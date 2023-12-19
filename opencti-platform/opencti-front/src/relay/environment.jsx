@@ -67,11 +67,12 @@ export const environment = new Environment({ network, store });
 // Components
 export class QueryRenderer extends Component {
   render() {
-    const { variables, query, render } = this.props;
+    const { variables, query, render, fetchPolicy } = this.props;
     return (
       <QR environment={environment}
         query={query}
         variables={variables}
+        fetchPolicy={fetchPolicy}
         render={(data) => {
           const { error } = data;
           if (error) {
@@ -87,6 +88,7 @@ QueryRenderer.propTypes = {
   variables: PropTypes.object,
   render: PropTypes.func,
   query: PropTypes.object,
+  fetchPolicy: PropTypes.string,
 };
 
 const buildErrorMessages = (error) => map(

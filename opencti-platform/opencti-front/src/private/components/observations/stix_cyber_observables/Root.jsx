@@ -90,6 +90,7 @@ class RootStixCyberObservable extends Component {
       <>
         <QueryRenderer
           query={stixCyberObservableQuery}
+          fetchPolicy={'store-and-network'}
           variables={{ id: observableId, relationship_type: 'indicates' }}
           render={({ props }) => {
             if (props) {
