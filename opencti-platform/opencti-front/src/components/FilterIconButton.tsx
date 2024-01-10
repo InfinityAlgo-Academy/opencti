@@ -8,8 +8,8 @@ import { handleFilterHelpers } from '../utils/hooks/useLocalStorage';
 import { filterValuesContentQuery } from './FilterValuesContent';
 import { FilterValuesContentQuery } from './__generated__/FilterValuesContentQuery.graphql';
 
-interface FilterIconButtonProps {
-  availableFilterKeys?: string[];
+export interface FilterIconButtonProps {
+  availableFilterKeys?: string[] | undefined;
   filters?: FilterGroup;
   handleRemoveFilter?: (key: string, op?: string) => void;
   handleSwitchGlobalMode?: () => void;
@@ -20,7 +20,7 @@ interface FilterIconButtonProps {
   disabledPossible?: boolean;
   redirection?: boolean;
   helpers?: handleFilterHelpers;
-  availableRelationFilterTypes?: Record<string, string[]>;
+  availableRelationFilterTypes?: Record<string, string[]> | undefined;
   entityTypes?: string[];
   filtersRestrictions?: FiltersRestrictions;
 }

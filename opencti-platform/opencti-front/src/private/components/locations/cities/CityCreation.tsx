@@ -7,6 +7,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import { FormikConfig } from 'formik/dist/types';
 import { RecordSourceSelectorProxy } from 'relay-runtime';
 import Drawer, { DrawerVariant } from '@components/common/drawer/Drawer';
+import { CitiesLinesPaginationQuery$variables } from '@components/locations/__generated__/CitiesLinesPaginationQuery.graphql';
 import ConfidenceField from '@components/common/form/ConfidenceField';
 import { useFormatter } from '../../../../components/i18n';
 import TextField from '../../../../components/TextField';
@@ -16,7 +17,6 @@ import MarkdownField from '../../../../components/fields/MarkdownField';
 import { ExternalReferencesField } from '../../common/form/ExternalReferencesField';
 import type { Theme } from '../../../../components/Theme';
 import { insertNode } from '../../../../utils/store';
-import { CitiesLinesPaginationQuery$variables } from './__generated__/CitiesLinesPaginationQuery.graphql';
 import { CityCreationMutation$variables } from './__generated__/CityCreationMutation.graphql';
 import ObjectLabelField from '../../common/form/ObjectLabelField';
 import { Option } from '../../common/form/ReferenceField';
@@ -48,7 +48,7 @@ const cityMutation = graphql`
       entity_type
       confidence
       parent_types
-      ...CityLine_node
+      ...CitiesLine_node
     }
   }
 `;

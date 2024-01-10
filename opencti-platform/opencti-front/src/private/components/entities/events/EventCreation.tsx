@@ -7,6 +7,7 @@ import { graphql } from 'react-relay';
 import makeStyles from '@mui/styles/makeStyles';
 import { RecordSourceSelectorProxy } from 'relay-runtime';
 import { FormikConfig } from 'formik/dist/types';
+import { EventsLinesPaginationQuery$variables } from '@components/entities/__generated__/EventsLinesPaginationQuery.graphql';
 import ConfidenceField from '@components/common/form/ConfidenceField';
 import { useFormatter } from '../../../../components/i18n';
 import { handleErrorInForm } from '../../../../relay/environment';
@@ -25,7 +26,6 @@ import { insertNode } from '../../../../utils/store';
 import type { Theme } from '../../../../components/Theme';
 import { Option } from '../../common/form/ReferenceField';
 import { EventCreationMutation, EventCreationMutation$variables } from './__generated__/EventCreationMutation.graphql';
-import { EventsLinesPaginationQuery$variables } from './__generated__/EventsLinesPaginationQuery.graphql';
 import useDefaultValues from '../../../../utils/hooks/useDefaultValues';
 import CustomFileUploader from '../../common/files/CustomFileUploader';
 import useApiMutation from '../../../../utils/hooks/useApiMutation';
@@ -52,7 +52,7 @@ const eventMutation = graphql`
       confidence
       entity_type
       parent_types
-      ...EventLine_node
+      ...EventsLine_node
     }
   }
 `;

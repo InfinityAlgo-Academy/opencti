@@ -18,7 +18,7 @@ interface FiltersProps {
   availableFilterKeys: string[];
   availableEntityTypes?: string[];
   availableRelationshipTypes?: string[];
-  availableRelationFilterTypes?: Record<string, string[]>;
+  availableRelationFilterTypes?: Record<string, string[]> | undefined;
   handleAddFilter?: HandleAddFilter;
   handleRemoveFilter?: (key: string, id?: string) => void;
   handleSwitchFilter?: HandleAddFilter;

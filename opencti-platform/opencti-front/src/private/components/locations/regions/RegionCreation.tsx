@@ -8,6 +8,7 @@ import { FormikConfig } from 'formik/dist/types';
 import { RecordSourceSelectorProxy } from 'relay-runtime';
 import CustomFileUploader from '@components/common/files/CustomFileUploader';
 import Drawer, { DrawerVariant } from '@components/common/drawer/Drawer';
+import { RegionsLinesPaginationQuery$variables } from '@components/locations/__generated__/RegionsLinesPaginationQuery.graphql';
 import ConfidenceField from '@components/common/form/ConfidenceField';
 import { useFormatter } from '../../../../components/i18n';
 import TextField from '../../../../components/TextField';
@@ -16,7 +17,6 @@ import ObjectMarkingField from '../../common/form/ObjectMarkingField';
 import MarkdownField from '../../../../components/fields/MarkdownField';
 import type { Theme } from '../../../../components/Theme';
 import { insertNode } from '../../../../utils/store';
-import { RegionsLinesPaginationQuery$variables } from './__generated__/RegionsLinesPaginationQuery.graphql';
 import { ExternalReferencesField } from '../../common/form/ExternalReferencesField';
 import { fieldSpacingContainerStyle } from '../../../../utils/field';
 import ObjectLabelField from '../../common/form/ObjectLabelField';
@@ -48,7 +48,7 @@ const regionMutation = graphql`
       description
       entity_type
       parent_types
-      ...RegionLine_node
+      ...RegionsLine_node
     }
   }
 `;

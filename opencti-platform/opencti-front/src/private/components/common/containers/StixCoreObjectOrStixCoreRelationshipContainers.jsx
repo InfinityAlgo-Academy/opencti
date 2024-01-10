@@ -6,11 +6,8 @@ import ToggleButton from '@mui/material/ToggleButton';
 import Tooltip from '@mui/material/Tooltip';
 import { FileDownloadOutlined, ViewListOutlined } from '@mui/icons-material';
 import { VectorPolygon } from 'mdi-material-ui';
+import { graphql } from 'react-relay';
 import { QueryRenderer } from '../../../../relay/environment';
-import ListLines from '../../../../components/list_lines/ListLines';
-import StixCoreObjectOrStixCoreRelationshipContainersLines, {
-  stixCoreObjectOrStixCoreRelationshipContainersLinesQuery,
-} from './StixCoreObjectOrStixCoreRelationshipContainersLines';
 import StixCoreObjectOrStixCoreRelationshipContainersGraph, {
   stixCoreObjectOrStixCoreRelationshipContainersGraphQuery,
 } from './StixCoreObjectOrStixCoreRelationshipContainersGraph';
@@ -23,6 +20,8 @@ import FilterIconButton from '../../../../components/FilterIconButton';
 import { usePaginationLocalStorage } from '../../../../utils/hooks/useLocalStorage';
 import { emptyFilterGroup, isFilterGroupNotEmpty, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../utils/filters/filtersUtils';
 import { useFormatter } from '../../../../components/i18n';
+import DataTable from '../../../../components/dataGrid/DataTable';
+import useQueryLoading from '../../../../utils/hooks/useQueryLoading';
 
 // Deprecated - https://mui.com/system/styles/basics/
 // Do not use it for new code.
@@ -34,10 +33,313 @@ const useStyles = makeStyles(() => ({
     paddingBottom: 0,
   },
 }));
+
+const stixCoreObjectOrStixCoreRelationshipContainersLineFragment = graphql`
+  fragment StixCoreObjectOrStixCoreRelationshipContainers_node on Container {
+    id
+    workflowEnabled
+    entity_type
+    status {
+      id
+      order
+      template {
+        name
+        color
+      }
+    }
+    creators {
+      id
+      name
+    }
+    ... on Note {
+      attribute_abstract
+      content
+      created
+    }
+    ... on Opinion {
+      opinion
+      created
+    }
+    ... on ObservedData {
+      name
+      first_observed
+      last_observed
+    }
+    ... on Report {
+      name
+      published
+    }
+    ... on Grouping {
+      name
+      created
+    }
+    ... on Case {
+      name
+      created
+    }
+    ... on Task {
+      name
+    }
+    createdBy {
+      ... on Identity {
+        id
+        name
+        entity_type
+      }
+    }
+    objectMarking {
+      id
+      definition_type
+      definition
+      x_opencti_order
+      x_opencti_color
+    }
+    objectLabel {
+      id
+      value
+      color
+    }
+    ... on ObservedData {
+      name
+      objects(first: 1) {
+        edges {
+          node {
+            ... on StixCoreObject {
+              id
+              entity_type
+              parent_types
+              created_at
+              createdBy {
+                ... on Identity {
+                  id
+                  name
+                  entity_type
+                }
+              }
+              objectMarking {
+                id
+                definition_type
+                definition
+                x_opencti_order
+                x_opencti_color
+              }
+            }
+            ... on AttackPattern {
+              name
+              description
+              x_mitre_id
+            }
+            ... on Campaign {
+              name
+              description
+              first_seen
+              last_seen
+            }
+            ... on Note {
+              attribute_abstract
+            }
+            ... on ObservedData {
+              name
+              first_observed
+              last_observed
+            }
+            ... on Opinion {
+              opinion
+            }
+            ... on Report {
+              name
+              description
+              published
+            }
+            ... on CourseOfAction {
+              name
+              description
+            }
+            ... on Individual {
+              name
+              description
+            }
+            ... on Organization {
+              name
+              description
+            }
+            ... on Sector {
+              name
+              description
+            }
+            ... on System {
+              name
+              description
+            }
+            ... on Indicator {
+              name
+              description
+              valid_from
+            }
+            ... on Infrastructure {
+              name
+              description
+            }
+            ... on IntrusionSet {
+              name
+              description
+              first_seen
+              last_seen
+            }
+            ... on Position {
+              name
+              description
+            }
+            ... on City {
+              name
+              description
+            }
+            ... on AdministrativeArea {
+              name
+              description
+            }
+            ... on Country {
+              name
+              description
+            }
+            ... on Region {
+              name
+              description
+            }
+            ... on Malware {
+              name
+              description
+              first_seen
+              last_seen
+            }
+            ... on ThreatActor {
+              name
+              description
+              first_seen
+              last_seen
+            }
+            ... on Tool {
+              name
+              description
+            }
+            ... on Vulnerability {
+              name
+              description
+            }
+            ... on Incident {
+              name
+              description
+              first_seen
+              last_seen
+            }
+            ... on Event {
+              name
+              description
+              start_time
+              stop_time
+            }
+            ... on Channel {
+              name
+              description
+            }
+            ... on Narrative {
+              name
+              description
+            }
+            ... on Language {
+              name
+            }
+            ... on DataComponent {
+              name
+            }
+            ... on DataSource {
+              name
+            }
+            ... on Case {
+              name
+            }
+            ... on StixCyberObservable {
+              observable_value
+              x_opencti_description
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const stixCoreObjectOrStixCoreRelationshipContainersQuery = graphql`
+  query StixCoreObjectOrStixCoreRelationshipContainersQuery(
+    $search: String
+    $count: Int!
+    $cursor: ID
+    $orderBy: ContainersOrdering
+    $orderMode: OrderingMode
+    $filters: FilterGroup
+  ) {
+    ...StixCoreObjectOrStixCoreRelationshipContainers_data
+    @arguments(
+      search: $search
+      count: $count
+      cursor: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    )
+  }
+`;
+
+const stixCoreObjectOrStixCoreRelationshipContainersLinesFragment = graphql`
+  fragment StixCoreObjectOrStixCoreRelationshipContainers_data on Query
+  @argumentDefinitions(
+    search: { type: "String" }
+    count: { type: "Int", defaultValue: 25 }
+    cursor: { type: "ID" }
+    orderBy: { type: "ContainersOrdering", defaultValue: created }
+    orderMode: { type: "OrderingMode", defaultValue: asc }
+    filters: { type: "FilterGroup" }
+  ) @refetchable(queryName: "StixCoreObjectOrStixCoreRelationshipContainersRefetchQuery") {
+    containers(
+      search: $search
+      first: $count
+      after: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    ) @connection(key: "Pagination_containers") {
+      edges {
+        node {
+          id
+          createdBy {
+            ... on Identity {
+              id
+              name
+              entity_type
+            }
+          }
+          objectMarking {
+            id
+            definition_type
+            definition
+            x_opencti_order
+            x_opencti_color
+          }
+          ...StixCoreObjectOrStixCoreRelationshipContainers_node
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+        globalCount
+      }
+    }
+  }
+`;
+
 const StixCoreObjectOrStixCoreRelationshipContainers = ({
   stixDomainObjectOrStixCoreRelationship,
   authorId,
-  onChangeOpenExports,
   reportType,
 }) => {
   const { t_i18n } = useFormatter();
@@ -52,28 +354,25 @@ const StixCoreObjectOrStixCoreRelationshipContainers = ({
       : `-${authorId}`
   }`;
 
+  const initialValues = {
+    filters: emptyFilterGroup,
+    searchTerm: '',
+    sortBy: 'created',
+    orderAsc: false,
+    openExports: false,
+    view: 'lines',
+    redirectionMode: 'overview',
+  };
   const { viewStorage, paginationOptions, helpers } = usePaginationLocalStorage(
     LOCAL_STORAGE_KEY,
-    {
-      filters: emptyFilterGroup,
-      searchTerm: '',
-      sortBy: 'created',
-      orderAsc: false,
-      openExports: false,
-      view: 'lines',
-      redirectionMode: 'overview',
-    },
+    initialValues,
   );
 
   const {
     numberOfElements,
     filters,
     searchTerm,
-    sortBy,
-    orderAsc,
-    redirectionMode,
     view,
-    openExports,
   } = viewStorage;
 
   const reportFilterClass = reportType !== 'all' && reportType !== undefined ? reportType.replace(/_/g, ' ') : '';
@@ -91,92 +390,68 @@ const StixCoreObjectOrStixCoreRelationshipContainers = ({
   const queryPaginationOptions = { ...paginationOptions, filters: contextFilters };
 
   const dataColumns = {
-    entity_type: {
-      label: 'Type',
-      width: '8%',
-      isSortable: true,
-    },
-    name: {
-      label: 'Title',
-      width: '25%',
-      isSortable: true,
-    },
-    createdBy: {
-      label: 'Author',
-      width: '12%',
-      isSortable: isRuntimeSort,
-    },
-    creator: {
-      label: 'Creators',
-      width: '12%',
-      isSortable: isRuntimeSort,
-    },
-    objectLabel: {
-      label: 'Labels',
-      width: '15%',
-      isSortable: false,
-    },
-    created: {
-      label: 'Original creation date',
-      width: '10%',
-      isSortable: true,
-    },
-    x_opencti_workflow_id: {
-      label: 'Status',
-      width: '8%',
-      isSortable: true,
-    },
-    objectMarking: {
-      label: 'Marking',
-      width: '8%',
-      isSortable: isRuntimeSort,
-    },
+    entity_type: { flexSize: 10 },
+    name: { label: 'Name' },
+    createdBy: { isSortable: isRuntimeSort },
+    creator: { isSortable: isRuntimeSort },
+    objectLabel: {},
+    created: { flexSize: 10 },
+    x_opencti_workflow_id: {},
+    objectMarking: { isSortable: isRuntimeSort },
+  };
+
+  const queryRef = useQueryLoading(
+    stixCoreObjectOrStixCoreRelationshipContainersQuery,
+    queryPaginationOptions,
+  );
+
+  const preloadedPaginationProps = {
+    linesQuery: stixCoreObjectOrStixCoreRelationshipContainersQuery,
+    linesFragment: stixCoreObjectOrStixCoreRelationshipContainersLinesFragment,
+    queryRef,
+    nodePath: ['containers', 'pageInfo', 'globalCount'],
+    setNumberOfElements: helpers.handleSetNumberOfElements,
   };
 
   const renderLines = () => {
     return (
-      <ListLines
-        helpers={helpers}
-        sortBy={sortBy}
-        orderAsc={orderAsc}
-        dataColumns={dataColumns}
-        handleSort={helpers.handleSort}
-        handleSearch={helpers.handleSearch}
-        handleAddFilter={helpers.handleAddFilter}
-        handleRemoveFilter={helpers.handleRemoveFilter}
-        handleSwitchGlobalMode={helpers.handleSwitchGlobalMode}
-        handleSwitchLocalMode={helpers.handleSwitchLocalMode}
-        handleToggleExports={helpers.handleToggleExports}
-        handleChangeView={helpers.handleChangeView}
-        openExports={openExports}
-        noPadding={typeof onChangeOpenExports === 'function'}
-        exportContext={{ entity_type: 'Container' }}
-        availableEntityTypes={['Container']}
-        keyword={searchTerm}
-        handleSwitchRedirectionMode={(value) => helpers.handleAddProperty('redirectionMode', value)}
-        redirectionMode={redirectionMode}
-        filters={filters}
-        paginationOptions={queryPaginationOptions}
-        numberOfElements={numberOfElements}
-        disableCards={true}
-        enableGraph={true}
-      >
-        <QueryRenderer
-          query={stixCoreObjectOrStixCoreRelationshipContainersLinesQuery}
-          variables={queryPaginationOptions}
-          render={({ props }) => (
-            <StixCoreObjectOrStixCoreRelationshipContainersLines
-              data={props}
-              paginationOptions={queryPaginationOptions}
-              dataColumns={dataColumns}
-              initialLoading={props === null}
-              onLabelClick={helpers.handleAddFilter}
-              setNumberOfElements={helpers.handleSetNumberOfElements}
-              redirectionMode={redirectionMode}
-            />
-          )}
-        />
-      </ListLines>
+      <>
+        {queryRef && (
+          <DataTable
+            dataColumns={dataColumns}
+            resolvePath={(data) => data.containers?.edges?.map((n) => n?.node)}
+            storageKey={LOCAL_STORAGE_KEY}
+            initialValues={initialValues}
+            toolbarFilters={contextFilters}
+            preloadedPaginationProps={preloadedPaginationProps}
+            lineFragment={stixCoreObjectOrStixCoreRelationshipContainersLineFragment}
+            filterExportContext={{ entity_type: 'Container' }}
+            redirectionModeEnabled
+            currentView={view}
+            additionalHeaderButtons={(
+              <>
+                <ToggleButton value="lines" aria-label="lines">
+                  <Tooltip title={t_i18n('Lines view')}>
+                    <ViewListOutlined
+                      fontSize="small"
+                      color={
+                        view === 'lines' || !view
+                          ? 'secondary'
+                          : 'primary'
+                      }
+                    />
+                  </Tooltip>
+                </ToggleButton>
+                <ToggleButton value="graph" aria-label="graph">
+                  <Tooltip title={t_i18n('Graph view')}>
+                    <VectorPolygon fontSize="small" color="primary" />
+                  </Tooltip>
+                </ToggleButton>
+              </>
+            )}
+          />
+        )}
+      </>
     );
   };
 
@@ -218,10 +493,10 @@ const StixCoreObjectOrStixCoreRelationshipContainers = ({
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {numberOfElements && (
-            <div>
-              <strong>{`${numberOfElements.number}${numberOfElements.symbol}`}</strong>{' '}
-              {t_i18n('entitie(s)')}
-            </div>
+              <div>
+                <strong>{`${numberOfElements.number}${numberOfElements.symbol}`}</strong>{' '}
+                {t_i18n('entitie(s)')}
+              </div>
             )}
             <ToggleButtonGroup
               size="small"
@@ -318,6 +593,7 @@ const StixCoreObjectOrStixCoreRelationshipContainers = ({
               <>
                 <StixCoreObjectOrStixCoreRelationshipContainersGraphBar
                   disabled={true}
+                  navOpen={localStorage.getItem('navOpen') === 'true'}
                 />
                 <Loader />
               </>

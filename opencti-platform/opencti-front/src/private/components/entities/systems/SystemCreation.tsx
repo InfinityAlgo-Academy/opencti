@@ -7,6 +7,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import { RecordSourceSelectorProxy } from 'relay-runtime';
 import { FormikConfig } from 'formik/dist/types';
 import Drawer, { DrawerVariant } from '@components/common/drawer/Drawer';
+import { SystemsLinesPaginationQuery$variables } from '@components/entities/__generated__/SystemsLinesPaginationQuery.graphql';
 import ConfidenceField from '@components/common/form/ConfidenceField';
 import { useFormatter } from '../../../../components/i18n';
 import { handleErrorInForm } from '../../../../relay/environment';
@@ -22,7 +23,6 @@ import type { Theme } from '../../../../components/Theme';
 import { Option } from '../../common/form/ReferenceField';
 import OpenVocabField from '../../common/form/OpenVocabField';
 import { SystemCreationMutation, SystemCreationMutation$variables } from './__generated__/SystemCreationMutation.graphql';
-import { SystemsLinesPaginationQuery$variables } from './__generated__/SystemsLinesPaginationQuery.graphql';
 import { fieldSpacingContainerStyle } from '../../../../utils/field';
 import useDefaultValues from '../../../../utils/hooks/useDefaultValues';
 import CustomFileUploader from '../../common/files/CustomFileUploader';
@@ -50,7 +50,7 @@ const systemMutation = graphql`
       confidence
       entity_type
       parent_types
-      ...SystemLine_node
+      ...SystemsLine_node
     }
   }
 `;

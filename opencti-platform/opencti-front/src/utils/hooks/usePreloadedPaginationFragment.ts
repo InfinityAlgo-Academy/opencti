@@ -9,7 +9,7 @@ type KeyType<TData = unknown> = Readonly<{
   ' $fragmentSpreads': FragmentType;
 }>;
 
-interface UsePreloadedPaginationFragment<QueryType extends OperationType> {
+export interface UsePreloadedPaginationFragment<QueryType extends OperationType> {
   queryRef: PreloadedQuery<QueryType>;
   linesQuery: GraphQLTaggedNode;
   linesFragment: GraphQLTaggedNode;
@@ -46,6 +46,7 @@ const usePreloadedPaginationFragment = <
     data,
     hasMore: () => hasNext,
     isLoadingMore: () => isLoadingNext,
+    isLoading: isLoadingNext,
     loadMore: loadNext,
   };
 };

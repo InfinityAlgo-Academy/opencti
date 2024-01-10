@@ -1,114 +1,155 @@
 import React, { FunctionComponent } from 'react';
-import ListLines from '../../../components/list_lines/ListLines';
-import CitiesLines, { citiesLinesQuery } from './cities/CitiesLines';
+import { graphql } from 'react-relay';
+import { CitiesLinesPaginationQuery, CitiesLinesPaginationQuery$variables } from '@components/locations/__generated__/CitiesLinesPaginationQuery.graphql';
+import { CitiesLines_data$data } from '@components/locations/__generated__/CitiesLines_data.graphql';
 import CityCreation from './cities/CityCreation';
 import Security from '../../../utils/Security';
 import { usePaginationLocalStorage } from '../../../utils/hooks/useLocalStorage';
 import useQueryLoading from '../../../utils/hooks/useQueryLoading';
-import { CityLineDummy } from './cities/CityLine';
 import { KNOWLEDGE_KNUPDATE } from '../../../utils/hooks/useGranted';
-import { CitiesLinesPaginationQuery, CitiesLinesPaginationQuery$variables } from './cities/__generated__/CitiesLinesPaginationQuery.graphql';
-import { emptyFilterGroup } from '../../../utils/filters/filtersUtils';
+import { useBuildEntityTypeBasedFilterContext, emptyFilterGroup } from '../../../utils/filters/filtersUtils';
 import { useFormatter } from '../../../components/i18n';
 import Breadcrumbs from '../../../components/Breadcrumbs';
+import DataTable from '../../../components/dataGrid/DataTable';
+import { UsePreloadedPaginationFragment } from '../../../utils/hooks/usePreloadedPaginationFragment';
 
 const LOCAL_STORAGE_KEY = 'cities';
 
+const cityFragment = graphql`
+  fragment CitiesLine_node on City {
+    id
+    entity_type
+    name
+    created
+    modified
+    objectMarking {
+      id
+      definition_type
+      definition
+      x_opencti_order
+      x_opencti_color
+    }
+    objectLabel {
+      id
+      value
+      color
+    }
+  }
+`;
+
+const citiesLinesQuery = graphql`
+  query CitiesLinesPaginationQuery(
+    $search: String
+    $count: Int
+    $cursor: ID
+    $orderBy: CitiesOrdering
+    $orderMode: OrderingMode
+    $filters: FilterGroup
+  ) {
+    ...CitiesLines_data
+    @arguments(
+      search: $search
+      count: $count
+      cursor: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    )
+  }
+`;
+
+const citiesLinesFragment = graphql`
+  fragment CitiesLines_data on Query
+  @argumentDefinitions(
+    search: { type: "String" }
+    count: { type: "Int" }
+    cursor: { type: "ID" }
+    orderBy: { type: "CitiesOrdering" }
+    orderMode: { type: "OrderingMode" }
+    filters: { type: "FilterGroup" }
+  )
+  @refetchable(queryName: "CitiesLinesRefetchQuery") {
+    cities(
+      search: $search
+      first: $count
+      after: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    ) @connection(key: "Pagination_cities") {
+      edges {
+        node {
+          id
+          name
+          description
+          ...CitiesLine_node
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+        globalCount
+      }
+    }
+  }
+`;
+
 const Cities: FunctionComponent = () => {
   const { t_i18n } = useFormatter();
-  const { viewStorage, helpers, paginationOptions } = usePaginationLocalStorage<CitiesLinesPaginationQuery$variables>(
-    LOCAL_STORAGE_KEY,
-    {
-      searchTerm: '',
-      sortBy: 'name',
-      orderAsc: true,
-      openExports: false,
-      filters: emptyFilterGroup,
-      numberOfElements: {
-        number: 0,
-        symbol: '',
-      },
-    },
-  );
-  const renderLines = () => {
-    const {
-      sortBy,
-      orderAsc,
-      searchTerm,
-      filters,
-      openExports,
-      numberOfElements,
-    } = viewStorage;
-    const dataColumns = {
-      name: {
-        label: 'Name',
-        width: '60%',
-        isSortable: true,
-      },
-      created: {
-        label: 'Original creation date',
-        width: '15%',
-        isSortable: true,
-      },
-      modified: {
-        label: 'Modification date',
-        width: '15%',
-        isSortable: true,
-      },
-    };
-    const queryRef = useQueryLoading<CitiesLinesPaginationQuery>(
-      citiesLinesQuery,
-      paginationOptions,
-    );
-    return (
-      <ListLines
-        helpers={helpers}
-        sortBy={sortBy}
-        orderAsc={orderAsc}
-        dataColumns={dataColumns}
-        handleSort={helpers.handleSort}
-        handleSearch={helpers.handleSearch}
-        handleAddFilter={helpers.handleAddFilter}
-        handleRemoveFilter={helpers.handleRemoveFilter}
-        handleSwitchGlobalMode={helpers.handleSwitchGlobalMode}
-        handleSwitchLocalMode={helpers.handleSwitchLocalMode}
-        handleToggleExports={helpers.handleToggleExports}
-        openExports={openExports}
-        exportContext={{ entity_type: 'City' }}
-        keyword={searchTerm}
-        filters={filters}
-        paginationOptions={paginationOptions}
-        numberOfElements={numberOfElements}
-      >
-        {queryRef && (
-          <React.Suspense
-            fallback={
-              <>
-                {Array(20)
-                  .fill(0)
-                  .map((_, idx) => (
-                    <CityLineDummy key={idx} dataColumns={dataColumns} />
-                  ))}
-              </>
-            }
-          >
-            <CitiesLines
-              queryRef={queryRef}
-              paginationOptions={paginationOptions}
-              dataColumns={dataColumns}
-              setNumberOfElements={helpers.handleSetNumberOfElements}
-            />
-          </React.Suspense>
-        )}
-      </ListLines>
-    );
+
+  const initialValues = {
+    searchTerm: '',
+    sortBy: 'name',
+    orderAsc: true,
+    openExports: false,
+    filters: emptyFilterGroup,
   };
+  const { viewStorage: { filters }, helpers: storageHelpers, paginationOptions } = usePaginationLocalStorage<CitiesLinesPaginationQuery$variables>(
+    LOCAL_STORAGE_KEY,
+    initialValues,
+  );
+
+  const contextFilters = useBuildEntityTypeBasedFilterContext('City', filters);
+  const queryPaginationOptions = {
+    ...paginationOptions,
+    filters: contextFilters,
+  } as unknown as CitiesLinesPaginationQuery$variables;
+
+  const dataColumns = {
+    name: { flexSize: 70 },
+    created: {},
+    modified: {},
+  };
+  const queryRef = useQueryLoading<CitiesLinesPaginationQuery>(
+    citiesLinesQuery,
+    queryPaginationOptions,
+  );
+
+  const preloadedPaginationProps = {
+    linesQuery: citiesLinesQuery,
+    linesFragment: citiesLinesFragment,
+    queryRef,
+    nodePath: ['cities', 'pageInfo', 'globalCount'],
+    setNumberOfElements: storageHelpers.handleSetNumberOfElements,
+  } as UsePreloadedPaginationFragment<CitiesLinesPaginationQuery>;
+
   return (
     <>
       <Breadcrumbs variant="list" elements={[{ label: t_i18n('Locations') }, { label: t_i18n('Cities'), current: true }]} />
-      {renderLines()}
+      {queryRef && (
+        <DataTable
+          dataColumns={dataColumns}
+          resolvePath={(data: CitiesLines_data$data) => data.cities?.edges?.map((n) => n?.node)}
+          storageKey={LOCAL_STORAGE_KEY}
+          initialValues={initialValues}
+          toolbarFilters={contextFilters}
+          lineFragment={cityFragment}
+          preloadedPaginationProps={preloadedPaginationProps}
+          filterExportContext={{ entity_type: 'City' }}
+        />
+      )}
       <Security needs={[KNOWLEDGE_KNUPDATE]}>
-        <CityCreation paginationOptions={paginationOptions} />
+        <CityCreation paginationOptions={queryPaginationOptions} />
       </Security>
     </>
   );

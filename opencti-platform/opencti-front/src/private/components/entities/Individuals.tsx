@@ -1,120 +1,157 @@
 import React from 'react';
-import { IndividualsLinesPaginationQuery, IndividualsLinesPaginationQuery$variables } from '@components/entities/individuals/__generated__/IndividualsLinesPaginationQuery.graphql';
-import { IndividualLineDummy } from '@components/entities/individuals/IndividualLine';
-import ListLines from '../../../components/list_lines/ListLines';
-import IndividualsLines, { individualsLinesQuery } from './individuals/IndividualsLines';
+import { graphql } from 'react-relay';
+import { IndividualsLinesPaginationQuery, IndividualsLinesPaginationQuery$variables } from '@components/entities/__generated__/IndividualsLinesPaginationQuery.graphql';
+import { IndividualsLines_data$data } from '@components/entities/__generated__/IndividualsLines_data.graphql';
 import IndividualCreation from './individuals/IndividualCreation';
 import Security from '../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../utils/hooks/useGranted';
 import { usePaginationLocalStorage } from '../../../utils/hooks/useLocalStorage';
 import useQueryLoading from '../../../utils/hooks/useQueryLoading';
-import { emptyFilterGroup } from '../../../utils/filters/filtersUtils';
+import { useBuildEntityTypeBasedFilterContext, emptyFilterGroup } from '../../../utils/filters/filtersUtils';
 import { useFormatter } from '../../../components/i18n';
 import Breadcrumbs from '../../../components/Breadcrumbs';
+import DataTable from '../../../components/dataGrid/DataTable';
+import { UsePreloadedPaginationFragment } from '../../../utils/hooks/usePreloadedPaginationFragment';
 
 const LOCAL_STORAGE_KEY = 'individuals';
 
+const individualLineFragment = graphql`
+  fragment IndividualsLine_node on Individual {
+    id
+    entity_type
+    name
+    created
+    modified
+    objectMarking {
+      id
+      definition_type
+      definition
+      x_opencti_order
+      x_opencti_color
+    }
+    objectLabel {
+      id
+      value
+      color
+    }
+  }
+`;
+
+const individualsLinesQuery = graphql`
+  query IndividualsLinesPaginationQuery(
+    $search: String
+    $count: Int!
+    $cursor: ID
+    $orderBy: IndividualsOrdering
+    $orderMode: OrderingMode
+    $filters: FilterGroup
+  ) {
+    ...IndividualsLines_data
+    @arguments(
+      search: $search
+      count: $count
+      cursor: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    )
+  }
+`;
+
+export const individualsLinesFragment = graphql`
+  fragment IndividualsLines_data on Query
+  @argumentDefinitions(
+    search: { type: "String" }
+    count: { type: "Int", defaultValue: 25 }
+    cursor: { type: "ID" }
+    orderBy: { type: "IndividualsOrdering", defaultValue: name }
+    orderMode: { type: "OrderingMode", defaultValue: asc }
+    filters: { type: "FilterGroup" }
+  )
+  @refetchable(queryName: "IndividualsLinesRefetchQuery") {
+    individuals(
+      search: $search
+      first: $count
+      after: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    ) @connection(key: "Pagination_individuals") {
+      edges {
+        node {
+          id
+          name
+          description
+          ...IndividualsLine_node
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+        globalCount
+      }
+    }
+  }
+`;
+
 const Individuals = () => {
   const { t_i18n } = useFormatter();
-  const { viewStorage, helpers, paginationOptions } = usePaginationLocalStorage<IndividualsLinesPaginationQuery$variables>(
-    LOCAL_STORAGE_KEY,
-    {
-      searchTerm: '',
-      sortBy: 'name',
-      orderAsc: true,
-      openExports: false,
-      filters: emptyFilterGroup,
-    },
-  );
-  const renderLines = () => {
-    const {
-      sortBy,
-      orderAsc,
-      searchTerm,
-      filters,
-      openExports,
-      numberOfElements,
-    } = viewStorage;
-    const dataColumns = {
-      name: {
-        label: 'Name',
-        width: '35%',
-        isSortable: true,
-      },
-      objectLabel: {
-        label: 'Labels',
-        width: '25%',
-        isSortable: false,
-      },
-      created: {
-        label: 'Original creation date',
-        width: '15%',
-        isSortable: true,
-      },
-      modified: {
-        label: 'Modification date',
-        width: '15%',
-        isSortable: true,
-      },
-    };
-    const queryRef = useQueryLoading<IndividualsLinesPaginationQuery>(
-      individualsLinesQuery,
-      paginationOptions,
-    );
-    return (
-      <ListLines
-        helpers={helpers}
-        sortBy={sortBy}
-        orderAsc={orderAsc}
-        dataColumns={dataColumns}
-        handleSort={helpers.handleSort}
-        handleSearch={helpers.handleSearch}
-        handleAddFilter={helpers.handleAddFilter}
-        handleRemoveFilter={helpers.handleRemoveFilter}
-        handleSwitchGlobalMode={helpers.handleSwitchGlobalMode}
-        handleSwitchLocalMode={helpers.handleSwitchLocalMode}
-        handleToggleExports={helpers.handleToggleExports}
-        openExports={openExports}
-        exportContext={{ entity_type: 'Individual' }}
-        keyword={searchTerm}
-        filters={filters}
-        paginationOptions={paginationOptions}
-        numberOfElements={numberOfElements}
-      >
-        {queryRef && (
-          <React.Suspense
-            fallback={
-              <>
-                {Array(20)
-                  .fill(0)
-                  .map((_, idx) => (
-                    <IndividualLineDummy
-                      key={idx}
-                      dataColumns={dataColumns}
-                    />
-                  ))}
-              </>
-            }
-          >
-            <IndividualsLines
-              queryRef={queryRef}
-              paginationOptions={paginationOptions}
-              dataColumns={dataColumns}
-              onLabelClick={helpers.handleAddFilter}
-              setNumberOfElements={helpers.handleSetNumberOfElements}
-            />
-          </React.Suspense>
-        )}
-      </ListLines>
-    );
+
+  const initialValues = {
+    searchTerm: '',
+    sortBy: 'name',
+    orderAsc: true,
+    openExports: false,
+    filters: emptyFilterGroup,
   };
+  const { viewStorage: { filters }, helpers: storageHelpers, paginationOptions } = usePaginationLocalStorage<IndividualsLinesPaginationQuery$variables>(
+    LOCAL_STORAGE_KEY,
+    initialValues,
+  );
+
+  const dataColumns = {
+    name: { flexSize: 45 },
+    objectLabel: { flexSize: 25 },
+    created: {},
+    modified: {},
+  };
+
+  const contextFilters = useBuildEntityTypeBasedFilterContext('Individual', filters);
+  const queryPaginationOptions = {
+    ...paginationOptions,
+    filters: contextFilters,
+  } as unknown as IndividualsLinesPaginationQuery$variables;
+
+  const queryRef = useQueryLoading<IndividualsLinesPaginationQuery>(
+    individualsLinesQuery,
+    queryPaginationOptions,
+  );
+
+  const preloadedPaginationOptions = {
+    linesQuery: individualsLinesQuery,
+    linesFragment: individualsLinesFragment,
+    queryRef,
+    nodePath: ['individuals', 'pageInfo', 'globalCount'],
+    setNumberOfElements: storageHelpers.handleSetNumberOfElements,
+  } as UsePreloadedPaginationFragment<IndividualsLinesPaginationQuery>;
 
   return (
     <>
       <Breadcrumbs variant="list" elements={[{ label: t_i18n('Entities') }, { label: t_i18n('Individuals'), current: true }]} />
-      {renderLines()}
+      {queryRef && (
+        <DataTable
+          dataColumns={dataColumns}
+          resolvePath={(data: IndividualsLines_data$data) => data.individuals?.edges?.map((n) => n?.node)}
+          storageKey={LOCAL_STORAGE_KEY}
+          initialValues={initialValues}
+          toolbarFilters={contextFilters}
+          lineFragment={individualLineFragment}
+          preloadedPaginationProps={preloadedPaginationOptions}
+          filterExportContext={{ entity_type: 'Individual' }}
+        />
+      )}
       <Security needs={[KNOWLEDGE_KNUPDATE]}>
-        <IndividualCreation paginationOptions={paginationOptions} />
+        <IndividualCreation paginationOptions={queryPaginationOptions} />
       </Security>
     </>
   );

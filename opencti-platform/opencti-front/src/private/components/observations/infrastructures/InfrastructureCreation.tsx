@@ -26,9 +26,9 @@ import { insertNode } from '../../../../utils/store';
 import type { Theme } from '../../../../components/Theme';
 import { Option } from '../../common/form/ReferenceField';
 import { InfrastructureCreationMutation, InfrastructureCreationMutation$variables } from './__generated__/InfrastructureCreationMutation.graphql';
-import { InfrastructuresLinesPaginationQuery$variables } from './__generated__/InfrastructuresLinesPaginationQuery.graphql';
 import useDefaultValues from '../../../../utils/hooks/useDefaultValues';
 import CustomFileUploader from '../../common/files/CustomFileUploader';
+import { InfrastructuresLinesPaginationQuery$variables } from '../__generated__/InfrastructuresLinesPaginationQuery.graphql';
 import useApiMutation from '../../../../utils/hooks/useApiMutation';
 
 // Deprecated - https://mui.com/system/styles/basics/
@@ -52,7 +52,7 @@ const infrastructureMutation = graphql`
       description
       entity_type
       parent_types
-      ...InfrastructureLine_node
+      ...InfrastructuresLine_node
     }
   }
 `;

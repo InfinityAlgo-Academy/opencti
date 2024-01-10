@@ -7,6 +7,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import { RecordSourceSelectorProxy } from 'relay-runtime';
 import { FormikConfig } from 'formik/dist/types';
 import Drawer, { DrawerVariant } from '@components/common/drawer/Drawer';
+import { ToolsLinesPaginationQuery$variables } from '@components/arsenal/__generated__/ToolsLinesPaginationQuery.graphql';
 import { useFormatter } from '../../../../components/i18n';
 import { handleErrorInForm } from '../../../../relay/environment';
 import TextField from '../../../../components/TextField';
@@ -22,7 +23,6 @@ import ConfidenceField from '../../common/form/ConfidenceField';
 import { useSchemaCreationValidation } from '../../../../utils/hooks/useEntitySettings';
 import { insertNode } from '../../../../utils/store';
 import { Option } from '../../common/form/ReferenceField';
-import { ToolsLinesPaginationQuery$variables } from './__generated__/ToolsLinesPaginationQuery.graphql';
 import type { Theme } from '../../../../components/Theme';
 import { ToolCreationMutation, ToolCreationMutation$variables } from './__generated__/ToolCreationMutation.graphql';
 import useDefaultValues from '../../../../utils/hooks/useDefaultValues';
@@ -50,7 +50,7 @@ const toolMutation = graphql`
       description
       entity_type
       parent_types
-      ...ToolLine_node
+      ...ToolsLine_node
     }
   }
 `;

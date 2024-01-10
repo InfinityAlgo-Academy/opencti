@@ -178,7 +178,10 @@ class StixCoreObjectOrStixCoreRelationshipContainersGraphBar extends Component {
               PaperProps={{
                 variant: 'elevation',
                 elevation: 1,
-                style: { bottom: bannerSettings.bannerHeightNumber },
+                style: {
+                  bottom: bannerSettings.bannerHeightNumber,
+                  marginLeft: navOpen ? 180 : 55,
+                },
               }}
             >
               <div
@@ -199,7 +202,7 @@ class StixCoreObjectOrStixCoreRelationshipContainersGraphBar extends Component {
                   <div
                     style={{
                       float: 'left',
-                      marginLeft: navOpen ? 185 : 60,
+                      marginLeft: 10,
                       height: '100%',
                       display: 'flex',
                     }}
@@ -427,7 +430,10 @@ class StixCoreObjectOrStixCoreRelationshipContainersGraphBar extends Component {
             PaperProps={{
               variant: 'elevation',
               elevation: 1,
-              style: { bottom: bannerSettings.bannerHeightNumber },
+              style: {
+                bottom: bannerSettings.bannerHeightNumber,
+                marginLeft: navOpen ? 180 : 55,
+              },
             }}
           >
             <div
@@ -448,7 +454,7 @@ class StixCoreObjectOrStixCoreRelationshipContainersGraphBar extends Component {
                 <div
                   style={{
                     float: 'left',
-                    marginLeft: navOpen ? 185 : 60,
+                    marginLeft: 10,
                     height: '100%',
                     display: 'flex',
                   }}

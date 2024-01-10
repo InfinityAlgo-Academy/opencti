@@ -8,6 +8,8 @@ import { FormikConfig } from 'formik/dist/types';
 import { RecordSourceSelectorProxy } from 'relay-runtime';
 import Drawer, { DrawerVariant } from '@components/common/drawer/Drawer';
 import ConfidenceField from '@components/common/form/ConfidenceField';
+import { AdministrativeAreasLinesPaginationQuery$variables } from '@components/locations/__generated__/AdministrativeAreasLinesPaginationQuery.graphql';
+import { AdministrativeAreaCreationMutation$variables } from '@components/locations/administrative_areas/__generated__/AdministrativeAreaCreationMutation.graphql';
 import { useFormatter } from '../../../../components/i18n';
 import TextField from '../../../../components/TextField';
 import CreatedByField from '../../common/form/CreatedByField';
@@ -16,8 +18,6 @@ import MarkdownField from '../../../../components/fields/MarkdownField';
 import { ExternalReferencesField } from '../../common/form/ExternalReferencesField';
 import type { Theme } from '../../../../components/Theme';
 import { insertNode } from '../../../../utils/store';
-import { AdministrativeAreasLinesPaginationQuery$variables } from './__generated__/AdministrativeAreasLinesPaginationQuery.graphql';
-import { AdministrativeAreaCreationMutation$variables } from './__generated__/AdministrativeAreaCreationMutation.graphql';
 import ObjectLabelField from '../../common/form/ObjectLabelField';
 import { fieldSpacingContainerStyle } from '../../../../utils/field';
 import { useSchemaCreationValidation } from '../../../../utils/hooks/useEntitySettings';
@@ -50,7 +50,7 @@ const administrativeAreaMutation = graphql`
       confidence
       entity_type
       parent_types
-      ...AdministrativeAreaLine_node
+      ...AdministrativeAreasLine_node
     }
   }
 `;

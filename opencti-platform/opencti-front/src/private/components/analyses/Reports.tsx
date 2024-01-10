@@ -1,21 +1,135 @@
 import React, { FunctionComponent } from 'react';
-import ListLines from '../../../components/list_lines/ListLines';
-import ReportsLines, { reportsLinesQuery } from './reports/ReportsLines';
+import { ReportsLines_data$data } from '@components/analyses/reports/__generated__/ReportsLines_data.graphql';
+import { graphql } from 'react-relay';
 import ReportCreation from './reports/ReportCreation';
-import ToolBar from '../data/ToolBar';
 import Security from '../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../utils/hooks/useGranted';
 import useAuth from '../../../utils/hooks/useAuth';
 import { usePaginationLocalStorage } from '../../../utils/hooks/useLocalStorage';
 import { ReportsLinesPaginationQuery, ReportsLinesPaginationQuery$variables } from './reports/__generated__/ReportsLinesPaginationQuery.graphql';
-import { ReportLine_node$data } from './reports/__generated__/ReportLine_node.graphql';
-import useEntityToggle from '../../../utils/hooks/useEntityToggle';
 import useQueryLoading from '../../../utils/hooks/useQueryLoading';
-import { ReportLineDummy } from './reports/ReportLine';
 import { useBuildEntityTypeBasedFilterContext, emptyFilterGroup } from '../../../utils/filters/filtersUtils';
 import { useFormatter } from '../../../components/i18n';
+import DataTable from '../../../components/dataGrid/DataTable';
+import { UsePreloadedPaginationFragment } from '../../../utils/hooks/usePreloadedPaginationFragment';
+import { DataTableProps } from '../../../components/dataGrid/dataTableTypes';
 import Breadcrumbs from '../../../components/Breadcrumbs';
-import ExportContextProvider from '../../../utils/ExportContextProvider';
+
+const reportLineFragment = graphql`
+  fragment ReportsLine_node on Report {
+    id
+    entity_type
+    name
+    description
+    published
+    report_types
+    createdBy {
+      ... on Identity {
+        id
+        name
+        entity_type
+      }
+    }
+    objectMarking {
+      id
+      definition_type
+      definition
+      x_opencti_order
+      x_opencti_color
+    }
+    objectLabel {
+      id
+      value
+      color
+    }
+    creators {
+      id
+      name
+    }
+    status {
+      id
+      order
+      template {
+        id
+        name
+        color
+      }
+    }
+    workflowEnabled
+    created_at
+  }
+`;
+
+const reportsLinesQuery = graphql`
+  query ReportsLinesPaginationQuery(
+    $search: String
+    $count: Int!
+    $cursor: ID
+    $orderBy: ReportsOrdering
+    $orderMode: OrderingMode
+    $filters: FilterGroup
+  ) {
+    ...ReportsLines_data
+    @arguments(
+      search: $search
+      count: $count
+      cursor: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    )
+  }
+`;
+
+const reportsLineFragment = graphql`
+  fragment ReportsLines_data on Query
+  @argumentDefinitions(
+    search: { type: "String" }
+    count: { type: "Int", defaultValue: 25 }
+    cursor: { type: "ID" }
+    orderBy: { type: "ReportsOrdering", defaultValue: name }
+    orderMode: { type: "OrderingMode", defaultValue: asc }
+    filters: { type: "FilterGroup" }
+  )
+  @refetchable(queryName: "ReportsLinesRefetchQuery") {
+    reports(
+      search: $search
+      first: $count
+      after: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    ) @connection(key: "Pagination_reports") {
+      edges {
+        node {
+          id
+          name
+          published
+          createdBy {
+            ... on Identity {
+              id
+              name
+              entity_type
+            }
+          }
+          objectMarking {
+            id
+            definition_type
+            definition
+            x_opencti_order
+            x_opencti_color
+          }
+          ...ReportsLine_node
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+        globalCount
+      }
+    }
+  }
+`;
 
 const LOCAL_STORAGE_KEY = 'reports';
 
@@ -24,39 +138,22 @@ const Reports: FunctionComponent = () => {
   const {
     platformModuleHelpers: { isRuntimeFieldEnable },
   } = useAuth();
+  const initialValues = {
+    filters: emptyFilterGroup,
+    searchTerm: '',
+    sortBy: 'published',
+    orderAsc: false,
+    openExports: false,
+    redirectionMode: 'overview',
+  };
   const {
     viewStorage,
     paginationOptions,
     helpers: storageHelpers,
-  } = usePaginationLocalStorage<ReportsLinesPaginationQuery$variables>(
-    LOCAL_STORAGE_KEY,
-    {
-      filters: emptyFilterGroup,
-      searchTerm: '',
-      sortBy: 'published',
-      orderAsc: false,
-      openExports: false,
-      redirectionMode: 'overview',
-    },
-  );
+  } = usePaginationLocalStorage<ReportsLinesPaginationQuery$variables>(LOCAL_STORAGE_KEY, initialValues);
   const {
-    numberOfElements,
     filters,
-    searchTerm,
-    sortBy,
-    orderAsc,
-    openExports,
-    redirectionMode,
   } = viewStorage;
-  const {
-    selectedElements,
-    deSelectedElements,
-    selectAll,
-    handleClearSelectedElements,
-    handleToggleSelectAll,
-    onToggleEntity,
-    numberOfSelectedElements,
-  } = useEntityToggle<ReportLine_node$data>(LOCAL_STORAGE_KEY);
 
   const contextFilters = useBuildEntityTypeBasedFilterContext('Report', filters);
   const queryPaginationOptions = {
@@ -68,124 +165,58 @@ const Reports: FunctionComponent = () => {
     queryPaginationOptions,
   );
 
-  const renderLines = () => {
-    const isRuntimeSort = isRuntimeFieldEnable() ?? false;
-    const dataColumns = {
-      name: {
-        label: 'Name',
-        width: '25%',
-        isSortable: true,
-      },
-      report_types: {
-        label: 'Type',
-        width: '8%',
-        isSortable: true,
-      },
-      createdBy: {
-        label: 'Author',
-        width: '12%',
-        isSortable: isRuntimeSort,
-      },
-      creator: {
-        label: 'Creators',
-        width: '12%',
-        isSortable: isRuntimeSort,
-      },
-      objectLabel: {
-        label: 'Labels',
-        width: '15%',
-        isSortable: false,
-      },
-      published: {
-        label: 'Publication date',
-        width: '10%',
-        isSortable: true,
-      },
-      x_opencti_workflow_id: {
-        label: 'Status',
-        width: '8%',
-        isSortable: true,
-      },
-      objectMarking: {
-        label: 'Marking',
-        isSortable: isRuntimeSort,
-        width: '8%',
-      },
-    };
-    return (
-      <div data-testid="report-page">
-        <ListLines
-          helpers={storageHelpers}
-          sortBy={sortBy}
-          orderAsc={orderAsc}
-          dataColumns={dataColumns}
-          handleSort={storageHelpers.handleSort}
-          handleSearch={storageHelpers.handleSearch}
-          handleAddFilter={storageHelpers.handleAddFilter}
-          handleRemoveFilter={storageHelpers.handleRemoveFilter}
-          handleSwitchGlobalMode={storageHelpers.handleSwitchGlobalMode}
-          handleSwitchLocalMode={storageHelpers.handleSwitchLocalMode}
-          handleToggleExports={storageHelpers.handleToggleExports}
-          openExports={openExports}
-          handleToggleSelectAll={handleToggleSelectAll}
-          selectAll={selectAll}
-          exportContext={{ entity_type: 'Report' }}
-          keyword={searchTerm}
-          redirectionMode={redirectionMode}
-          handleSwitchRedirectionMode={(value: string) => storageHelpers.handleAddProperty('redirectionMode', value)}
-          filters={filters}
-          paginationOptions={queryPaginationOptions}
-          numberOfElements={numberOfElements}
-          iconExtension={true}
-        >
-          {queryRef && (
-            <React.Suspense
-              fallback={
-                <>
-                  {Array(20)
-                    .fill(0)
-                    .map((_, idx) => (
-                      <ReportLineDummy key={idx} dataColumns={dataColumns} />
-                    ))}
-                </>
-              }
-            >
-              <ReportsLines
-                queryRef={queryRef}
-                paginationOptions={queryPaginationOptions}
-                dataColumns={dataColumns}
-                onLabelClick={storageHelpers.handleAddFilter}
-                selectedElements={selectedElements}
-                deSelectedElements={deSelectedElements}
-                onToggleEntity={onToggleEntity}
-                selectAll={selectAll}
-                setNumberOfElements={storageHelpers.handleSetNumberOfElements}
-                redirectionMode={redirectionMode}
-              />
-            </React.Suspense>
-          )}
-        </ListLines>
-        <ToolBar
-          selectedElements={selectedElements}
-          deSelectedElements={deSelectedElements}
-          numberOfSelectedElements={numberOfSelectedElements}
-          selectAll={selectAll}
-          search={searchTerm}
-          filters={contextFilters}
-          handleClearSelectedElements={handleClearSelectedElements}
-          type="Report"
-        />
-      </div>
-    );
+  const preloadedPaginationProps = {
+    linesQuery: reportsLinesQuery,
+    linesFragment: reportsLineFragment,
+    queryRef,
+    nodePath: ['reports', 'pageInfo', 'globalCount'],
+    setNumberOfElements: storageHelpers.handleSetNumberOfElements,
+  } as UsePreloadedPaginationFragment<ReportsLinesPaginationQuery>;
+
+  const isRuntimeSort = isRuntimeFieldEnable() ?? false;
+  const dataColumns: DataTableProps['dataColumns'] = {
+    name: {
+      label: 'Title',
+      flexSize: 25,
+      isSortable: true,
+    },
+    report_types: {},
+    createdBy: {
+      flexSize: 12,
+      isSortable: isRuntimeSort,
+    },
+    creator: {
+      flexSize: 12,
+      isSortable: isRuntimeSort,
+    },
+    objectLabel: { flexSize: 15 },
+    published: {},
+    x_opencti_workflow_id: { flexSize: 8 },
+    objectMarking: {
+      isSortable: isRuntimeSort,
+      flexSize: 8,
+    },
   };
   return (
-    <ExportContextProvider>
+    <>
       <Breadcrumbs variant="list" elements={[{ label: t_i18n('Analyses') }, { label: t_i18n('Reports'), current: true }]} />
-      {renderLines()}
+      {queryRef && (
+        <DataTable
+          dataColumns={dataColumns}
+          resolvePath={(data: ReportsLines_data$data) => data.reports?.edges?.map((n) => n?.node)}
+          storageKey={LOCAL_STORAGE_KEY}
+          initialValues={initialValues}
+          toolbarFilters={contextFilters}
+          preloadedPaginationProps={preloadedPaginationProps}
+          lineFragment={reportLineFragment}
+          filterExportContext={{ entity_type: 'Report' }}
+          redirectionModeEnabled
+        />
+      )}
       <Security needs={[KNOWLEDGE_KNUPDATE]}>
         <ReportCreation paginationOptions={queryPaginationOptions} />
       </Security>
-    </ExportContextProvider>
+    </>
   );
 };
 

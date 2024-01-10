@@ -20,20 +20,18 @@ const LOCAL_STORAGE_KEY = 'threatActorsGroups';
 
 const ThreatActorsGroup = () => {
   const { t_i18n } = useFormatter();
+
+  const initialValues = {
+    filters: emptyFilterGroup,
+    searchTerm: '',
+    sortBy: 'name',
+    orderAsc: true,
+    openExports: false,
+    view: 'cards',
+  };
   const { viewStorage, helpers, paginationOptions } = usePaginationLocalStorage<ThreatActorsGroupCardsPaginationQuery$variables>(
     LOCAL_STORAGE_KEY,
-    {
-      numberOfElements: {
-        number: 0,
-        symbol: '',
-      },
-      filters: emptyFilterGroup,
-      searchTerm: '',
-      sortBy: 'name',
-      orderAsc: true,
-      openExports: false,
-      view: 'cards',
-    },
+    initialValues,
   );
   const queryRef = useQueryLoading<ThreatActorsGroupCardsPaginationQuery>(
     threatActorsGroupCardsQuery,

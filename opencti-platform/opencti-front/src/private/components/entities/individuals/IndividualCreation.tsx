@@ -7,6 +7,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import { RecordSourceSelectorProxy } from 'relay-runtime';
 import { FormikConfig } from 'formik/dist/types';
 import Drawer, { DrawerVariant } from '@components/common/drawer/Drawer';
+import { IndividualsLinesPaginationQuery$variables } from '@components/entities/__generated__/IndividualsLinesPaginationQuery.graphql';
 import ConfidenceField from '@components/common/form/ConfidenceField';
 import { useFormatter } from '../../../../components/i18n';
 import { handleErrorInForm } from '../../../../relay/environment';
@@ -22,7 +23,6 @@ import type { Theme } from '../../../../components/Theme';
 import { Option } from '../../common/form/ReferenceField';
 import OpenVocabField from '../../common/form/OpenVocabField';
 import { IndividualCreationMutation, IndividualCreationMutation$variables } from './__generated__/IndividualCreationMutation.graphql';
-import { IndividualsLinesPaginationQuery$variables } from './__generated__/IndividualsLinesPaginationQuery.graphql';
 import { fieldSpacingContainerStyle } from '../../../../utils/field';
 import useDefaultValues from '../../../../utils/hooks/useDefaultValues';
 import CustomFileUploader from '../../common/files/CustomFileUploader';
@@ -50,7 +50,7 @@ const individualMutation = graphql`
       description
       entity_type
       parent_types
-      ...IndividualLine_node
+      ...IndividualsLine_node
     }
   }
 `;

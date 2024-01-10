@@ -9,32 +9,33 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import makeStyles from '@mui/styles/makeStyles';
 import { Form, Formik } from 'formik';
-import React, { FunctionComponent, MutableRefObject, useState } from 'react';
-import { graphql, PreloadedQuery } from 'react-relay';
-import { GridTypeMap } from '@mui/material';
+import React, { FunctionComponent, useState } from 'react';
+import { graphql } from 'react-relay';
 import Drawer from '@components/common/drawer/Drawer';
+import { TasksLine_node$data } from '@components/cases/tasks/__generated__/TasksLine_node.graphql';
+import { CaseTasksLines_data$data } from '@components/cases/tasks/__generated__/CaseTasksLines_data.graphql';
 import { useFormatter } from '../../../../components/i18n';
 import type { Theme } from '../../../../components/Theme';
 import { handleErrorInForm } from '../../../../relay/environment';
-import usePreloadedPaginationFragment from '../../../../utils/hooks/usePreloadedPaginationFragment';
+import { UsePreloadedPaginationFragment } from '../../../../utils/hooks/usePreloadedPaginationFragment';
 import CaseTemplateField from '../../common/form/CaseTemplateField';
 import { Option } from '../../common/form/ReferenceField';
 import CaseTaskCreation from './CaseTaskCreation';
 import { caseSetTemplateQuery, generateConnectionId } from '../CaseUtils';
-import ListLinesContent from '../../../../components/list_lines/ListLinesContent';
-import ListLines from '../../../../components/list_lines/ListLines';
-import { CaseTasksLine } from './CaseTasksLine';
-import { tasksDataColumns } from './TasksLine';
-import { CaseTasksLines_data$key } from './__generated__/CaseTasksLines_data.graphql';
+import { CaseTaskFragment } from './CaseTasksLine';
 import { CaseTasksLinesQuery, CaseTasksLinesQuery$variables } from './__generated__/CaseTasksLinesQuery.graphql';
+import DataTable from '../../../../components/dataGrid/DataTable';
+import { usePaginationLocalStorage } from '../../../../utils/hooks/useLocalStorage';
+import { FilterGroup, isFilterGroupNotEmpty, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../utils/filters/filtersUtils';
+import { DataTableProps, DataTableVariant } from '../../../../components/dataGrid/dataTableTypes';
+import ItemDueDate from '../../../../components/ItemDueDate';
+import useQueryLoading from '../../../../utils/hooks/useQueryLoading';
 import useApiMutation from '../../../../utils/hooks/useApiMutation';
 
 // Deprecated - https://mui.com/system/styles/basics/
 // Do not use it for new code.
 const useStyles = makeStyles<Theme>((theme) => ({
   paper: {
-    height: '100%',
-    minHeight: '100%',
     margin: '-5px 0 0 0',
     padding: 0,
     borderRadius: 4,
@@ -58,70 +59,65 @@ const useStyles = makeStyles<Theme>((theme) => ({
 }));
 
 export const caseTasksLinesQuery = graphql`
-    query CaseTasksLinesQuery(
-        $count: Int
-        $filters: FilterGroup
-        $cursor: ID
-        $orderBy: TasksOrdering
-        $orderMode: OrderingMode
-    ) {
-        ...CaseTasksLines_data
-        @arguments(
-            count: $count
-            filters: $filters
-            cursor: $cursor
-            orderBy: $orderBy
-            orderMode: $orderMode
-        )
-    }
+  query CaseTasksLinesQuery(
+    $count: Int
+    $filters: FilterGroup
+    $cursor: ID
+    $orderBy: TasksOrdering
+    $orderMode: OrderingMode
+    $search: String
+  ) {
+    ...CaseTasksLines_data
+    @arguments(
+      count: $count
+      filters: $filters
+      cursor: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      search: $search
+    )
+  }
 `;
 
 const caseTasksLinesFragment = graphql`
-    fragment CaseTasksLines_data on Query
-    @argumentDefinitions(
-        count: { type: "Int", defaultValue: 25 }
-        filters: { type: "FilterGroup" }
-        cursor: { type: "ID" }
-        orderBy: { type: "TasksOrdering" }
-        orderMode: { type: "OrderingMode", defaultValue: desc }
-    )
-    @refetchable(queryName: "TasksRefetch") {
-        tasks(
-            first: $count
-            filters: $filters
-            after: $cursor
-            orderBy: $orderBy
-            orderMode: $orderMode
-        ) @connection(key: "Pagination_tasks") {
-            edges {
-                node {
-                    ...CaseTasksLine_data
-                }
-            }
+  fragment CaseTasksLines_data on Query
+  @argumentDefinitions(
+    count: { type: "Int", defaultValue: 25 }
+    filters: { type: "FilterGroup" }
+    cursor: { type: "ID" }
+    orderBy: { type: "TasksOrdering" }
+    orderMode: { type: "OrderingMode", defaultValue: desc }
+    search: { type: "String" }
+  )
+  @refetchable(queryName: "TasksRefetch") {
+    tasks(
+      first: $count
+      filters: $filters
+      after: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      search: $search
+    ) @connection(key: "Pagination_tasks") {
+      edges {
+        node {
+          ...CaseTasksLine_data
         }
+      }
+      pageInfo {
+        globalCount
+      }
     }
+  }
 `;
 
 interface CaseTasksLinesProps {
-  caseId: string;
-  queryRef: PreloadedQuery<CaseTasksLinesQuery>;
-  paginationOptions: CaseTasksLinesQuery$variables;
-  defaultMarkings?: Option[];
-  sortBy: string | undefined;
-  orderAsc: boolean | undefined;
-  handleSort?: (field: string, order: boolean) => void;
-  containerRef: MutableRefObject<GridTypeMap | null>;
+  caseId: string
+  defaultMarkings?: Option[]
 }
 
 const CaseTasksLines: FunctionComponent<CaseTasksLinesProps> = ({
   caseId,
-  queryRef,
-  paginationOptions,
   defaultMarkings,
-  sortBy,
-  orderAsc,
-  handleSort,
-  containerRef,
 }) => {
   const classes = useStyles();
   const { t_i18n } = useFormatter();
@@ -130,13 +126,65 @@ const CaseTasksLines: FunctionComponent<CaseTasksLinesProps> = ({
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
   const [commit] = useApiMutation(caseSetTemplateQuery);
-  const { data } = usePreloadedPaginationFragment<CaseTasksLinesQuery,
-  CaseTasksLines_data$key>({
-    queryRef,
+
+  const LOCAL_STORAGE_KEY_CASE_TASKS = `cases-${caseId}-caseTask`;
+  const initialValues = {
+    searchTerm: '',
+    sortBy: 'created',
+    orderAsc: false,
+  };
+  // TASKS
+  const { viewStorage: { filters }, helpers, paginationOptions: { count, ...paginationOptions } } = usePaginationLocalStorage<CaseTasksLinesQuery$variables>(
+    LOCAL_STORAGE_KEY_CASE_TASKS,
+    initialValues,
+    true,
+  );
+  const userFilters = useRemoveIdAndIncorrectKeysFromFilterGroupObject(filters, ['Case']);
+  const contextTaskFilters: FilterGroup = {
+    mode: 'and',
+    filters: [
+      { key: 'entity_type', operator: 'eq', mode: 'or', values: ['Task'] },
+      { key: 'objects', operator: 'eq', mode: 'or', values: [caseId] },
+    ],
+    filterGroups: userFilters && isFilterGroupNotEmpty(userFilters) ? [userFilters] : [],
+  };
+
+  const queryTaskPaginationOptions = {
+    ...paginationOptions,
+    filters: contextTaskFilters,
+  } as unknown as CaseTasksLinesQuery$variables;
+
+  const queryRef = useQueryLoading<CaseTasksLinesQuery>(
+    caseTasksLinesQuery,
+    {
+      count,
+      ...queryTaskPaginationOptions,
+    },
+  );
+
+  const preloadedPaginationProps = {
     linesQuery: caseTasksLinesQuery,
     linesFragment: caseTasksLinesFragment,
-  });
-  const { count: _, ...tasksFilters } = paginationOptions;
+    queryRef,
+    nodePath: ['tasks', 'pageInfo', 'globalCount'],
+    setNumberOfElements: helpers.handleSetNumberOfElements,
+  } as UsePreloadedPaginationFragment<CaseTasksLinesQuery>;
+
+  const dataColumns: DataTableProps['dataColumns'] = {
+    name: { flexSize: 35 },
+    due_date: {
+      label: 'Due Date',
+      flexSize: 15,
+      isSortable: true,
+      render: (task: TasksLine_node$data) => (
+        <ItemDueDate due_date={task.due_date} variant={'inList'} />
+      ),
+    },
+    objectAssignee: { flexSize: 20 },
+    objectLabel: { flexSize: 20 },
+    x_opencti_workflow_id: { flexSize: 10 },
+  };
+
   return (
     <div style={{ height: '100%' }}>
       <Typography
@@ -154,7 +202,7 @@ const CaseTasksLines: FunctionComponent<CaseTasksLinesProps> = ({
           classes={{ root: classes.createButton }}
           size="large"
         >
-          <AddOutlined fontSize="small"/>
+          <AddOutlined fontSize="small" />
         </IconButton>
       </Tooltip>
       <Tooltip title={t_i18n('Apply a new case template')}>
@@ -165,7 +213,7 @@ const CaseTasksLines: FunctionComponent<CaseTasksLinesProps> = ({
           classes={{ root: classes.applyButton }}
           size="large"
         >
-          <ContentPasteGoOutlined fontSize="small"/>
+          <ContentPasteGoOutlined fontSize="small" />
         </IconButton>
       </Tooltip>
       <Dialog
@@ -189,7 +237,7 @@ const CaseTasksLines: FunctionComponent<CaseTasksLinesProps> = ({
                   connections: [
                     generateConnectionId({
                       key: 'Pagination_tasks',
-                      params: tasksFilters,
+                      params: queryTaskPaginationOptions,
                     }),
                   ],
                 },
@@ -247,26 +295,20 @@ const CaseTasksLines: FunctionComponent<CaseTasksLinesProps> = ({
           defaultMarkings={defaultMarkings}
         />
       </Drawer>
-      <div className="clearfix"/>
+      <div className="clearfix" />
       <Paper classes={{ root: classes.paper }} variant="outlined">
-        <ListLines
-          sortBy={sortBy}
-          orderAsc={orderAsc}
-          handleSort={handleSort}
-          dataColumns={tasksDataColumns}
-          inline={true}
-          secondaryAction={true}
-        >
-          <ListLinesContent
-            dataColumns={tasksDataColumns}
-            dataList={data?.tasks?.edges ?? []}
-            LineComponent={CaseTasksLine}
-            isLoading={() => false}
-            entityId={caseId}
-            paginationOptions={tasksFilters}
-            containerRef={containerRef}
+        {queryRef && (
+          <DataTable
+            dataColumns={dataColumns}
+            resolvePath={(data: CaseTasksLines_data$data) => data.tasks?.edges?.map((n) => n?.node)}
+            storageKey={LOCAL_STORAGE_KEY_CASE_TASKS}
+            initialValues={initialValues}
+            toolbarFilters={contextTaskFilters}
+            preloadedPaginationProps={preloadedPaginationProps}
+            lineFragment={CaseTaskFragment}
+            variant={DataTableVariant.inline}
           />
-        </ListLines>
+        )}
       </Paper>
     </div>
   );

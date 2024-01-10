@@ -7,6 +7,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import { RecordSourceSelectorProxy } from 'relay-runtime';
 import { FormikConfig } from 'formik/dist/types';
 import Drawer, { DrawerVariant } from '@components/common/drawer/Drawer';
+import { PositionsLinesPaginationQuery$variables } from '@components/locations/__generated__/PositionsLinesPaginationQuery.graphql';
 import ConfidenceField from '@components/common/form/ConfidenceField';
 import { useFormatter } from '../../../../components/i18n';
 import { handleErrorInForm } from '../../../../relay/environment';
@@ -22,7 +23,6 @@ import { useSchemaCreationValidation } from '../../../../utils/hooks/useEntitySe
 import type { Theme } from '../../../../components/Theme';
 import { Option } from '../../common/form/ReferenceField';
 import { PositionCreationMutation, PositionCreationMutation$variables } from './__generated__/PositionCreationMutation.graphql';
-import { PositionsLinesPaginationQuery$variables } from './__generated__/PositionsLinesPaginationQuery.graphql';
 import useDefaultValues from '../../../../utils/hooks/useDefaultValues';
 import CustomFileUploader from '../../common/files/CustomFileUploader';
 import useApiMutation from '../../../../utils/hooks/useApiMutation';
@@ -49,7 +49,7 @@ const positionMutation = graphql`
       confidence
       entity_type
       parent_types
-      ...PositionLine_node
+      ...PositionsLine_node
     }
   }
 `;

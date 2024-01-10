@@ -81,7 +81,7 @@ const SubTypesLines: FunctionComponent<SubTypesLinesProps> = ({
     .filter(filterOnSubType)
     .sort(sortOnSubType);
   setNumberOfElements({
-    number: subTypes.length.toString(),
+    number: Number.parseInt(subTypes.length.toString(), 10),
     symbol: '',
     original: subTypes.length,
   });

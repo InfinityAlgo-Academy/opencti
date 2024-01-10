@@ -55,7 +55,7 @@ export const reportCreationMutation = graphql`
       entity_type
       confidence
       parent_types
-      ...ReportLine_node
+      ...ReportsLine_node
     }
   }
 `;

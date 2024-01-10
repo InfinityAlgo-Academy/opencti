@@ -1,128 +1,163 @@
 import React from 'react';
-import {
-  OrganizationsLinesPaginationQuery,
-  OrganizationsLinesPaginationQuery$variables,
-} from '@components/entities/organizations/__generated__/OrganizationsLinesPaginationQuery.graphql';
-import { OrganizationLineDummy } from '@components/entities/organizations/OrganizationLine';
-import ListLines from '../../../components/list_lines/ListLines';
-import OrganizationsLines, { organizationsLinesQuery } from './organizations/OrganizationsLines';
+import { graphql } from 'react-relay';
+import { OrganizationsLinesPaginationQuery, OrganizationsLinesPaginationQuery$variables } from '@components/entities/__generated__/OrganizationsLinesPaginationQuery.graphql';
+import { OrganizationsLines_data$data } from '@components/entities/__generated__/OrganizationsLines_data.graphql';
 import OrganizationCreation from './organizations/OrganizationCreation';
 import Security from '../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../utils/hooks/useGranted';
 import { usePaginationLocalStorage } from '../../../utils/hooks/useLocalStorage';
 import useQueryLoading from '../../../utils/hooks/useQueryLoading';
-import { emptyFilterGroup } from '../../../utils/filters/filtersUtils';
+import { useBuildEntityTypeBasedFilterContext, emptyFilterGroup } from '../../../utils/filters/filtersUtils';
 import { useFormatter } from '../../../components/i18n';
 import Breadcrumbs from '../../../components/Breadcrumbs';
+import DataTable from '../../../components/dataGrid/DataTable';
+import { UsePreloadedPaginationFragment } from '../../../utils/hooks/usePreloadedPaginationFragment';
 
 const LOCAL_STORAGE_KEY = 'organizations';
 
+const organizationLineFragment = graphql`
+  fragment OrganizationsLine_node on Organization {
+    id
+    entity_type
+    x_opencti_organization_type
+    name
+    created
+    modified
+    objectMarking {
+      id
+      definition_type
+      definition
+      x_opencti_order
+      x_opencti_color
+    }
+    objectLabel {
+      id
+      value
+      color
+    }
+  }
+`;
+
+const organizationsLinesQuery = graphql`
+  query OrganizationsLinesPaginationQuery(
+    $search: String
+    $count: Int!
+    $cursor: ID
+    $orderBy: OrganizationsOrdering
+    $orderMode: OrderingMode
+    $filters: FilterGroup
+  ) {
+    ...OrganizationsLines_data
+    @arguments(
+      search: $search
+      count: $count
+      cursor: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    )
+  }
+`;
+
+export const organizationsLinesFragment = graphql`
+  fragment OrganizationsLines_data on Query
+  @argumentDefinitions(
+    search: { type: "String" }
+    count: { type: "Int", defaultValue: 25 }
+    cursor: { type: "ID" }
+    orderBy: { type: "OrganizationsOrdering", defaultValue: name }
+    orderMode: { type: "OrderingMode", defaultValue: asc }
+    filters: { type: "FilterGroup" }
+  )
+  @refetchable(queryName: "OrganizationsLinesRefetchQuery") {
+    organizations(
+      search: $search
+      first: $count
+      after: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    ) @connection(key: "Pagination_organizations") {
+      edges {
+        node {
+          id
+          name
+          description
+          ...OrganizationsLine_node
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+        globalCount
+      }
+    }
+  }
+`;
+
 const Organizations = () => {
   const { t_i18n } = useFormatter();
-  const { viewStorage, helpers, paginationOptions } = usePaginationLocalStorage<OrganizationsLinesPaginationQuery$variables>(
-    LOCAL_STORAGE_KEY,
-    {
-      searchTerm: '',
-      sortBy: 'name',
-      orderAsc: true,
-      openExports: false,
-      filters: emptyFilterGroup,
-    },
-  );
-  const renderLines = () => {
-    const {
-      sortBy,
-      orderAsc,
-      searchTerm,
-      filters,
-      openExports,
-      numberOfElements,
-    } = viewStorage;
-    const dataColumns = {
-      name: {
-        label: 'Name',
-        width: '23%',
-        isSortable: true,
-      },
-      x_opencti_organization_type: {
-        label: 'Type',
-        width: '15%',
-        isSortable: true,
-      },
-      objectLabel: {
-        label: 'Labels',
-        width: '23%',
-        isSortable: false,
-      },
-      created: {
-        label: 'Original creation date',
-        width: '15%',
-        isSortable: true,
-      },
-      modified: {
-        label: 'Modification date',
-        width: '15%',
-        isSortable: true,
-      },
-    };
-    const queryRef = useQueryLoading<OrganizationsLinesPaginationQuery>(
-      organizationsLinesQuery,
-      paginationOptions,
-    );
-    return (
-      <ListLines
-        helpers={helpers}
-        sortBy={sortBy}
-        orderAsc={orderAsc}
-        dataColumns={dataColumns}
-        handleSort={helpers.handleSort}
-        handleSearch={helpers.handleSearch}
-        handleAddFilter={helpers.handleAddFilter}
-        handleRemoveFilter={helpers.handleRemoveFilter}
-        handleSwitchGlobalMode={helpers.handleSwitchGlobalMode}
-        handleSwitchLocalMode={helpers.handleSwitchLocalMode}
-        handleToggleExports={helpers.handleToggleExports}
-        openExports={openExports}
-        exportContext={{ entity_type: 'Organization' }}
-        keyword={searchTerm}
-        filters={filters}
-        paginationOptions={paginationOptions}
-        numberOfElements={numberOfElements}
-      >
-        {queryRef && (
-          <React.Suspense
-            fallback={
-              <>
-                {Array(20)
-                  .fill(0)
-                  .map((_, idx) => (
-                    <OrganizationLineDummy
-                      key={idx}
-                      dataColumns={dataColumns}
-                    />
-                  ))}
-              </>
-            }
-          >
-            <OrganizationsLines
-              queryRef={queryRef}
-              paginationOptions={paginationOptions}
-              dataColumns={dataColumns}
-              onLabelClick={helpers.handleAddFilter}
-              setNumberOfElements={helpers.handleSetNumberOfElements}
-            />
-          </React.Suspense>
-        )}
-      </ListLines>
-    );
+
+  const initialValues = {
+    searchTerm: '',
+    sortBy: 'name',
+    orderAsc: true,
+    openExports: false,
+    filters: emptyFilterGroup,
   };
+  const { viewStorage: { filters }, helpers: storageHelpers, paginationOptions } = usePaginationLocalStorage<OrganizationsLinesPaginationQuery$variables>(
+    LOCAL_STORAGE_KEY,
+    initialValues,
+  );
+
+  const dataColumns = {
+    name: { flexSize: 35 },
+    x_opencti_organization_type: {
+      label: 'Type',
+      flexSize: 15,
+      isSortable: true,
+    },
+    objectLabel: { flexSize: 20 },
+    created: {},
+    modified: {},
+  };
+
+  const contextFilters = useBuildEntityTypeBasedFilterContext('Organization', filters);
+  const queryPaginationOptions = {
+    ...paginationOptions,
+    filters: contextFilters,
+  } as unknown as OrganizationsLinesPaginationQuery$variables;
+
+  const queryRef = useQueryLoading<OrganizationsLinesPaginationQuery>(
+    organizationsLinesQuery,
+    queryPaginationOptions,
+  );
+
+  const preloadedPaginationProps = {
+    linesQuery: organizationsLinesQuery,
+    linesFragment: organizationsLinesFragment,
+    queryRef,
+    nodePath: ['organizations', 'pageInfo', 'globalCount'],
+    setNumberOfElements: storageHelpers.handleSetNumberOfElements,
+  } as UsePreloadedPaginationFragment<OrganizationsLinesPaginationQuery>;
 
   return (
     <>
       <Breadcrumbs variant="list" elements={[{ label: t_i18n('Entities') }, { label: t_i18n('Organizations'), current: true }]} />
-      {renderLines()}
+      {queryRef && (
+        <DataTable
+          dataColumns={dataColumns}
+          resolvePath={(data: OrganizationsLines_data$data) => data.organizations?.edges?.map((n) => n?.node)}
+          storageKey={LOCAL_STORAGE_KEY}
+          initialValues={initialValues}
+          toolbarFilters={contextFilters}
+          preloadedPaginationProps={preloadedPaginationProps}
+          lineFragment={organizationLineFragment}
+          filterExportContext={{ entity_type: 'Organization' }}
+        />
+      )}
       <Security needs={[KNOWLEDGE_KNUPDATE]}>
-        <OrganizationCreation paginationOptions={paginationOptions} />
+        <OrganizationCreation paginationOptions={queryPaginationOptions} />
       </Security>
     </>
   );

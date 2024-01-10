@@ -11,6 +11,7 @@ import { Dialog, DialogContent } from '@mui/material';
 import { RecordSourceSelectorProxy } from 'relay-runtime';
 import DialogTitle from '@mui/material/DialogTitle';
 import Drawer, { DrawerVariant } from '@components/common/drawer/Drawer';
+import { DataComponentsLinesPaginationQuery$variables } from '@components/techniques/__generated__/DataComponentsLinesPaginationQuery.graphql';
 import { useFormatter } from '../../../../components/i18n';
 import { handleErrorInForm } from '../../../../relay/environment';
 import TextField from '../../../../components/TextField';
@@ -21,7 +22,6 @@ import MarkdownField from '../../../../components/fields/MarkdownField';
 import type { Theme } from '../../../../components/Theme';
 import { ExternalReferencesField } from '../../common/form/ExternalReferencesField';
 import { insertNode } from '../../../../utils/store';
-import { DataComponentsLinesPaginationQuery$variables } from './__generated__/DataComponentsLinesPaginationQuery.graphql';
 import { fieldSpacingContainerStyle } from '../../../../utils/field';
 import ConfidenceField from '../../common/form/ConfidenceField';
 import { Option } from '../../common/form/ReferenceField';
@@ -63,7 +63,7 @@ const dataComponentMutation = graphql`
       description
       entity_type
       parent_types
-      ...DataComponentLine_node
+      ...DataComponentsLine_node
     }
   }
 `;

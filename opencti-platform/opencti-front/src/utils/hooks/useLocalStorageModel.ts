@@ -11,7 +11,7 @@ export interface MessageFromLocalStorage {
 }
 export interface LocalStorage {
   numberOfElements?: {
-    number: number | string;
+    number: number;
     symbol: string;
     original?: number;
   };

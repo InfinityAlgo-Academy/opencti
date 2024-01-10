@@ -97,7 +97,7 @@ const StyledBadge = styled(Badge)(() => ({
   },
 }));
 
-const ItemMarkings = ({ variant, markingDefinitions, limit }) => {
+const ItemMarkings = ({ variant, markingDefinitions, limit, handleAddFilter }) => {
   const markings = markingDefinitions ?? [];
   const classes = useStyles();
   const theme = useTheme();
@@ -134,6 +134,11 @@ const ItemMarkings = ({ variant, markingDefinitions, limit }) => {
             border,
           }}
           label={markingDefinition.definition}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleAddFilter('objectMarking', markingDefinition.id);
+          }}
         />
       );
     }
@@ -238,6 +243,7 @@ const ItemMarkings = ({ variant, markingDefinitions, limit }) => {
 ItemMarkings.propTypes = {
   variant: PropTypes.string,
   limit: PropTypes.number,
+  handleAddFilter: PropTypes.func,
 };
 
 export default ItemMarkings;

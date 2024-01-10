@@ -1,22 +1,19 @@
 import React, { FunctionComponent } from 'react';
 import { createFragmentContainer, graphql } from 'react-relay';
-import ListLines from '../../../../components/list_lines/ListLines';
-import ContainerStixCyberObservablesLines, { containerStixCyberObservablesLinesQuery } from './ContainerStixCyberObservablesLines';
+import { ContainerStixCyberObservables_container$data } from '@components/common/containers/__generated__/ContainerStixCyberObservables_container.graphql';
+import { ContainerStixCyberObservables_containerQuery$data } from '@components/common/containers/__generated__/ContainerStixCyberObservables_containerQuery.graphql';
+import {
+  ContainerStixCyberObservablesQuery,
+  ContainerStixCyberObservablesQuery$variables,
+} from '@components/common/containers/__generated__/ContainerStixCyberObservablesQuery.graphql';
 import StixCyberObservablesRightBar from '../../observations/stix_cyber_observables/StixCyberObservablesRightBar';
-import ToolBar from '../../data/ToolBar';
 import { usePaginationLocalStorage } from '../../../../utils/hooks/useLocalStorage';
-import { ModuleHelper } from '../../../../utils/platformModulesHelper';
-import { ContainerStixCyberObservablesLinesQuery, ContainerStixCyberObservablesLinesQuery$variables } from './__generated__/ContainerStixCyberObservablesLinesQuery.graphql';
 import useQueryLoading from '../../../../utils/hooks/useQueryLoading';
-import { ContainerStixCyberObservables_container$data } from './__generated__/ContainerStixCyberObservables_container.graphql';
-import useCopy from '../../../../utils/hooks/useCopy';
-import { ContainerStixCyberObservablesLinesSearchQuery$data } from './__generated__/ContainerStixCyberObservablesLinesSearchQuery.graphql';
-import { UserContext } from '../../../../utils/hooks/useAuth';
-import ExportContextProvider from '../../../../utils/ExportContextProvider';
-import { ContainerStixCyberObservableLineDummy } from './ContainerStixCyberObservableLine';
-import useEntityToggle from '../../../../utils/hooks/useEntityToggle';
-import { ContainerStixCyberObservableLine_node$data } from './__generated__/ContainerStixCyberObservableLine_node.graphql';
 import { emptyFilterGroup, isFilterGroupNotEmpty, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../utils/filters/filtersUtils';
+import DataTable from '../../../../components/dataGrid/DataTable';
+import useAuth from '../../../../utils/hooks/useAuth';
+import { UsePreloadedPaginationFragment } from '../../../../utils/hooks/usePreloadedPaginationFragment';
+import { DataTableProps } from '../../../../components/dataGrid/dataTableTypes';
 
 export const ContainerStixCyberObservablesLinesSearchQuery = graphql`
   query ContainerStixCyberObservablesLinesSearchQuery(
@@ -53,63 +50,184 @@ export const ContainerStixCyberObservablesLinesSearchQuery = graphql`
   }
 `;
 
+const containerStixCyberObservableLineFragment = graphql`
+  fragment ContainerStixCyberObservables_node on StixCyberObservable {
+    id
+    standard_id
+    observable_value
+    entity_type
+    parent_types
+    created_at
+    ... on IPv4Addr {
+      countries {
+        edges {
+          node {
+            name
+            x_opencti_aliases
+          }
+        }
+      }
+    }
+    ... on IPv6Addr {
+      countries {
+        edges {
+          node {
+            name
+            x_opencti_aliases
+          }
+        }
+      }
+    }
+    objectLabel {
+      id
+      value
+      color
+    }
+    createdBy {
+      ... on Identity {
+        id
+        name
+        entity_type
+      }
+    }
+    objectMarking {
+      id
+      definition_type
+      definition
+      x_opencti_order
+      x_opencti_color
+    }
+    containersNumber {
+      total
+    }
+  }
+`;
+
+const containerStixCyberObservablesQuery = graphql`
+  query ContainerStixCyberObservablesQuery(
+    $id: String!
+    $types: [String]
+    $search: String
+    $count: Int
+    $cursor: ID
+    $orderBy: StixObjectOrStixRelationshipsOrdering
+    $orderMode: OrderingMode
+    $filters: FilterGroup
+  ) {
+    ...ContainerStixCyberObservables_containerQuery
+    @arguments(
+      id: $id
+      types: $types
+      search: $search
+      count: $count
+      cursor: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    )
+  }
+`;
+
+const containerStixCyberObservablesLinesFragment = graphql`
+  fragment ContainerStixCyberObservables_containerQuery on Query
+  @argumentDefinitions(
+    id: { type: "String!" }
+    types: { type: "[String]" }
+    search: { type: "String" }
+    count: { type: "Int", defaultValue: 25 }
+    cursor: { type: "ID" }
+    orderBy: {
+      type: "StixObjectOrStixRelationshipsOrdering"
+      defaultValue: name
+    }
+    orderMode: { type: "OrderingMode", defaultValue: asc }
+    filters: { type: "FilterGroup" }
+  )
+  @refetchable(queryName: "ContainerStixCyberObservablesLinesRefetchQuery") {
+    container(id: $id) {
+      id
+      confidence
+      createdBy {
+        ... on Identity {
+          id
+          name
+          entity_type
+        }
+      }
+      objectMarking {
+        id
+        definition_type
+        definition
+        x_opencti_order
+        x_opencti_color
+      }
+      objects(
+        types: $types
+        search: $search
+        first: $count
+        after: $cursor
+        orderBy: $orderBy
+        orderMode: $orderMode
+        filters: $filters
+      ) @connection(key: "Pagination_objects") {
+        edges {
+          types
+          node {
+            ... on StixCyberObservable {
+              id
+              observable_value
+            }
+            ...ContainerStixCyberObservables_node
+          }
+        }
+        pageInfo {
+          endCursor
+          hasNextPage
+          globalCount
+        }
+      }
+    }
+  }
+`;
+
 interface ContainerStixCyberObservablesComponentProps {
   container: ContainerStixCyberObservables_container$data;
   enableReferences?: boolean;
 }
 
-const ContainerStixCyberObservablesComponent: FunctionComponent<
-ContainerStixCyberObservablesComponentProps
-> = ({ container, enableReferences }) => {
+const ContainerStixCyberObservablesComponent: FunctionComponent<ContainerStixCyberObservablesComponentProps> = ({ container, enableReferences }) => {
+  const {
+    platformModuleHelpers: { isRuntimeFieldEnable },
+  } = useAuth();
+
   const LOCAL_STORAGE_KEY = `container-${container.id}-stixCyberObservables`;
+
+  const initialValues = {
+    id: container.id,
+    filters: emptyFilterGroup,
+    searchTerm: '',
+    sortBy: 'created_at',
+    orderAsc: false,
+    openExports: false,
+    types: [] as string[],
+  };
   const {
     viewStorage,
     paginationOptions,
     helpers,
-  } = usePaginationLocalStorage<ContainerStixCyberObservablesLinesQuery$variables>(
+  } = usePaginationLocalStorage<ContainerStixCyberObservablesQuery$variables>(
     LOCAL_STORAGE_KEY,
-    {
-      id: container.id,
-      filters: emptyFilterGroup,
-      searchTerm: '',
-      sortBy: 'created_at',
-      orderAsc: false,
-      openExports: false,
-      types: [] as string[],
-    },
+    initialValues,
   );
+
   const {
-    numberOfElements,
     filters,
-    searchTerm,
-    sortBy,
-    orderAsc,
     openExports,
     types,
   } = viewStorage;
   const {
-    handleRemoveFilter,
-    handleSearch,
-    handleSort,
-    handleToggleExports,
-    handleAddFilter,
-    handleSwitchGlobalMode,
-    handleSwitchLocalMode,
-    handleSetNumberOfElements,
     handleAddProperty,
   } = helpers;
-  const {
-    selectedElements,
-    deSelectedElements,
-    selectAll,
-    handleClearSelectedElements,
-    handleToggleSelectAll,
-    setSelectedElements,
-    onToggleEntity,
-    numberOfSelectedElements,
-  } = useEntityToggle<ContainerStixCyberObservableLine_node$data>(
-    LOCAL_STORAGE_KEY,
-  );
   const handleClear = () => {
     handleAddProperty('types', []);
   };
@@ -122,13 +240,6 @@ ContainerStixCyberObservablesComponentProps
     } else {
       handleAddProperty('types', types ? [...types, type] : [type]);
     }
-  };
-  const getValuesForCopy = (
-    data: ContainerStixCyberObservablesLinesSearchQuery$data,
-  ) => {
-    return (data.container?.objects?.edges ?? [])
-      .map((o) => ({ id: o?.node.id, value: o?.node.observable_value }))
-      .filter((o) => o.id) as { id: string; value: string }[];
   };
 
   const userFilters = useRemoveIdAndIncorrectKeysFromFilterGroupObject(filters, ['Stix-Cyber-Observable']);
@@ -153,151 +264,68 @@ ContainerStixCyberObservablesComponentProps
   const queryPaginationOptions = {
     ...paginationOptions,
     filters: contextFilters,
-  } as unknown as ContainerStixCyberObservablesLinesQuery$variables;
+  } as unknown as ContainerStixCyberObservablesQuery$variables;
 
-  const handleCopy = useCopy<ContainerStixCyberObservablesLinesSearchQuery$data>(
-    {
-      filters: contextFilters,
-      searchTerm: searchTerm ?? '',
-      query: ContainerStixCyberObservablesLinesSearchQuery,
-      selectedValues: Object.values(selectedElements).map(
-        ({ observable_value }) => observable_value,
-      ),
-      deselectedIds: Object.values(deSelectedElements).map((o) => o.id),
-      elementId: container.id,
-      getValuesForCopy,
+  const isRuntimeSort = isRuntimeFieldEnable() ?? false;
+  const dataColumns: DataTableProps['dataColumns'] = {
+    entity_type: {
+      flexSize: 12,
     },
-    selectAll,
-  );
-
-  const buildColumns = (platformModuleHelpers: ModuleHelper | undefined) => {
-    const isRuntimeSort = platformModuleHelpers?.isRuntimeFieldEnable() ?? false;
-    return {
-      entity_type: {
-        label: 'Type',
-        width: '12%',
-        isSortable: true,
-      },
-      observable_value: {
-        label: 'Value',
-        width: '28%',
-        isSortable: isRuntimeSort,
-      },
-      objectLabel: {
-        label: 'Labels',
-        width: '19%',
-        isSortable: false,
-      },
-      createdBy: {
-        label: 'Author',
-        width: '12%',
-        isSortable: isRuntimeSort,
-      },
-      created_at: {
-        label: 'Platform creation date',
-        width: '10%',
-        isSortable: true,
-      },
-      analyses: {
-        label: 'Analyses',
-        width: '8%',
-        isSortable: false,
-      },
-      objectMarking: {
-        label: 'Marking',
-        width: '9%',
-        isSortable: isRuntimeSort,
-      },
-    };
+    observable_value: {
+      flexSize: 28,
+      isSortable: isRuntimeSort,
+    },
+    objectLabel: {
+      flexSize: 19,
+    },
+    createdBy: {
+      isSortable: isRuntimeSort,
+    },
+    created_at: {
+      flexSize: 10,
+    },
+    analyses: {},
+    objectMarking: {
+      flexSize: 9,
+      isSortable: isRuntimeSort,
+    },
   };
-  const queryRef = useQueryLoading<ContainerStixCyberObservablesLinesQuery>(
-    containerStixCyberObservablesLinesQuery,
+
+  const queryRef = useQueryLoading<ContainerStixCyberObservablesQuery>(
+    containerStixCyberObservablesQuery,
     queryPaginationOptions,
   );
+  const preloadedPaginationProps = {
+    linesQuery: containerStixCyberObservablesQuery,
+    linesFragment: containerStixCyberObservablesLinesFragment,
+    queryRef,
+    nodePath: ['container', 'objects', 'pageInfo', 'globalCount'],
+    setNumberOfElements: helpers.handleSetNumberOfElements,
+  } as UsePreloadedPaginationFragment<ContainerStixCyberObservablesQuery>;
+
   return (
-    <div data-testid="container-observables-pages">
-      <UserContext.Consumer>
-        {({ platformModuleHelpers }) => (
-          <ExportContextProvider>
-            <ListLines
-              helpers={helpers}
-              sortBy={sortBy}
-              orderAsc={orderAsc}
-              dataColumns={buildColumns(platformModuleHelpers)}
-              handleSort={handleSort}
-              handleSearch={handleSearch}
-              secondaryAction={true}
-              numberOfElements={numberOfElements}
-              handleAddFilter={handleAddFilter}
-              handleRemoveFilter={handleRemoveFilter}
-              handleSwitchGlobalMode={handleSwitchGlobalMode}
-              handleSwitchLocalMode={handleSwitchLocalMode}
-              handleToggleSelectAll={handleToggleSelectAll}
-              selectAll={selectAll}
-              iconExtension={true}
-              handleToggleExports={handleToggleExports}
-              exportContext={{ entity_type: 'Stix-Cyber-Observable' }}
-              keyword={searchTerm}
-              openExports={openExports}
-              filters={filters}
-              paginationOptions={queryPaginationOptions}
-              availableEntityTypes={['Stix-Cyber-Observable']}
-            >
-              {queryRef && (
-                <React.Suspense
-                  fallback={
-                    <>
-                      {Array(20)
-                        .fill(0)
-                        .map((_, idx) => (
-                          <ContainerStixCyberObservableLineDummy
-                            key={idx}
-                            dataColumns={buildColumns(platformModuleHelpers)}
-                          />
-                        ))}
-                    </>
-                  }
-                >
-                  <ContainerStixCyberObservablesLines
-                    queryRef={queryRef}
-                    paginationOptions={queryPaginationOptions}
-                    dataColumns={buildColumns(platformModuleHelpers)}
-                    onTypesChange={handleToggle}
-                    openExports={openExports}
-                    selectedElements={selectedElements}
-                    deSelectedElements={deSelectedElements}
-                    onToggleEntity={onToggleEntity}
-                    selectAll={selectAll}
-                    setNumberOfElements={handleSetNumberOfElements}
-                    setSelectedElements={setSelectedElements}
-                    enableReferences={enableReferences}
-                  />
-                </React.Suspense>
-              )}
-            </ListLines>
-            <ToolBar
-              selectedElements={selectedElements}
-              deSelectedElements={deSelectedElements}
-              numberOfSelectedElements={numberOfSelectedElements}
-              selectAll={selectAll}
-              search={searchTerm}
-              filters={contextFilters}
-              handleClearSelectedElements={handleClearSelectedElements}
-              variant="large"
-              container={container}
-              handleCopy={handleCopy}
-              warning={true}
-            />
-            <StixCyberObservablesRightBar
-              types={types}
-              handleToggle={handleToggle}
-              handleClear={handleClear}
-              openExports={openExports}
-            />
-          </ExportContextProvider>
-        )}
-      </UserContext.Consumer>
-    </div>
+    <>
+      {queryRef && (
+        <DataTable
+          dataColumns={dataColumns}
+          resolvePath={(data: ContainerStixCyberObservables_containerQuery$data) => data.container?.objects?.edges?.map((n) => n?.node)}
+          storageKey={LOCAL_STORAGE_KEY}
+          initialValues={initialValues}
+          toolbarFilters={contextFilters}
+          lineFragment={containerStixCyberObservableLineFragment}
+          preloadedPaginationProps={preloadedPaginationProps}
+          filterExportContext={{ entity_type: 'Stix-Cyber-Observable' }}
+          redirectionModeEnabled
+          enableReferences={enableReferences}
+        />
+      )}
+      <StixCyberObservablesRightBar
+        types={types}
+        handleToggle={handleToggle}
+        handleClear={handleClear}
+        openExports={openExports}
+      />
+    </>
   );
 };
 

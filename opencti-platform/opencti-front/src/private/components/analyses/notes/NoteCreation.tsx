@@ -12,6 +12,7 @@ import { Add } from '@mui/icons-material';
 import makeStyles from '@mui/styles/makeStyles';
 import { FormikConfig } from 'formik/dist/types';
 import { RecordSourceSelectorProxy } from 'relay-runtime';
+import { NotesLinesPaginationQuery$variables } from '@components/analyses/__generated__/NotesLinesPaginationQuery.graphql';
 import { useFormatter } from '../../../../components/i18n';
 import ObjectMarkingField from '../../common/form/ObjectMarkingField';
 import CreatedByField from '../../common/form/CreatedByField';
@@ -26,7 +27,6 @@ import OpenVocabField from '../../common/form/OpenVocabField';
 import type { Theme } from '../../../../components/Theme';
 import { insertNode } from '../../../../utils/store';
 import { Option } from '../../common/form/ReferenceField';
-import { NotesLinesPaginationQuery$variables } from './__generated__/NotesLinesPaginationQuery.graphql';
 import SliderField from '../../../../components/fields/SliderField';
 import { ExternalReferencesField } from '../../common/form/ExternalReferencesField';
 import { useSchemaCreationValidation } from '../../../../utils/hooks/useEntitySettings';
@@ -62,7 +62,7 @@ export const noteCreationUserMutation = graphql`
       parent_types
       attribute_abstract
       content
-      ...NoteLine_node
+      ...NotesLine_node
     }
   }
 `;
@@ -76,7 +76,7 @@ export const noteCreationMutation = graphql`
       parent_types
       attribute_abstract
       content
-      ...NoteLine_node
+      ...NotesLine_node
     }
   }
 `;

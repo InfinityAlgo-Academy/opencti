@@ -65,17 +65,13 @@ class StixCoreObjectLabels extends Component {
                       color: label.color,
                       borderColor: label.color,
                       backgroundColor: hexToRGB(label.color),
+                      cursor: onClick ? 'pointer' : 'inherit',
                     }}
-                    onClick={
-                      typeof onClick === 'function'
-                        ? onClick.bind(
-                          this,
-                          'objectLabel',
-                          label.id,
-                          'eq',
-                        )
-                        : null
-                    }
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onClick?.bind(this, 'objectLabel', label.id, 'eq');
+                    }}
                   />
                 </Tooltip>
               ),

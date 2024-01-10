@@ -1,45 +1,177 @@
 import React from 'react';
 import { graphql, useFragment } from 'react-relay';
-import { ContainerStixDomainObjectLine_node$data } from '@components/common/containers/__generated__/ContainerStixDomainObjectLine_node.graphql';
 import {
   ContainerStixDomainObjectsLinesQuery,
   ContainerStixDomainObjectsLinesQuery$variables,
 } from '@components/common/containers/__generated__/ContainerStixDomainObjectsLinesQuery.graphql';
-import { ContainerStixDomainObjectLineDummy } from '@components/common/containers/ContainerStixDomainObjectLine';
 import { ContainerStixDomainObjects_container$key } from '@components/common/containers/__generated__/ContainerStixDomainObjects_container.graphql';
-import ListLines from '../../../../components/list_lines/ListLines';
-import ContainerStixDomainObjectsLines, { containerStixDomainObjectsLinesQuery } from './ContainerStixDomainObjectsLines';
+import { ContainerStixDomainObjects_containerQuery$data } from '@components/common/containers/__generated__/ContainerStixDomainObjects_containerQuery.graphql';
+import ContainerAddStixCoreObjects from '@components/common/containers/ContainerAddStixCoreObjects';
 import StixDomainObjectsRightBar from '../stix_domain_objects/StixDomainObjectsRightBar';
-import ToolBar from '../../data/ToolBar';
 import { usePaginationLocalStorage } from '../../../../utils/hooks/useLocalStorage';
-import useEntityToggle from '../../../../utils/hooks/useEntityToggle';
 import useQueryLoading from '../../../../utils/hooks/useQueryLoading';
 import useAuth from '../../../../utils/hooks/useAuth';
 import { emptyFilterGroup, FilterGroup, isFilterGroupNotEmpty, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../utils/filters/filtersUtils';
+import DataTable from '../../../../components/dataGrid/DataTable';
+import { UsePreloadedPaginationFragment } from '../../../../utils/hooks/usePreloadedPaginationFragment';
+import Security from '../../../../utils/Security';
+import { KNOWLEDGE_KNUPDATE } from '../../../../utils/hooks/useGranted';
 
 const ContainerStixDomainObjectsFragment = graphql`
-    fragment ContainerStixDomainObjects_container on Container {
-        id
-        ... on Report {
-            name
-        }
-        ... on Grouping {
-            name
-        }
-        ... on Note {
-            attribute_abstract
-            content
-        }
-        ... on Opinion {
-            opinion
-        }
-        ... on ObservedData {
-            name
-            first_observed
-            last_observed
-        }
-        ...ContainerHeader_container
+  fragment ContainerStixDomainObjects_container on Container {
+    id
+    ... on Report {
+      name
     }
+    ... on Grouping {
+      name
+    }
+    ... on Note {
+      attribute_abstract
+      content
+    }
+    ... on Opinion {
+      opinion
+    }
+    ... on ObservedData {
+      name
+      first_observed
+      last_observed
+    }
+    confidence
+    createdBy {
+      id
+    }
+    objectMarking {
+      id
+      definition_type
+      definition
+      x_opencti_order
+      x_opencti_color
+    }
+    ...ContainerHeader_container
+  }
+`;
+
+const containerStixDomainObjectLine = graphql`
+  fragment ContainerStixDomainObjects_node on StixDomainObject {
+    id
+    standard_id
+    entity_type
+    parent_types
+    created_at
+    ... on StixDomainObject {
+      representative {
+        main
+      }
+    }
+    objectLabel {
+      id
+      value
+      color
+    }
+    createdBy {
+      ... on Identity {
+        id
+        name
+        entity_type
+      }
+    }
+    objectMarking {
+      id
+      definition_type
+      definition
+      x_opencti_order
+      x_opencti_color
+    }
+    containersNumber {
+      total
+    }
+  }
+`;
+
+export const containerStixDomainObjectsLinesQuery = graphql`
+  query ContainerStixDomainObjectsLinesQuery(
+    $id: String!
+    $search: String
+    $types: [String]
+    $count: Int!
+    $cursor: ID
+    $orderBy: StixObjectOrStixRelationshipsOrdering
+    $orderMode: OrderingMode
+    $filters: FilterGroup
+  ) {
+    ...ContainerStixDomainObjects_containerQuery
+    @arguments(
+      search: $search
+      types: $types
+      count: $count
+      cursor: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    )
+  }
+`;
+
+export const containerStixDomainObjectsLinesFragment = graphql`
+  fragment ContainerStixDomainObjects_containerQuery on Query
+  @argumentDefinitions(
+    types: { type: "[String]" }
+    search: { type: "String" }
+    count: { type: "Int", defaultValue: 25 }
+    cursor: { type: "ID" }
+    orderBy: {
+      type: "StixObjectOrStixRelationshipsOrdering"
+      defaultValue: name
+    }
+    orderMode: { type: "OrderingMode", defaultValue: asc }
+    filters: { type: "FilterGroup" }
+  )
+  @refetchable(queryName: "ContainerStixDomainObjectsLinesRefetchQuery") {
+    container(id: $id) {
+      id
+      confidence
+      createdBy {
+        ... on Identity {
+          id
+          name
+          entity_type
+        }
+      }
+      objectMarking {
+        id
+        definition_type
+        definition
+        x_opencti_order
+        x_opencti_color
+      }
+      objects(
+        types: $types
+        search: $search
+        first: $count
+        after: $cursor
+        orderBy: $orderBy
+        orderMode: $orderMode
+        filters: $filters
+      ) @connection(key: "Pagination_objects") {
+        edges {
+          types
+          node {
+            ... on BasicObject {
+              id
+            }
+            ...ContainerStixDomainObjects_node
+          }
+        }
+        pageInfo {
+          endCursor
+          hasNextPage
+          globalCount
+        }
+      }
+    }
+  }
 `;
 
 const ContainerStixDomainObjects = ({
@@ -55,24 +187,25 @@ const ContainerStixDomainObjects = ({
     ContainerStixDomainObjectsFragment,
     container,
   );
+
   const LOCAL_STORAGE_KEY = `container-${containerData.id}-stixDomainObjects`;
+  const initialValues = {
+    filters: emptyFilterGroup,
+    searchTerm: '',
+    sortBy: 'name',
+    orderAsc: false,
+    openExports: false,
+    types: [],
+  };
   const {
     viewStorage,
     paginationOptions,
     helpers: storageHelpers,
   } = usePaginationLocalStorage<ContainerStixDomainObjectsLinesQuery$variables>(
     LOCAL_STORAGE_KEY,
-    {
-      filters: emptyFilterGroup,
-      searchTerm: '',
-      sortBy: 'name',
-      orderAsc: false,
-      openExports: false,
-      types: [],
-    },
+    initialValues,
   );
   const {
-    numberOfElements,
     filters,
     searchTerm,
     sortBy,
@@ -103,131 +236,81 @@ const ContainerStixDomainObjects = ({
     search: searchTerm,
     filters: contextFilters,
   } as unknown as ContainerStixDomainObjectsLinesQuery$variables;
-  const {
-    selectedElements,
-    deSelectedElements,
-    selectAll,
-    handleClearSelectedElements,
-    handleToggleSelectAll,
-    onToggleEntity,
-    numberOfSelectedElements,
-  } = useEntityToggle<ContainerStixDomainObjectLine_node$data>(LOCAL_STORAGE_KEY);
+
   const queryRef = useQueryLoading<ContainerStixDomainObjectsLinesQuery>(
     containerStixDomainObjectsLinesQuery,
     queryPaginationOptions,
   );
+
   const isRuntimeSort = isRuntimeFieldEnable() ?? false;
   const dataColumns = {
     entity_type: {
-      label: 'Type',
-      width: '12%',
-      isSortable: true,
+      flexSize: 12,
     },
-    name: {
+    value: {
+      flexSize: 25,
       label: 'Name',
-      width: '28%',
-      isSortable: true,
     },
     objectLabel: {
-      label: 'Labels',
-      width: '19%',
-      isSortable: false,
+      flexSize: 19,
     },
     createdBy: {
-      label: 'Author',
-      width: '12%',
       isSortable: isRuntimeSort,
     },
-    created_at: {
-      label: 'Platform creation date',
-      width: '10%',
-      isSortable: true,
-    },
-    analyses: {
-      label: 'Analyses',
-      width: '8%',
-      isSortable: false,
-    },
+    created_at: {},
+    analyses: {},
     objectMarking: {
-      label: 'Marking',
-      width: '9%',
       isSortable: isRuntimeSort,
     },
   };
+
+  const preloadedPaginationProps = {
+    linesQuery: containerStixDomainObjectsLinesQuery,
+    linesFragment: containerStixDomainObjectsLinesFragment,
+    queryRef,
+    nodePath: ['container', 'objects', 'pageInfo', 'globalCount'],
+    setNumberOfElements: storageHelpers.handleSetNumberOfElements,
+  } as UsePreloadedPaginationFragment<ContainerStixDomainObjectsLinesQuery>;
+
   return (
-    <ListLines
-      helpers={storageHelpers}
-      sortBy={sortBy}
-      orderAsc={orderAsc}
-      dataColumns={dataColumns}
-      handleSort={storageHelpers.handleSort}
-      handleSearch={storageHelpers.handleSearch}
-      handleAddFilter={storageHelpers.handleAddFilter}
-      handleRemoveFilter={storageHelpers.handleRemoveFilter}
-      handleSwitchGlobalMode={storageHelpers.handleSwitchGlobalMode}
-      handleSwitchLocalMode={storageHelpers.handleSwitchLocalMode}
-      handleToggleExports={storageHelpers.handleToggleExports}
-      openExports={openExports}
-      handleToggleSelectAll={handleToggleSelectAll}
-      selectAll={selectAll}
-      iconExtension={true}
-      exportContext={{ entity_id: containerData.id, entity_type: 'Stix-Domain-Object' }}
-      filters={filters}
-      keyword={searchTerm}
-      secondaryAction={true}
-      numberOfElements={numberOfElements}
-      paginationOptions={queryPaginationOptions}
-      availableEntityTypes={['Stix-Domain-Object']}
-    >
+    <>
       {queryRef && (
-        <React.Suspense
-          fallback={
-            <>
-              {Array(20)
-                .fill(0)
-                .map((_, idx) => (
-                  <ContainerStixDomainObjectLineDummy
-                    key={idx}
-                    dataColumns={dataColumns}
-                  />
-                ))}
-            </>
-          }
-        >
-          <ContainerStixDomainObjectsLines
-            queryRef={queryRef}
-            paginationOptions={queryPaginationOptions}
-            dataColumns={dataColumns}
-            setNumberOfElements={storageHelpers.handleSetNumberOfElements}
+        <DataTable
+          dataColumns={dataColumns}
+          resolvePath={(data: ContainerStixDomainObjects_containerQuery$data) => data.container?.objects?.edges?.map((n) => n?.node)}
+          storageKey={LOCAL_STORAGE_KEY}
+          initialValues={initialValues}
+          toolbarFilters={contextFilters}
+          preloadedPaginationProps={preloadedPaginationProps}
+          lineFragment={containerStixDomainObjectLine}
+          filterExportContext={{ entity_type: 'Container' }}
+          enableReferences={enableReferences}
+        />
+      )}
+      {container && (
+        <Security needs={[KNOWLEDGE_KNUPDATE]}>
+          <ContainerAddStixCoreObjects
+            containerId={containerData.id}
+            containerStixCoreObjects={undefined}
+            paginationOptions={paginationOptions}
+            withPadding={true}
+            targetStixCoreObjectTypes={['Stix-Domain-Object']}
             onTypesChange={storageHelpers.handleToggleTypes}
             openExports={openExports}
-            selectedElements={selectedElements}
-            deSelectedElements={deSelectedElements}
-            onToggleEntity={onToggleEntity}
-            selectAll={selectAll}
+            defaultCreatedBy={containerData.createdBy ?? null}
+            defaultMarkingDefinitions={containerData.objectMarking ?? []}
+            confidence={containerData.confidence}
             enableReferences={enableReferences}
           />
-          <ToolBar
-            selectedElements={selectedElements}
-            deSelectedElements={deSelectedElements}
-            numberOfSelectedElements={numberOfSelectedElements}
-            selectAll={selectAll}
-            filters={contextFilters}
-            search={searchTerm}
-            handleClearSelectedElements={handleClearSelectedElements}
-            variant="large"
-            container={containerData}
-            warning={true}
-          />
-          <StixDomainObjectsRightBar
-            types={types}
-            handleToggle={storageHelpers.handleToggleTypes}
-            handleClear={storageHelpers.handleClearTypes}
-            openExports={openExports}
-          />
-        </React.Suspense>
+        </Security>
       )}
-    </ListLines>
+      <StixDomainObjectsRightBar
+        types={types}
+        handleToggle={storageHelpers.handleToggleTypes}
+        handleClear={storageHelpers.handleClearTypes}
+        openExports={openExports}
+      />
+    </>
   );
 };
 

@@ -66,6 +66,8 @@ export const resolveLink = (type = 'unknown'): string | null => {
       return '/dashboard/arsenal/vulnerabilities';
     case 'Incident':
       return '/dashboard/events/incidents';
+    case 'stix-sighting-relationship':
+      return '/dashboard/events/sightings';
     case 'Artifact':
       return '/dashboard/observations/artifacts';
     case 'Data-Component':
