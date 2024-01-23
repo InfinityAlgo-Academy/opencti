@@ -147,6 +147,7 @@
     "build:standalone": "yarn relay && yarn esbuild --keep",
     "lint": "cross-env DEBUG=eslint:cli-engine TIMING=1 eslint --max-warnings 0 --cache -c .eslintrc.js src",
     "control": "yarn audit --groups dependencies --summary",
+    "test:dev": "vitest watch --config vitest.config.ts",
     "test": "vitest run",
     "check-ts": "tsc --noEmit",
     "i18n-checker": "node i18n-checker.js",
