@@ -2514,5 +2514,6 @@
   "Open Settings": "Abrir Configuración",
   "alert_USER_WITH_NULL_EFFECTIVE_LEVEL": "A partir de OpenCTI 6.0, se añadirá un nivel de confianza máximo para los usuarios. Proporcionará a los administradores de la plataforma un mayor control sobre el impacto de los datos importados y evitará cualquier actualización no deseada en los datos. Lea {link_blogpost} para obtener más información.\n \nEn esta plataforma, \"el nivel máximo de confianza\" de algunos usuarios no está definido actualmente. No podrán crear ningún dato en la versión 6.X de la plataforma. Para evitarlo, asegúrese de que todos los usuarios tienen un nivel de confianza máximo definido. Más información en {link_blogpost}. Ten especial cuidado con los usuarios asociados a Conectores, Feeds y Streams. Únete a {link_slack} si necesitas consejos.",
   "No confidence level found in this user's groups and organizations, and no confidence level defined at the user level.": "No se ha encontrado ningún nivel de confianza en los grupos y organizaciones de este usuario, y no se ha definido ningún nivel de confianza a nivel de usuario.",
-  "confidence_level_from": "De {entity_type} {link}"
+  "confidence_level_from": "De {entity_type} {link}",
+  "Unknown configuration error in the platform.": "Error de configuración desconocido en la plataforma."
 }

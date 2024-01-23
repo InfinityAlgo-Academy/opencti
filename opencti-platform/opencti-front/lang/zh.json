@@ -2514,5 +2514,6 @@
   "Open Settings": "打开设置",
   "alert_USER_WITH_NULL_EFFECTIVE_LEVEL": "从 OpenCTI 6.0 开始，将为用户添加最大置信度。这将为平台管理员提供更多对导入数据影响的控制，并防止任何不必要的数据更新。请阅读 {link_blogpost} 获取更多信息。\n \n在本平台中，某些用户的 \"max confidence level\" 目前未定义。他们将无法在 6.X 版平台中创建任何数据。为避免出现这种情况，请确保所有用户都设置了最大置信度。更多信息请参见 {link_blogpost}。请特别注意与连接器、馈送和数据流相关的用户。如果需要建议，请加入 {link_slack} 。",
   "No confidence level found in this user's groups and organizations, and no confidence level defined at the user level.": "在该用户的群组和组织中未发现置信度，且未在用户级别定义置信度。",
-  "confidence_level_from": "来自 {entity_type}{link}"
+  "confidence_level_from": "来自 {entity_type}{link}",
+  "Unknown configuration error in the platform.": "平台中出现未知配置错误。"
 }
