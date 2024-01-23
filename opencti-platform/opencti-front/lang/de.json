@@ -2504,5 +2504,15 @@
   "Max Confidence Level": "Max. Konfidenzniveau",
   "This value is overridden for the following entity types": "Dieser Wert wird für die folgenden Entitätstypen außer Kraft gesetzt",
   "Enable user max confidence level": "Maximales Vertrauensniveau des Benutzers aktivieren",
-  "The user's max confidence level overrides the max confidence that might be set at groups or organizations level.": "Die maximale Vertrauensstufe des Benutzers hat Vorrang vor der maximalen Vertrauensstufe, die auf Gruppen- oder Organisationsebene festgelegt werden kann."
+  "The user's max confidence level overrides the max confidence that might be set at groups or organizations level.": "Die maximale Vertrauensstufe des Benutzers hat Vorrang vor der maximalen Vertrauensstufe, die auf Gruppen- oder Organisationsebene festgelegt werden kann.",
+  "entity_Group": "Gruppe",
+  "Important notice: your action is required!": "Wichtiger Hinweis: Ihr Handeln ist erforderlich!",
+  "this blogpost": "dieser Blogpost",
+  "our Slack channel": "unser Slack-Kanal",
+  "The following user(s) require your attention:": "Die folgenden Benutzer benötigen Ihre Aufmerksamkeit:",
+  "and ... more": "und {count} weitere.",
+  "Open Settings": "Einstellungen öffnen",
+  "alert_USER_WITH_NULL_EFFECTIVE_LEVEL": "Beginnend mit OpenCTI 6.0 wird ein maximaler Vertrauensgrad für Benutzer hinzugefügt. Damit haben Plattformadministratoren eine bessere Kontrolle über die Auswirkungen importierter Daten und können unerwünschte Datenaktualisierungen verhindern. Bitte lesen Sie {link_blogpost} für weitere Informationen.\n \nAuf dieser Plattform ist \"max confidence level\" für einige Benutzer derzeit nicht definiert. Sie können in der Version 6.X der Plattform keine Daten erstellen. Um dies zu verhindern, stellen Sie sicher, dass für alle Benutzer eine maximale Vertrauensstufe festgelegt ist. Mehr dazu in {link_blogpost}. Achten Sie besonders auf Benutzer, die mit Connectors, Feeds und Streams verbunden sind. Treten Sie {link_slack} bei, wenn Sie Ratschläge benötigen.",
+  "No confidence level found in this user's groups and organizations, and no confidence level defined at the user level.": "Keine Vertrauensstufe in den Gruppen und Organisationen dieses Benutzers gefunden und keine Vertrauensstufe auf Benutzerebene definiert.",
+  "confidence_level_from": "Von {entity_type} {link}"
 }
