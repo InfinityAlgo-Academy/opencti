@@ -118,6 +118,7 @@ type Organization implements BasicObject & StixObject & StixCoreObject & StixDom
   parentOrganizations: OrganizationConnection
   default_dashboard: Workspace
   default_hidden_types: [String!]
+  org_confidence_level: ConfidenceLevel
   # Technical
   creators: [Creator!]
   toStix: String

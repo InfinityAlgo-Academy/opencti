@@ -43,6 +43,32 @@ const ORGANIZATION_DEFINITION: ModuleDefinition<StoreEntityOrganization, StixOrg
     { name: 'default_hidden_types', label: 'Default hidden types', type: 'string', format: 'short', mandatoryType: 'no', editDefault: false, multiple: true, upsert: false, isFilterable: true },
     { name: 'authorized_authorities', label: 'Authorized authorities', type: 'string', format: 'short', mandatoryType: 'no', editDefault: false, multiple: true, upsert: false, isFilterable: false },
     { name: 'grantable_groups', label: 'Grantable groups', type: 'string', format: 'short', mandatoryType: 'no', editDefault: false, multiple: true, upsert: false, isFilterable: true },
+    { name: 'org_confidence_level',
+      label: 'Organization Confidence Level',
+      type: 'object',
+      format: 'standard',
+      mandatoryType: 'no',
+      editDefault: false,
+      multiple: false,
+      upsert: false,
+      isFilterable: true,
+      mappings: [
+        { name: 'max_confidence', label: 'Max Confidence', type: 'numeric', precision: 'integer', editDefault: false, mandatoryType: 'internal', multiple: false, upsert: false, isFilterable: true },
+        { name: 'overrides',
+          label: 'Overrides',
+          type: 'object',
+          format: 'nested',
+          editDefault: false,
+          mandatoryType: 'internal',
+          multiple: true,
+          upsert: true,
+          isFilterable: true,
+          mappings: [
+            { name: 'entity_type', label: 'Entity Type', type: 'string', format: 'short', editDefault: false, mandatoryType: 'external', multiple: false, upsert: false, isFilterable: true },
+            { name: 'max_confidence', label: 'Max Confidence', type: 'numeric', precision: 'integer', editDefault: false, mandatoryType: 'external', multiple: false, upsert: false, isFilterable: true },
+          ] },
+      ]
+    },
   ],
   relations: [
     {
