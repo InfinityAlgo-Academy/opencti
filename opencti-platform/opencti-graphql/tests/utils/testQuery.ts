@@ -359,7 +359,7 @@ const USER_CREATION_MUTATION = `
     }
   }
 `;
-const createUser = async (user: User) => {
+export const createUser = async (user: User) => {
   // Assign user to groups
   for (let indexGroup = 0; indexGroup < user.groups.length; indexGroup += 1) {
     const group = user.groups[indexGroup];
