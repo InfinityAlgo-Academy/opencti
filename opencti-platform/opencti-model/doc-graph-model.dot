@@ -1,0 +1,38 @@
+digraph UML_Class_diagram {
+    graph [
+        label="OpenCTI Entities model"
+        labelloc="t"
+        fontname="Helvetica,Arial,sans-serif"
+    ]
+    node [
+        fontname="Helvetica,Arial,sans-serif"
+        shape=record
+        style=filled
+        fillcolor=gray95
+    ]
+    edge [fontname="Helvetica,Arial,sans-serif"]
+    edge [arrowhead=vee style=dashed]
+    
+    Stix-Object [
+        shape=plain
+        label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4">
+            <tr> 
+                <td> <b>Stix-Object</b> </td> 
+            </tr>
+            <tr> 
+                <td>
+                    <table border="0" cellborder="0" cellspacing="0" >
+                        <tr> <td align="left">+ property</td> </tr>
+                        <tr> <td align="left" port="r1">- resource</td> </tr>
+                        <tr> <td align="left">...</td> </tr>
+                    </table>
+                </td> 
+            </tr>
+            <tr>
+                <td align="left">
+                    + method<br/>
+                    ...<br align="left"/>
+                </td>
+            </tr>
+        </table>>
+    ]

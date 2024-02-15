@@ -9137,6 +9137,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"graphviz@npm:0.0.9":
+  version: 0.0.9
+  resolution: "graphviz@npm:0.0.9"
+  dependencies:
+    temp: "npm:~0.4.0"
+  checksum: 10/23c6d7440591d02ef8a046f5f011379a723afa7647751ca5bd6d45bb414c390d771ec3d204abbe3cba8ec9c0b9050879d5cec2985d077f85641f2b2ec6f5bf63
+  languageName: node
+  linkType: hard
+
 "has-bigints@npm:^1.0.1, has-bigints@npm:^1.0.2":
   version: 1.0.2
   resolution: "has-bigints@npm:1.0.2"
@@ -11442,6 +11451,7 @@ __metadata:
     graphql-subscriptions: "npm:2.0.0"
     graphql-tag: "npm:2.12.6"
     graphql-upload: "npm:16.0.2"
+    graphviz: "npm:0.0.9"
     helmet: "npm:7.1.0"
     http-proxy-agent: "npm:7.0.0"
     https-proxy-agent: "npm:7.0.2"
@@ -13391,6 +13401,13 @@ __metadata:
   dependencies:
     bintrees: "npm:1.0.2"
   checksum: 10/45be99fa52dab74b8edafe150e473cdc45aa1352c75ed516a39905f350a08c3175f6555598111042c3677ba042d7e3cae6b5ce4c663fe609bc634f326aabc9d6
+  languageName: node
+  linkType: hard
+
+"temp@npm:~0.4.0":
+  version: 0.4.0
+  resolution: "temp@npm:0.4.0"
+  checksum: 10/bcb5544a71bd03a6ae80ba8e08cf52076a289bf3d86279839df63048a5e5308fe100fb9aaf24cff912926ab08188ed81d194d2cac619d67b2dab28efbf6dda19
   languageName: node
   linkType: hard
 
