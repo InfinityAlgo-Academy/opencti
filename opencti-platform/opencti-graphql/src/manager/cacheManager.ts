@@ -1,3 +1,4 @@
+import { Promise as Bluebird } from 'bluebird';
 import * as R from 'ramda';
 import { logApp, TOPIC_PREFIX } from '../config/conf';
 import { dynamicCacheUpdater, resetCacheForEntity, writeCacheForEntity } from '../database/cache';
@@ -7,10 +8,12 @@ import { ENTITY_TYPE_ENTITY_SETTING } from '../modules/entitySetting/entitySetti
 import { FilterMode, OrderingMode } from '../generated/graphql';
 import { extractFilterGroupValuesToResolveForCache } from '../utils/filtering/filtering-resolution';
 import { type BasicStoreEntityTrigger, ENTITY_TYPE_TRIGGER } from '../modules/notification/notification-types';
+import { ES_MAX_CONCURRENCY } from '../database/engine';
 import { stixLoadByIds } from '../database/middleware';
 import { type EntityOptions, listAllEntities, listAllRelations } from '../database/middleware-loader';
 import { pubSubSubscription } from '../database/redis';
 import { connectors as findConnectors } from '../database/repository';
+import { resolveUserById } from '../domain/user';
 import { STATIC_NOTIFIERS } from '../modules/notifier/notifier-statics';
 import type { BasicStoreEntityNotifier } from '../modules/notifier/notifier-types';
 import { ENTITY_TYPE_NOTIFIER } from '../modules/notifier/notifier-types';
@@ -136,7 +139,10 @@ const platformRunningPlaybooks = (context: AuthContext) => {
 };
 const platformUsers = (context: AuthContext) => {
   const reloadUsers = async () => {
-    return listAllEntities(context, SYSTEM_USER, [ENTITY_TYPE_USER], { connectionFormat: false });
+    const users = await listAllEntities(context, SYSTEM_USER, [ENTITY_TYPE_USER], { connectionFormat: false });
+    const allUserIds = users.map((user) => user.internal_id);
+    // Users complete resolution is needed for notification managers (getNotifications)
+    return Bluebird.map(allUserIds, (userId: string) => resolveUserById(context, userId), { concurrency: ES_MAX_CONCURRENCY });
   };
   return { values: null, fn: reloadUsers };
 };
