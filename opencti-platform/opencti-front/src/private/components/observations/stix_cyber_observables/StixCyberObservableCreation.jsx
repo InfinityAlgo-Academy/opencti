@@ -11,12 +11,14 @@ import * as Yup from 'yup';
 import { graphql } from 'react-relay';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import Tooltip from '@mui/material/Tooltip';
 import Dialog from '@mui/material/Dialog';
 import List from '@mui/material/List';
 import ListItemText from '@mui/material/ListItemText';
 import makeStyles from '@mui/styles/makeStyles';
 import { ListItemButton } from '@mui/material';
+import * as PropTypes from 'prop-types';
 import { commitMutation, handleErrorInForm, QueryRenderer } from '../../../../relay/environment';
 import TextField from '../../../../components/TextField';
 import SwitchField from '../../../../components/SwitchField';
@@ -226,9 +228,16 @@ const StixCyberObservableCreation = ({
   const handleOpen = () => setStatus({ open: true, type: status.type });
   const localHandleClose = () => setStatus({ open: false, type: type ?? null });
   const selectType = (selected) => setStatus({ open: status.open, type: selected });
+  const bulkAddMsg = t_i18n('Multiple Values Entered Edit with the TT button');
 
   const onSubmit = (values, { setSubmitting, setErrors, resetForm }) => {
     let adaptedValues = values;
+
+    // Bulk Add Modal was used
+    if (adaptedValues.value && adaptedValues.bulk_value_field && adaptedValues.value === bulkAddMsg) {
+      adaptedValues.value = adaptedValues.bulk_value_field;
+    }
+
     // Potential dicts
     if (
       adaptedValues.hashes_MD5
@@ -331,7 +340,7 @@ const StixCyberObservableCreation = ({
       });
     };
 
-    const valueList = values?.value?.split('\n') || values?.value;
+    const valueList = (values != null && values?.value?.split('\n')) || values?.value;
     if (valueList) {
     // loop and commit
       for (const value of valueList) {
@@ -389,6 +398,85 @@ const StixCyberObservableCreation = ({
     );
   };
 
+  function BulkAddModal(props) {
+    const [openBulkModal, setOpenBulkModal] = React.useState(false);
+    const handleOpenBulkModal = () => {
+      setOpenBulkModal(true);
+    };
+    const handleCloseBulkModal = () => {
+      setOpenBulkModal(false);
+      const bulk_value_field = document.getElementById('bulk_value_field');
+      const generic_value_field = document.getElementById('generic_value_field');
+      if (bulk_value_field != null && bulk_value_field.value != null && bulk_value_field.value.length > 0) {
+        props.setValue('value', bulkAddMsg);
+        generic_value_field.disabled = true;
+      } else {
+        props.setValue('value', '');
+        generic_value_field.disabled = false;
+      }
+    };
+    const localHandleCancelClearBulkModal = () => {
+      setOpenBulkModal(false);
+      const generic_value_field = document.getElementById('generic_value_field');
+      generic_value_field.disabled = false;
+      props.setValue('value', '');
+      props.setValue('bulk_value_field', '');
+    };
+    return (
+      <React.Fragment>
+        <IconButton
+          onClick={handleOpenBulkModal}
+          size="large"
+          color="primary" style={{ float: 'right' }}
+        >
+          <TextFieldsOutlined />
+        </IconButton>
+        <Dialog
+          PaperProps={{ elevation: 3 }}
+          open={openBulkModal}
+          onClose={handleCloseBulkModal}
+          fullWidth={true}
+        >
+          <DialogTitle>{t_i18n('Bulk Observable Creation')}</DialogTitle>
+          <DialogContent style={{ marginTop: 0, paddingTop: 0 }}>
+            <Typography id="add-bulk-observable-instructions" variant="subtitle1" component="subtitle1" style={{ whiteSpace: 'pre-line' }}>
+              <div style={{ border: '2px solid #FFA500', paddingLeft: 10 }}>
+                {t_i18n('Observables listed must be of the same type.')}
+                <br/>
+                {t_i18n('One Observable per line.')}
+              </div>
+            </Typography>
+            <Typography style={{ float: 'left', marginTop: 10 }}>
+              {t_i18n('Bulk Content')}
+            </Typography>
+            <Field
+              component={TextField}
+              id="bulk_value_field"
+              variant="standard"
+              key="bulk_value_field"
+              name="bulk_value_field"
+              fullWidth={true}
+              multiline={true}
+              rows="5"
+            />
+            <DialogActions>
+              <Button onClick={localHandleCancelClearBulkModal}>
+                {t_i18n('Cancel')}
+              </Button>
+              <Button color="secondary" onClick={handleCloseBulkModal}>
+                {t_i18n('Continue')}
+              </Button>
+            </DialogActions>
+          </DialogContent>
+        </Dialog>
+      </React.Fragment>
+    );
+  }
+
+  BulkAddModal.propTypes = {
+    setValue: PropTypes.func,
+  };
+
   const renderForm = () => {
     return (
       <QueryRenderer
@@ -420,8 +508,6 @@ const StixCyberObservableCreation = ({
               ),
             )(props.schemaAttributeNames.edges);
             for (const attribute of attributes) {
-              // eslint-disable-next-line no-console
-              console.log(`attribute ===> ${JSON.stringify(attribute, null, 4)}`);
               if (isVocabularyField(status.type, attribute.value)) {
                 initialValues[attribute.value] = null;
               } else if (includes(attribute.value, dateAttributes)) {
@@ -586,28 +672,27 @@ const StixCyberObservableCreation = ({
                         }
                         if (attribute.value === 'value') {
                           return (
-                            <>
+                            <div key={attribute.value}>
                               <Typography style={{ float: 'left', marginTop: 20 }}>
                                 {attribute.value}
                               </Typography>
                               <Tooltip title="Copy/paste text content">
-                                <IconButton
-                                  size="large"
-                                  color="primary" style={{ float: 'right' }}
-                                >
-                                  <TextFieldsOutlined />
-                                </IconButton>
+                                <BulkAddModal
+                                  setValue={(field_name, new_value) => setFieldValue(field_name, new_value)}
+                                />
                               </Tooltip>
                               <Field
+                                id="generic_value_field"
+                                disabled={false}
                                 component={TextField}
                                 variant="standard"
                                 key={attribute.value}
                                 name={attribute.value}
                                 fullWidth={true}
                                 multiline={true}
-                                rows="3"
+                                rows="1"
                               />
-                            </>
+                            </div>
                           );
                         }
                         return (
