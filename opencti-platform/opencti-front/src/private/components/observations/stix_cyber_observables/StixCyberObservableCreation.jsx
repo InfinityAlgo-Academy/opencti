@@ -11,12 +11,14 @@ import * as Yup from 'yup';
 import { graphql } from 'react-relay';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import Tooltip from '@mui/material/Tooltip';
 import Dialog from '@mui/material/Dialog';
 import List from '@mui/material/List';
 import ListItemText from '@mui/material/ListItemText';
 import makeStyles from '@mui/styles/makeStyles';
 import { ListItemButton } from '@mui/material';
+import * as PropTypes from 'prop-types';
 import { commitMutation, handleErrorInForm, QueryRenderer } from '../../../../relay/environment';
 import TextField from '../../../../components/TextField';
 import SwitchField from '../../../../components/SwitchField';
@@ -226,122 +228,131 @@ const StixCyberObservableCreation = ({
   const handleOpen = () => setStatus({ open: true, type: status.type });
   const localHandleClose = () => setStatus({ open: false, type: type ?? null });
   const selectType = (selected) => setStatus({ open: status.open, type: selected });
+  const bulkAddMsg = t_i18n('Multiple values entered. Edit with the TT button');
 
   const onSubmit = (values, { setSubmitting, setErrors, resetForm }) => {
     let adaptedValues = values;
-    // Potential dicts
-    if (
-      adaptedValues.hashes_MD5
-      || adaptedValues['hashes_SHA-1']
-      || adaptedValues['hashes_SHA-256']
-      || adaptedValues['hashes_SHA-512']
-    ) {
-      adaptedValues.hashes = [];
-      if (adaptedValues.hashes_MD5.length > 0) {
-        adaptedValues.hashes.push({
-          algorithm: 'MD5',
-          hash: adaptedValues.hashes_MD5,
-        });
-      }
-      if (adaptedValues['hashes_SHA-1'].length > 0) {
-        adaptedValues.hashes.push({
-          algorithm: 'SHA-1',
-          hash: adaptedValues['hashes_SHA-1'],
-        });
-      }
-      if (adaptedValues['hashes_SHA-256'].length > 0) {
-        adaptedValues.hashes.push({
-          algorithm: 'SHA-256',
-          hash: adaptedValues['hashes_SHA-256'],
-        });
-      }
-      if (adaptedValues['hashes_SHA-512'].length > 0) {
-        adaptedValues.hashes.push({
-          algorithm: 'SHA-512',
-          hash: adaptedValues['hashes_SHA-512'],
-        });
-      }
-    }
-    adaptedValues = pipe(
-      dissoc('x_opencti_description'),
-      dissoc('x_opencti_score'),
-      dissoc('createdBy'),
-      dissoc('objectMarking'),
-      dissoc('objectLabel'),
-      dissoc('externalReferences'),
-      dissoc('createIndicator'),
-      dissoc('hashes_MD5'),
-      dissoc('hashes_SHA-1'),
-      dissoc('hashes_SHA-256'),
-      dissoc('hashes_SHA-512'),
-      toPairs,
-      map((n) => (includes(n[0], dateAttributes)
-        ? [n[0], n[1] ? parse(n[1]).format() : null]
-        : n)),
-      map((n) => (includes(n[0], numberAttributes)
-        ? [n[0], n[1] ? parseInt(n[1], 10) : null]
-        : n)),
-      map((n) => (includes(n[0], multipleAttributes)
-        ? [n[0], n[1] ? n[1].split(',') : null]
-        : n)),
-      fromPairs,
-    )(adaptedValues);
-    const observableType = status.type.replace(/(?:^|-|_)(\w)/g, (matches, letter) => letter.toUpperCase());
-    const finalValues = {
-      type: status.type,
-      x_opencti_description:
-        values.x_opencti_description.length > 0
-          ? values.x_opencti_description
-          : null,
-      x_opencti_score: parseInt(values.x_opencti_score, 10),
-      createdBy: propOr(null, 'value', values.createdBy),
-      objectMarking: pluck('value', values.objectMarking),
-      objectLabel: pluck('value', values.objectLabel),
-      externalReferences: pluck('value', values.externalReferences),
-      createIndicator: values.createIndicator,
-      [observableType]: {
-        ...adaptedValues,
-        obsContent: values.obsContent?.value,
-      },
-    };
-    if (values.file) {
-      finalValues.file = values.file;
-    }
 
-    const commit = () => {
-      commitMutation({
-        mutation: stixCyberObservableMutation,
-        variables: finalValues,
-        updater: (store) => insertNode(
-          store,
-          paginationKey,
-          paginationOptions,
-          'stixCyberObservableAdd',
-        ),
-        onError: (error) => {
-          handleErrorInForm(error, setErrors);
-          setSubmitting(false);
-        },
-        setSubmitting,
-        onCompleted: () => {
-          setSubmitting(false);
-          resetForm();
-          localHandleClose();
-        },
-      });
-    };
+    if (adaptedValues) { // Verify not null for DeepScan compliance
+      // Bulk Add Modal was used
+      if (adaptedValues.value && adaptedValues.bulk_value_field && adaptedValues.value === bulkAddMsg) {
+        adaptedValues.value = adaptedValues.bulk_value_field;
+      }
 
-    const valueList = values?.value?.split('\n') || values?.value;
-    if (valueList) {
-    // loop and commit
-      for (const value of valueList) {
-        if (value) {
-          finalValues[observableType] = { value };
+      // Potential dicts
+      if (
+        adaptedValues.hashes_MD5
+        || adaptedValues['hashes_SHA-1']
+        || adaptedValues['hashes_SHA-256']
+        || adaptedValues['hashes_SHA-512']
+      ) {
+        adaptedValues.hashes = [];
+        if (adaptedValues.hashes_MD5.length > 0) {
+          adaptedValues.hashes.push({
+            algorithm: 'MD5',
+            hash: adaptedValues.hashes_MD5,
+          });
         }
+        if (adaptedValues['hashes_SHA-1'].length > 0) {
+          adaptedValues.hashes.push({
+            algorithm: 'SHA-1',
+            hash: adaptedValues['hashes_SHA-1'],
+          });
+        }
+        if (adaptedValues['hashes_SHA-256'].length > 0) {
+          adaptedValues.hashes.push({
+            algorithm: 'SHA-256',
+            hash: adaptedValues['hashes_SHA-256'],
+          });
+        }
+        if (adaptedValues['hashes_SHA-512'].length > 0) {
+          adaptedValues.hashes.push({
+            algorithm: 'SHA-512',
+            hash: adaptedValues['hashes_SHA-512'],
+          });
+        }
+      }
+      adaptedValues = pipe(
+        dissoc('x_opencti_description'),
+        dissoc('x_opencti_score'),
+        dissoc('createdBy'),
+        dissoc('objectMarking'),
+        dissoc('objectLabel'),
+        dissoc('externalReferences'),
+        dissoc('createIndicator'),
+        dissoc('hashes_MD5'),
+        dissoc('hashes_SHA-1'),
+        dissoc('hashes_SHA-256'),
+        dissoc('hashes_SHA-512'),
+        toPairs,
+        map((n) => (includes(n[0], dateAttributes)
+          ? [n[0], n[1] ? parse(n[1]).format() : null]
+          : n)),
+        map((n) => (includes(n[0], numberAttributes)
+          ? [n[0], n[1] ? parseInt(n[1], 10) : null]
+          : n)),
+        map((n) => (includes(n[0], multipleAttributes)
+          ? [n[0], n[1] ? n[1].split(',') : null]
+          : n)),
+        fromPairs,
+      )(adaptedValues);
+      const observableType = status.type.replace(/(?:^|-|_)(\w)/g, (matches, letter) => letter.toUpperCase());
+      const finalValues = {
+        type: status.type,
+        x_opencti_description:
+          values.x_opencti_description.length > 0
+            ? values.x_opencti_description
+            : null,
+        x_opencti_score: parseInt(values.x_opencti_score, 10),
+        createdBy: propOr(null, 'value', values.createdBy),
+        objectMarking: pluck('value', values.objectMarking),
+        objectLabel: pluck('value', values.objectLabel),
+        externalReferences: pluck('value', values.externalReferences),
+        createIndicator: values.createIndicator,
+        [observableType]: {
+          ...adaptedValues,
+          obsContent: values.obsContent?.value,
+        },
+      };
+      if (values.file) {
+        finalValues.file = values.file;
+      }
+
+      const commit = () => {
+        commitMutation({
+          mutation: stixCyberObservableMutation,
+          variables: finalValues,
+          updater: (store) => insertNode(
+            store,
+            paginationKey,
+            paginationOptions,
+            'stixCyberObservableAdd',
+          ),
+          onError: (error) => {
+            handleErrorInForm(error, setErrors);
+            setSubmitting(false);
+          },
+          setSubmitting,
+          onCompleted: () => {
+            setSubmitting(false);
+            resetForm();
+            localHandleClose();
+          },
+        });
+      };
+
+      const valueList = values?.value?.split('\n') || values?.value;
+      if (valueList) {
+      // loop and commit
+        for (const value of valueList) {
+          if (value) {
+            finalValues[observableType] = { value };
+          }
+          commit();
+        }
+      } else {
         commit();
       }
-    } else {
-      commit();
     }
   };
 
@@ -389,6 +400,85 @@ const StixCyberObservableCreation = ({
     );
   };
 
+  function BulkAddModal(props) {
+    const [openBulkModal, setOpenBulkModal] = React.useState(false);
+    const handleOpenBulkModal = () => {
+      setOpenBulkModal(true);
+    };
+    const handleCloseBulkModal = () => {
+      setOpenBulkModal(false);
+      const bulk_value_field = document.getElementById('bulk_value_field');
+      const generic_value_field = document.getElementById('generic_value_field');
+      if (bulk_value_field != null && bulk_value_field.value != null && bulk_value_field.value.length > 0) {
+        props.setValue('value', bulkAddMsg);
+        generic_value_field.disabled = true;
+      } else {
+        props.setValue('value', '');
+        generic_value_field.disabled = false;
+      }
+    };
+    const localHandleCancelClearBulkModal = () => {
+      setOpenBulkModal(false);
+      const generic_value_field = document.getElementById('generic_value_field');
+      generic_value_field.disabled = false;
+      props.setValue('value', '');
+      props.setValue('bulk_value_field', '');
+    };
+    return (
+      <React.Fragment>
+        <IconButton
+          onClick={handleOpenBulkModal}
+          size="large"
+          color="primary" style={{ float: 'right' }}
+        >
+          <TextFieldsOutlined />
+        </IconButton>
+        <Dialog
+          PaperProps={{ elevation: 3 }}
+          open={openBulkModal}
+          onClose={handleCloseBulkModal}
+          fullWidth={true}
+        >
+          <DialogTitle>{t_i18n('Bulk Observable Creation')}</DialogTitle>
+          <DialogContent style={{ marginTop: 0, paddingTop: 0 }}>
+            <Typography id="add-bulk-observable-instructions" variant="subtitle1" component="subtitle1" style={{ whiteSpace: 'pre-line' }}>
+              <div style={{ border: '2px solid #FFA500', paddingLeft: 10 }}>
+                {t_i18n('Observables listed must be of the same type.')}
+                <br/>
+                {t_i18n('One Observable per line.')}
+              </div>
+            </Typography>
+            <Typography style={{ float: 'left', marginTop: 10 }}>
+              {t_i18n('Bulk Content')}
+            </Typography>
+            <Field
+              component={TextField}
+              id="bulk_value_field"
+              variant="standard"
+              key="bulk_value_field"
+              name="bulk_value_field"
+              fullWidth={true}
+              multiline={true}
+              rows="5"
+            />
+            <DialogActions>
+              <Button onClick={localHandleCancelClearBulkModal}>
+                {t_i18n('Cancel')}
+              </Button>
+              <Button color="secondary" onClick={handleCloseBulkModal}>
+                {t_i18n('Continue')}
+              </Button>
+            </DialogActions>
+          </DialogContent>
+        </Dialog>
+      </React.Fragment>
+    );
+  }
+
+  BulkAddModal.propTypes = {
+    setValue: PropTypes.func,
+  };
+
   const renderForm = () => {
     return (
       <QueryRenderer
@@ -420,8 +510,6 @@ const StixCyberObservableCreation = ({
               ),
             )(props.schemaAttributeNames.edges);
             for (const attribute of attributes) {
-              // eslint-disable-next-line no-console
-              console.log(`attribute ===> ${JSON.stringify(attribute, null, 4)}`);
               if (isVocabularyField(status.type, attribute.value)) {
                 initialValues[attribute.value] = null;
               } else if (includes(attribute.value, dateAttributes)) {
@@ -586,28 +674,27 @@ const StixCyberObservableCreation = ({
                         }
                         if (attribute.value === 'value') {
                           return (
-                            <>
+                            <div key={attribute.value}>
                               <Typography style={{ float: 'left', marginTop: 20 }}>
                                 {attribute.value}
                               </Typography>
                               <Tooltip title="Copy/paste text content">
-                                <IconButton
-                                  size="large"
-                                  color="primary" style={{ float: 'right' }}
-                                >
-                                  <TextFieldsOutlined />
-                                </IconButton>
+                                <BulkAddModal
+                                  setValue={(field_name, new_value) => setFieldValue(field_name, new_value)}
+                                />
                               </Tooltip>
                               <Field
+                                id="generic_value_field"
+                                disabled={false}
                                 component={TextField}
                                 variant="standard"
                                 key={attribute.value}
                                 name={attribute.value}
                                 fullWidth={true}
                                 multiline={true}
-                                rows="3"
+                                rows="1"
                               />
-                            </>
+                            </div>
                           );
                         }
                         return (
