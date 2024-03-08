@@ -8,13 +8,13 @@ import { isRuntimeSortEnable, searchEngineVersion } from '../database/engine';
 import { getRabbitMQVersion } from '../database/rabbitmq';
 import { ENTITY_TYPE_GROUP, ENTITY_TYPE_SETTINGS } from '../schema/internalObject';
 import { isUserHasCapability, SETTINGS_SET_ACCESSES, SYSTEM_USER } from '../utils/access';
-import { storeLoadById } from '../database/middleware-loader';
+import { internalLoadById, storeLoadById } from '../database/middleware-loader';
 import { INTERNAL_SECURITY_PROVIDER, PROVIDERS } from '../config/providers';
 import { publishUserAction } from '../listener/UserActionListener';
 import { getEntityFromCache } from '../database/cache';
 import { now } from '../utils/format';
 import { generateInternalId } from '../schema/identifier';
-import { UnsupportedError } from '../config/errors';
+import { ForbiddenAccess, UnsupportedError } from '../config/errors';
 import { isEmptyField, isNotEmptyField } from '../database/utils';
 
 export const getMemoryStatistics = () => {
@@ -196,4 +196,16 @@ export const getCriticalAlerts = async (context, user) => {
 
   // no alert
   return [];
+};
+
+export const getMaxMarkings = async (context, user) => {
+  if (!isUserHasCapability(user, SETTINGS_SET_ACCESSES)) {
+    throw ForbiddenAccess();
+  }
+  const settings = await getEntityFromCache(context, user, ENTITY_TYPE_SETTINGS);
+  const { platform_data_sharing_max_markings } = settings;
+  if (!platform_data_sharing_max_markings) {
+    return [];
+  }
+  return await Promise.all(platform_data_sharing_max_markings.map((id) => internalLoadById(context, user, id)));
 };

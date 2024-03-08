@@ -45,7 +45,7 @@ export const getWidgetArguments = async (
   const user = {
     ...platformUser,
     origin: { user_id: platformUser.id, referer: 'public-dashboard' },
-    allowed_marking: computeAvailableMarkings(allowed_markings, allMarkings), // TODO what if user is downgraded ??
+    allowed_marking: computeAvailableMarkings(allowed_markings, allMarkings),
     capabilities: [accessKnowledgeCapability]
   };
 
