@@ -16,7 +16,7 @@ const stixRelationshipsTimelineStixRelationshipQuery = graphql`
     $toId: [String]
     $fromTypes: [String]
     $toTypes: [String]
-    $first: Int!
+    $first: Int
     $orderBy: StixRelationshipsOrdering
     $orderMode: OrderingMode
     $filters: FilterGroup

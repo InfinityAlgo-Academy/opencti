@@ -14,7 +14,7 @@ export const stixRelationshipsListSearchQuery = graphql`
     $fromId: [String]
     $toId: [String]
     $relationship_type: [String]
-    $count: Int!
+    $count: Int
     $filters: FilterGroup
     $dynamicFrom: FilterGroup
     $dynamicTo: FilterGroup
@@ -49,7 +49,7 @@ const stixRelationshipsListQuery = graphql`
     $toId: [String]
     $fromTypes: [String]
     $toTypes: [String]
-    $first: Int!
+    $first: Int
     $orderBy: StixRelationshipsOrdering
     $orderMode: OrderingMode
     $filters: FilterGroup
