@@ -31,4 +31,8 @@ export default class ReportPage {
   getItemFromList(name: string) {
     return this.page.getByRole('link', { name }).first();
   }
+
+  getMenuReport() {
+    return this.page.getByLabel('Menu report');
+  }
 }

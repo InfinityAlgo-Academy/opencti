@@ -42,6 +42,7 @@ const ReportPopover = ({ id }) => {
   return (
     <>
       <ToggleButton
+        aria-label="Menu report"
         value="popover"
         size="small"
         onClick={handleOpen}
