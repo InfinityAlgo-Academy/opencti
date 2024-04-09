@@ -61,9 +61,12 @@ const DeleteOperationPopover: React.FC<DeleteOperationPopoverProps> = ({ mainEnt
         handleClose();
       },
       onError: (error) => {
-        // TODO: utilities or hook to turn any relay error to mlessaging display
+        // TODO: utilities or hook to turn any relay error to messaging display
         const { errors } = (error as unknown as RelayError).res;
         MESSAGING$.notifyError(errors.at(0)?.message);
+      },
+      updater: (store) => {
+        deleteNode(store, 'Pagination_deleteOperations', paginationOptions, mainEntityId);
       },
     });
   };

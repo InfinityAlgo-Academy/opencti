@@ -44,11 +44,30 @@ interface DeleteOperationLineComponentProps {
   dataColumns: DataColumns;
   node: DeleteOperationLine_node$data;
   paginationOptions: DeleteOperationsLinesPaginationQuery$variables;
+  selectedElements: Record<string, DeleteOperationLine_node$data>;
+  deSelectedElements: Record<string, DeleteOperationLine_node$data>;
+  onToggleEntity: (
+    entity: DeleteOperationLine_node$data,
+    event?: React.SyntheticEvent
+  ) => void;
+  selectAll: boolean;
+  onToggleShiftEntity: (
+    index: number,
+    entity: DeleteOperationLine_node$data,
+    event?: React.SyntheticEvent
+  ) => void;
+  index: number;
 }
 
 const DeleteOperationLineComponent: React.FC<DeleteOperationLineComponentProps> = ({
-  dataColumns,
   node,
+  dataColumns,
+  onToggleEntity,
+  selectedElements,
+  deSelectedElements,
+  selectAll,
+  onToggleShiftEntity,
+  index,
   paginationOptions,
 }) => {
   const classes = useStyles();
@@ -59,6 +78,23 @@ const DeleteOperationLineComponent: React.FC<DeleteOperationLineComponentProps> 
       divider={true}
       button={true}
     >
+      <ListItemIcon
+        classes={{ root: classes.itemIcon }}
+        style={{ minWidth: 40 }}
+        onClick={(event) => (event.shiftKey
+          ? onToggleShiftEntity(index, node, event)
+          : onToggleEntity(node, event))
+        }
+      >
+        <Checkbox
+          edge="start"
+          checked={
+            (selectAll && !(node.id in (deSelectedElements || {})))
+            || node.id in (selectedElements || {})
+          }
+          disableRipple={true}
+        />
+      </ListItemIcon>
       <ListItemIcon classes={{ root: classes.itemIcon }}>
         <ItemIcon type={node.main_entity_type} />
       </ListItemIcon>
@@ -92,7 +128,7 @@ const DeleteOperationLineComponent: React.FC<DeleteOperationLineComponentProps> 
           </div>
         }
       />
-      <ListItemSecondaryAction>
+      <ListItemSecondaryAction >
         <DeleteOperationPopover
           mainEntityId={node.id}
           deletedCount={node.deleted_elements.length}
@@ -109,6 +145,7 @@ export const DeleteOperationLine = createFragmentContainer(
     node: graphql`
       fragment DeleteOperationLine_node on DeleteOperation {
         id
+        entity_type
         main_entity_name
         main_entity_type
         deletedBy {

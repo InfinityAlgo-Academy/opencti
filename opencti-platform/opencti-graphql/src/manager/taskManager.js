@@ -56,9 +56,19 @@ import { promoteObservableToIndicator } from '../domain/stixCyberObservable';
 import { promoteIndicatorToObservable } from '../modules/indicator/indicator-domain';
 import { askElementEnrichmentForConnector } from '../domain/stixCoreObject';
 import { RELATION_GRANTED_TO, RELATION_OBJECT } from '../schema/stixRefRelationship';
-import { ACTION_TYPE_DELETE, ACTION_TYPE_SHARE, ACTION_TYPE_UNSHARE, TASK_TYPE_LIST, TASK_TYPE_QUERY, TASK_TYPE_RULE } from '../domain/backgroundTask-common';
+import {
+  ACTION_TYPE_DELETE,
+  ACTION_TYPE_COMPLETE_DELETE,
+  ACTION_TYPE_RESTORE,
+  ACTION_TYPE_SHARE,
+  ACTION_TYPE_UNSHARE,
+  TASK_TYPE_LIST,
+  TASK_TYPE_QUERY,
+  TASK_TYPE_RULE
+} from '../domain/backgroundTask-common';
 import { validateUpdatableAttribute } from '../schema/schema-validator';
 import { schemaRelationsRefDefinition } from '../schema/schema-relationsRef';
+import { processDelete, restoreDelete } from '../modules/deleteOperation/deleteOperation-domain';
 
 // Task manager responsible to execute long manual tasks
 // Each API will start is task manager.
@@ -194,6 +204,12 @@ const generatePatch = (field, values, type) => {
 
 const executeDelete = async (context, user, element) => {
   await deleteElementById(context, user, element.internal_id, element.entity_type);
+};
+const executeCompleteDelete = async (context, user, element) => {
+  await processDelete(context, user, element.internal_id);
+};
+const executeRestore = async (context, user, element) => {
+  await restoreDelete(context, user, element.internal_id);
 };
 const executeAdd = async (context, user, actionContext, element) => {
   const { field, type: contextType, values } = actionContext;
@@ -390,6 +406,12 @@ const executeProcessing = async (context, user, job) => {
         try {
           if (type === ACTION_TYPE_DELETE) {
             await executeDelete(context, user, element);
+          }
+          if (type === ACTION_TYPE_COMPLETE_DELETE) {
+            await executeCompleteDelete(context, user, element);
+          }
+          if (type === ACTION_TYPE_RESTORE) {
+            await executeRestore(context, user, element);
           }
           if (type === ACTION_TYPE_ADD) {
             await executeAdd(context, user, actionContext, element);

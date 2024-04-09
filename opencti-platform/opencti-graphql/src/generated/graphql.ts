@@ -1143,12 +1143,14 @@ export type BackgroundTaskActionInput = {
 
 export enum BackgroundTaskActionType {
   Add = 'ADD',
+  CompleteDelete = 'COMPLETE_DELETE',
   Delete = 'DELETE',
   Enrichment = 'ENRICHMENT',
   Merge = 'MERGE',
   Promote = 'PROMOTE',
   Remove = 'REMOVE',
   Replace = 'REPLACE',
+  Restore = 'RESTORE',
   RuleElementRescan = 'RULE_ELEMENT_RESCAN',
   Share = 'SHARE',
   Unshare = 'UNSHARE'
