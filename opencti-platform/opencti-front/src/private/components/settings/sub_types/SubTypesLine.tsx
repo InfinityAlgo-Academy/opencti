@@ -45,6 +45,7 @@ const subTypesLinesFragment = graphql`
     id
     label
     workflowEnabled
+    overridable
     settings {
       id
       enforce_reference
