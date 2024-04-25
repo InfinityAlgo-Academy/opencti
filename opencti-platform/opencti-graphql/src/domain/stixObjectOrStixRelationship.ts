@@ -1,16 +1,24 @@
+import { v4 as uuid } from 'uuid';
 import { elLoadById } from '../database/engine';
 import { READ_PLATFORM_INDICES, UPDATE_OPERATION_ADD, UPDATE_OPERATION_REMOVE } from '../database/utils';
 import { storeLoadById } from '../database/middleware-loader';
 import { ABSTRACT_STIX_REF_RELATIONSHIP } from '../schema/general';
 import { FunctionalError, UnsupportedError } from '../config/errors';
-import { isStixRefRelationship } from '../schema/stixRefRelationship';
+import { isStixRefRelationship, RELATION_CREATED_BY, RELATION_OBJECT_ASSIGNEE, RELATION_OBJECT_PARTICIPANT } from '../schema/stixRefRelationship';
 import { buildRelationData, storeLoadByIdWithRefs, transformPatchToInput, updateAttributeFromLoadedWithRefs, validateCreatedBy } from '../database/middleware';
 import { notify } from '../database/redis';
 import { BUS_TOPICS } from '../config/conf';
 import type { AuthContext, AuthUser } from '../types/user';
-import type { StixRefRelationshipAddInput, StixRefRelationshipsAddInput } from '../generated/graphql';
+import type { StixRefRelationshipAddInput, StixRefRelationshipsAddInput, TriggerLiveAddInput } from '../generated/graphql';
+import { TriggerEventType, TriggerType } from '../generated/graphql';
 import type { BasicStoreObject } from '../types/store';
 import { schemaRelationsRefDefinition } from '../schema/schema-relationsRef';
+import { type BasicStoreEntityTrigger, ENTITY_TYPE_TRIGGER } from '../modules/notification/notification-types';
+import { getEntitiesListFromCache } from '../database/cache';
+import { SYSTEM_USER } from '../utils/access';
+import { addTrigger } from '../modules/notification/notification-domain';
+import { extractEntityRepresentativeName } from '../database/entity-representative';
+import { STATIC_NOTIFIER_UI } from '../modules/notifier/notifier-statics';
 
 type BusTopicsKeyType = keyof typeof BUS_TOPICS;
 
@@ -48,8 +56,30 @@ export const stixObjectOrRelationshipAddRefRelation = async (
 ): Promise<any> => { // TODO remove any when all resolvers in ts
   const to = await findById(context, user, input.toId);
 
-  if (input.relationship_type === 'created-by') {
+  if (input.relationship_type === RELATION_CREATED_BY) {
     await validateCreatedBy(context, user, input.toId);
+  } else if ([RELATION_OBJECT_ASSIGNEE, RELATION_OBJECT_PARTICIPANT].includes(input.relationship_type)) {
+    const triggers = await getEntitiesListFromCache(context, SYSTEM_USER, ENTITY_TYPE_TRIGGER) as BasicStoreEntityTrigger[];
+    const existingInstanceTrigger = triggers.some((trigger) => (
+      trigger.instance_trigger
+      && trigger.authorized_members.some(({ id }) => id === input.toId)
+      && trigger.filters?.includes(stixObjectOrRelationshipId)
+    ));
+
+    const naming = input.relationship_type === RELATION_OBJECT_ASSIGNEE ? 'assignee' : 'participant';
+    if (!existingInstanceTrigger) {
+      const from = await findById(context, user, stixObjectOrRelationshipId);
+      const triggerInput: TriggerLiveAddInput = {
+        description: `Automatic trigger for the ${naming}`,
+        event_types: [TriggerEventType.Update, TriggerEventType.Delete],
+        instance_trigger: true,
+        name: `Automatic trigger for the ${naming} of ${extractEntityRepresentativeName(from)}`,
+        recipients: [input.toId],
+        notifiers: [STATIC_NOTIFIER_UI],
+        filters: `{ "mode": "and", "filters": [{ "id": "${uuid()}", "key": ["connectedToId"], "values": ["${stixObjectOrRelationshipId}"], "operator": "eq", "mode": "or" }], "filterGroups": []}`
+      };
+      await addTrigger(context, SYSTEM_USER, triggerInput, TriggerType.Live);
+    }
   }
 
   const patchedFrom = await patchElementWithRefRelationships(context, user, stixObjectOrRelationshipId, type, input.relationship_type, [input.toId], UPDATE_OPERATION_ADD, opts);

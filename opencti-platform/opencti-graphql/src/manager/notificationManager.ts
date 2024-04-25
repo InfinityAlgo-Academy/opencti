@@ -8,7 +8,7 @@ import conf, { booleanConf, logApp } from '../config/conf';
 import { FunctionalError, TYPE_LOCK_ERROR } from '../config/errors';
 import { executionContext, INTERNAL_USERS, isUserCanAccessStixElement, isUserCanAccessStoreElement, SYSTEM_USER } from '../utils/access';
 import type { DataEvent, SseEvent, StreamNotifEvent, UpdateEvent } from '../types/event';
-import type { AuthContext, AuthUser } from '../types/user';
+import type { AuthContext, AuthUser, UserOrigin } from '../types/user';
 import { utcDate } from '../utils/format';
 import { EVENT_TYPE_CREATE, EVENT_TYPE_DELETE, EVENT_TYPE_UPDATE } from '../database/utils';
 import type { StixCoreObject, StixObject, StixRelationshipObject } from '../types/stix-common';
@@ -66,12 +66,15 @@ export interface KnowledgeNotificationEvent extends StreamNotifEvent {
   type: 'live'
   targets: Array<{ user: NotificationUser, type: string, message: string }>
   data: StixObject
+  streamMessage?: string
+  origin: Partial<UserOrigin>
 }
 
 export interface ActivityNotificationEvent extends StreamNotifEvent {
   type: 'live'
   targets: Array<{ user: NotificationUser, type: string, message: string }>
   data: Partial<{ id: string }>
+  origin: Partial<UserOrigin>
 }
 
 export interface DigestEvent extends StreamNotifEvent {
@@ -503,7 +506,7 @@ const notificationLiveStreamHandler = async (streamEvents: Array<SseEvent<DataEv
     const liveNotifications = await getLiveNotifications(context);
     for (let index = 0; index < streamEvents.length; index += 1) {
       const streamEvent = streamEvents[index];
-      const { data: { data } } = streamEvent;
+      const { data: { data, message: streamMessage, origin } } = streamEvent;
       // For each event we need to check ifs
       for (let notifIndex = 0; notifIndex < liveNotifications.length; notifIndex += 1) {
         const { users, trigger }: ResolvedLive = liveNotifications[notifIndex];
@@ -511,7 +514,7 @@ const notificationLiveStreamHandler = async (streamEvents: Array<SseEvent<DataEv
         const targets = await buildTargetEvents(context, users, streamEvent, trigger);
         if (targets.length > 0) {
           const version = EVENT_NOTIFICATION_VERSION;
-          const notificationEvent: KnowledgeNotificationEvent = { version, notification_id, type, targets, data };
+          const notificationEvent: KnowledgeNotificationEvent = { version, notification_id, type, targets, data, streamMessage, origin };
           await storeNotificationEvent(context, notificationEvent);
         }
         // search side events for instance_trigger
@@ -519,7 +522,7 @@ const notificationLiveStreamHandler = async (streamEvents: Array<SseEvent<DataEv
           const sideTargets = await buildTargetEvents(context, users, streamEvent, trigger, true);
           if (sideTargets.length > 0) {
             const version = EVENT_NOTIFICATION_VERSION;
-            const notificationEvent: KnowledgeNotificationEvent = { version, notification_id, type, targets: sideTargets, data };
+            const notificationEvent: KnowledgeNotificationEvent = { version, notification_id, type, targets: sideTargets, data, streamMessage, origin };
             await storeNotificationEvent(context, notificationEvent);
           }
         }
