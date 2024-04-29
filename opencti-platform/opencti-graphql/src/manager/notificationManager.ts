@@ -72,7 +72,7 @@ export interface KnowledgeNotificationEvent extends StreamNotifEvent {
 
 export interface ActivityNotificationEvent extends StreamNotifEvent {
   type: 'live'
-  targets: Array<{ user: NotificationUser, type: string, message: string }>
+  targets: Array<{ user: NotificationUser, type: string, message: string, event_access: string }>
   data: Partial<{ id: string }>
   origin: Partial<UserOrigin>
 }

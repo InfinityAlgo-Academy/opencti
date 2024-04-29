@@ -42,8 +42,13 @@ const DEFAULT_ACTIVITY = {
       },
     ]
   },
-  type: 'update',
-  message: '`admin` updates `name` for report `Some Name`'
+  version: '1',
+  type: 'file',
+  event_access: 'extended',
+  event_scope: 'read',
+  status: 'success',
+  message: ' reads from `Test` the file `2024-04-29T10%3A24%3A32.423Z_PAP%3ACLEAR_(ExportFileStix)_Report-Test_full.json`',
+  data: {},
 };
 
 export const MOCK_NOTIFICATIONS: Record<string, NotificationData[]> = {

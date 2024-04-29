@@ -165,7 +165,7 @@ const processLiveNotificationEvent = async (
   const { targets, data: instance, origin: { user_id } } = event;
   const streamUser = (await getEntitiesMapFromCache(context, SYSTEM_USER, ENTITY_TYPE_USER)).get(user_id as string) as AuthUser;
   for (let index = 0; index < targets.length; index += 1) {
-    const { user, type, message } = targets[index];
+    const { user, type, message, event_access } = targets[index];
     let notificationMessage = message;
     if (streamUser && (event as KnowledgeNotificationEvent).streamMessage) {
       const { streamMessage } = event as KnowledgeNotificationEvent;
@@ -174,7 +174,7 @@ const processLiveNotificationEvent = async (
         notificationMessage = `${message} - ${streamBuiltMessage}`;
       }
     }
-    const data = [{ notification_id: event.notification_id, instance, type, message: notificationMessage }];
+    const data = [{ notification_id: event.notification_id, instance, type, message: notificationMessage, event_access, user: streamUser }];
     await processNotificationEvent(context, notificationMap, event.notification_id, user, data);
   }
 };

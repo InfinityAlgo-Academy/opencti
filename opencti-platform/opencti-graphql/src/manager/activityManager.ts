@@ -54,7 +54,7 @@ const alertingTriggers = async (context: AuthContext, events: Array<SseEvent<Act
     // event_scope: 'read' | 'create' | 'update' | 'delete' | 'merge' | 'login' | 'logout' | 'unauthorized' | 'export' | 'import' | 'enrich'
     // status: 'error' | 'success'
     const event = events[index];
-    const { message, data, origin, event_scope } = event.data;
+    const { message, data, origin, event_scope, event_access } = event.data;
     let sourceUser = origin.user_id ? platformUsers.get(origin.user_id) : SYSTEM_USER;
     if (ENABLED_DEMO_MODE) sourceUser = REDACTED_USER;
     for (let triggerIndex = 0; triggerIndex < triggers.length; triggerIndex += 1) {
@@ -64,11 +64,11 @@ const alertingTriggers = async (context: AuthContext, events: Array<SseEvent<Act
       // Filter the event
       const isMatchFilter = triggerFilters ? await isActivityEventMatchFilterGroup(event.data, triggerFilters) : true;
       if (isMatchFilter) {
-        const targets: Array<{ user: NotificationUser, type: string, message: string }> = [];
+        const targets: ActivityNotificationEvent['targets'] = [];
         const version = EVENT_NOTIFICATION_VERSION;
         for (let indexUser = 0; indexUser < users.length; indexUser += 1) {
           const user = users[indexUser];
-          targets.push({ user: convertToNotificationUser(user, notifiers), type: event_scope, message: `\`${sourceUser?.name}\` ${message}` });
+          targets.push({ user: convertToNotificationUser(user, notifiers), type: event_scope, message: `\`${sourceUser?.name}\` ${message}`, event_access });
         }
         const notificationEvent: ActivityNotificationEvent = { version, notification_id, type: 'live', targets, data, origin };
         await storeNotificationEvent(context, notificationEvent);
