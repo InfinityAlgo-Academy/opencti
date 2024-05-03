@@ -2,25 +2,19 @@
 // TODO Remove this when V6
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-import React, { useMemo } from 'react';
-import { graphql, useSubscription } from 'react-relay';
+import React, { useEffect, useMemo } from 'react';
+import { graphql, useLazyLoadQuery, usePreloadedQuery, useQueryLoader, useSubscription } from 'react-relay';
 import { Link, Route, Routes, useParams, useLocation, Navigate } from 'react-router-dom';
-import { GraphQLSubscriptionConfig } from 'relay-runtime';
 import Box from '@mui/material/Box';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import StixCoreObjectSimulationResult from '../../common/stix_core_objects/StixCoreObjectSimulationResult';
-import { QueryRenderer } from '../../../../relay/environment';
 import Report from './Report';
-import { RootReportSubscription } from './__generated__/RootReportSubscription.graphql';
-import { RootReportQuery$data } from './__generated__/RootReportQuery.graphql';
 import ReportPopover from './ReportPopover';
 import ReportKnowledge from './ReportKnowledge';
 import ContainerHeader from '../../common/containers/ContainerHeader';
 import Loader from '../../../../components/Loader';
 import ContainerStixDomainObjects from '../../common/containers/ContainerStixDomainObjects';
 import ContainerStixCyberObservables from '../../common/containers/ContainerStixCyberObservables';
-import ErrorNotFound from '../../../../components/ErrorNotFound';
 import StixCoreObjectFilesAndHistory from '../../common/stix_core_objects/StixCoreObjectFilesAndHistory';
 import StixDomainObjectContent from '../../common/stix_domain_objects/StixDomainObjectContent';
 import Breadcrumbs from '../../../../components/Breadcrumbs';
@@ -44,6 +38,16 @@ const subscription = graphql`
     }
   }
 `;
+
+function useRootReportSubscription(
+  id: string,
+) {
+  const config = useMemo(() => ({
+    subscription,
+    variables: { id },
+  }), [id]);
+  return useSubscription(config);
+}
 
 const reportQuery = graphql`
   query RootReportQuery($id: String!) {
@@ -73,195 +77,200 @@ const reportQuery = graphql`
   }
 `;
 
-const RootReport = () => {
-  const { reportId } = useParams() as { reportId: string };
-  const subConfig = useMemo<
-  GraphQLSubscriptionConfig<RootReportSubscription>
-  >(
-    () => ({
-      subscription,
-      variables: { id: reportId },
-    }),
-    [reportId],
-  );
-  const location = useLocation();
+const RenderRootReport: FunctionComponent<{ queryRef: PreloadedQuery<RootStixCyberObservableQuery> }> = ({ queryRef }) => {
   const enableReferences = useIsEnforceReference('Report') && !useGranted([BYPASSREFERENCE]);
+  const { report, connectorsForExport, connectorsForImport } = usePreloadedQuery(
+    reportQuery,
+    queryRef,
+  );
+  return (
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <Report report={report} />
+        }
+      />
+      <Route
+        path="/entities"
+        element={
+          <ContainerStixDomainObjects
+            container={report}
+            enableReferences={enableReferences}
+          />
+        }
+      />
+      <Route
+        path="/observables"
+        element={
+          <ContainerStixCyberObservables
+            container={report}
+            enableReferences={enableReferences}
+          />
+        }
+      />
+      <Route
+        path="/knowledge"
+        element={<Navigate to={`/dashboard/analyses/reports/${report.id}/knowledge/graph`} />}
+      />
+      <Route
+        path="/content"
+        element={
+          <StixDomainObjectContent
+            stixDomainObject={report}
+          />
+        }
+      />
+      <Route
+        path="/knowledge/*"
+        element={
+          <ReportKnowledge
+            report={report}
+            enableReferences={enableReferences}
+          />
+        }
+      />
+      <Route
+        path="/files"
+        element={
+          <StixCoreObjectFilesAndHistory
+            id={report.id}
+            connectorsExport={connectorsForExport}
+            connectorsImport={connectorsForImport}
+            entity={report}
+            withoutRelations={true}
+            bypassEntityId={true}
+          />
+        }
+      />
+    </Routes>
+  );
+};
+
+const ReportHeader = () => {
   const { t_i18n } = useFormatter();
-  useSubscription(subConfig);
+  const { pathname } = useLocation();
+  const { reportId } = useParams();
+  const { report } = useLazyLoadQuery(
+    reportQuery,
+    { id: reportId },
+  );
+  const isOverview = pathname === `/dashboard/analyses/reports/${report.id}`;
   return (
     <>
-      <QueryRenderer
-        query={reportQuery}
-        variables={{ id: reportId }}
-        render={({ props }: { props: RootReportQuery$data }) => {
-          if (props) {
-            if (props.report) {
-              const { report } = props;
-              let paddingRight = 0;
-              const isOverview = location.pathname === `/dashboard/analyses/reports/${report.id}`;
-              if (
-                location.pathname.includes(
-                  `/dashboard/analyses/reports/${report.id}/entities`,
-                )
-                      || location.pathname.includes(
-                        `/dashboard/analyses/reports/${report.id}/observables`,
-                      )
-              ) {
-                paddingRight = 250;
-              }
-              if (
-                location.pathname.includes(
-                  `/dashboard/analyses/reports/${report.id}/content`,
-                )
-              ) {
-                paddingRight = 350;
-              }
-              return (
-                <div style={{ paddingRight }} data-testid="report-details-page">
-                  <Breadcrumbs variant="object" elements={[
-                    { label: t_i18n('Analyses') },
-                    { label: t_i18n('Reports'), link: '/dashboard/analyses/reports' },
-                    { label: report.name, current: true },
-                  ]}
-                  />
-                  <ContainerHeader
-                    container={report}
-                    PopoverComponent={
-                      <ReportPopover id={reportId} />
-                    }
-                    enableQuickSubscription={true}
-                    enableQuickExport={true}
-                    enableAskAi={true}
-                    overview={isOverview}
-                  />
-                  <Box
-                    sx={{
-                      borderBottom: 1,
-                      borderColor: 'divider',
-                      marginBottom: 4,
-                    }}
-                  >
-                    <Tabs
-                      value={
-                                location.pathname.includes(
-                                  `/dashboard/analyses/reports/${report.id}/knowledge`,
-                                )
-                                  ? `/dashboard/analyses/reports/${report.id}/knowledge`
-                                  : location.pathname
-                              }
-                    >
-                      <Tab
-                        component={Link}
-                        to={`/dashboard/analyses/reports/${report.id}`}
-                        value={`/dashboard/analyses/reports/${report.id}`}
-                        label={t_i18n('Overview')}
-                      />
-                      <Tab
-                        component={Link}
-                        to={`/dashboard/analyses/reports/${report.id}/knowledge/graph`}
-                        value={`/dashboard/analyses/reports/${report.id}/knowledge`}
-                        label={t_i18n('Knowledge')}
-                      />
-                      <Tab
-                        component={Link}
-                        to={`/dashboard/analyses/reports/${report.id}/content`}
-                        value={`/dashboard/analyses/reports/${report.id}/content`}
-                        label={t_i18n('Content')}
-                      />
-                      <Tab
-                        component={Link}
-                        to={`/dashboard/analyses/reports/${report.id}/entities`}
-                        value={`/dashboard/analyses/reports/${report.id}/entities`}
-                        label={t_i18n('Entities')}
-                      />
-                      <Tab
-                        component={Link}
-                        to={`/dashboard/analyses/reports/${report.id}/observables`}
-                        value={`/dashboard/analyses/reports/${report.id}/observables`}
-                        label={t_i18n('Observables')}
-                      />
-                      <Tab
-                        component={Link}
-                        to={`/dashboard/analyses/reports/${report.id}/files`}
-                        value={`/dashboard/analyses/reports/${report.id}/files`}
-                        label={t_i18n('Data')}
-                      />
-                    </Tabs>
-                    {isOverview && (
-                      <StixCoreObjectSimulationResult id={report.id} type="container" />
-                    )}
-                  </Box>
-                  <Routes>
-                    <Route
-                      path="/"
-                      element={
-                        <Report report={report} />
-                      }
-                    />
-                    <Route
-                      path="/entities"
-                      element={
-                        <ContainerStixDomainObjects
-                          container={report}
-                          enableReferences={enableReferences}
-                        />
-                      }
-                    />
-                    <Route
-                      path="/observables"
-                      element={
-                        <ContainerStixCyberObservables
-                          container={report}
-                          enableReferences={enableReferences}
-                        />
-                      }
-                    />
-                    <Route
-                      path="/knowledge"
-                      element={<Navigate
-                        to={`/dashboard/analyses/reports/${reportId}/knowledge/graph`}
-                               />}
-                    />
-                    <Route
-                      path="/content"
-                      element={
-                        <StixDomainObjectContent
-                          stixDomainObject={report}
-                        />
-                      }
-                    />
-                    <Route
-                      path="/knowledge/*"
-                      element={
-                        <ReportKnowledge
-                          report={report}
-                          enableReferences={enableReferences}
-                        />
-                      }
-                    />
-                    <Route
-                      path="/files"
-                      element={
-                        <StixCoreObjectFilesAndHistory
-                          id={reportId}
-                          connectorsExport={props.connectorsForExport}
-                          connectorsImport={props.connectorsForImport}
-                          entity={report}
-                          withoutRelations={true}
-                          bypassEntityId={true}
-                        />
-                      }
-                    />
-                  </Routes>
-                </div>
-              );
-            }
-            return <ErrorNotFound />;
-          }
-          return <Loader />;
-        }}
+      <Breadcrumbs variant="object" elements={[
+        { label: t_i18n('Analyses') },
+        { label: t_i18n('Reports'), link: '/dashboard/analyses/reports' },
+        { label: report.name, current: true },
+      ]}
+      />
+      <ContainerHeader
+        container={report}
+        PopoverComponent={
+          <ReportPopover id={report.id} />
+        }
+        enableQuickSubscription={true}
+        enableQuickExport={true}
+        enableAskAi={true}
+        overview={isOverview}
       />
     </>
+  );
+};
+
+const ReportTabs = () => {
+  const { t_i18n } = useFormatter();
+  const location = useLocation();
+  const { reportId } = useParams();
+  const baseUrl = `/dashboard/analyses/reports/${reportId}`;
+  const linkKnowledge = `${baseUrl}/knowledge`;
+  return (
+    <Tabs
+      sx={{
+        borderBottom: 1,
+        borderColor: 'divider',
+        marginBottom: 4,
+      }}
+      value={
+        location.pathname.includes(linkKnowledge)
+          ? linkKnowledge
+          : location.pathname
+      }
+    >
+      <Tab
+        component={Link}
+        to={`${baseUrl}`}
+        value={`${baseUrl}`}
+        label={t_i18n('Overview')}
+      />
+      <Tab
+        component={Link}
+        to={`${linkKnowledge}/graph`}
+        value={`${linkKnowledge}`}
+        label={t_i18n('Knowledge')}
+      />
+      <Tab
+        component={Link}
+        to={`${baseUrl}/content`}
+        value={`${baseUrl}/content`}
+        label={t_i18n('Content')}
+      />
+      <Tab
+        component={Link}
+        to={`${baseUrl}/entities`}
+        value={`${baseUrl}/entities`}
+        label={t_i18n('Entities')}
+      />
+      <Tab
+        component={Link}
+        to={`${baseUrl}/observables`}
+        value={`${baseUrl}/observables`}
+        label={t_i18n('Observables')}
+      />
+      <Tab
+        component={Link}
+        to={`${baseUrl}/files`}
+        value={`${baseUrl}/files`}
+        label={t_i18n('Data')}
+      />
+    </Tabs>
+  );
+};
+
+const ReportContent = () => {
+  const { reportId } = useParams();
+  const variables: reportQuery$variables = { id: reportId };
+  useRootReportSubscription(reportId);
+  const [queryRef, fetchLoadQuery] = useQueryLoader<RootreportQuery>(
+    reportQuery,
+  );
+  useEffect(
+    () => {
+      fetchLoadQuery(variables);
+    },
+    [],
+  );
+  return queryRef ? (
+    <React.Suspense fallback={<Loader />}>
+      <RenderRootReport queryRef={queryRef} />
+    </React.Suspense>
+  ) : (<Loader />);
+};
+
+const RootReport = () => {
+  const paddingRight = () => {
+    const { pathname } = useLocation();
+    if (pathname.includes('/entities')) return '250px';
+    if (pathname.includes('/observables')) return '250px';
+    if (pathname.includes('/content')) return '350px';
+    return '0px';
+  };
+  return (
+    <Box sx={{ paddingRight }} data-testid="report-details-page">
+      <ReportHeader />
+      <ReportTabs />
+      <ReportContent />
+    </Box>
   );
 };
 
