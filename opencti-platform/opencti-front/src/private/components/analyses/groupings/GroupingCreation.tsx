@@ -22,7 +22,6 @@ import OpenVocabField from '../../common/form/OpenVocabField';
 import { useFormatter } from '../../../../components/i18n';
 import { insertNode } from '../../../../utils/store';
 import { fieldSpacingContainerStyle } from '../../../../utils/field';
-import { useSchemaCreationValidation } from '../../../../utils/hooks/useEntitySettings';
 import { Option } from '../../common/form/ReferenceField';
 import { GroupingCreationMutation, GroupingCreationMutation$variables } from './__generated__/GroupingCreationMutation.graphql';
 import type { Theme } from '../../../../components/Theme';
@@ -31,6 +30,7 @@ import RichTextField from '../../../../components/fields/RichTextField';
 import CustomFileUploader from '../../common/files/CustomFileUploader';
 import useApiMutation from '../../../../utils/hooks/useApiMutation';
 import CreateEntityControlledDial from '../../../../components/CreateEntityControlledDial';
+import { useDynamicSchemaCreationValidation, useIsMandatoryAttribute, yupShapeConditionalRequired } from '../../../../utils/hooks/useEntitySettings';
 
 // Deprecated - https://mui.com/system/styles/basics/
 // Do not use it for new code.
@@ -97,15 +97,19 @@ export const GroupingCreationForm: FunctionComponent<GroupingFormProps> = ({
   const { t_i18n } = useFormatter();
   const navigate = useNavigate();
   const [mapAfter, setMapAfter] = useState<boolean>(false);
-  const basicShape = {
-    name: Yup.string().trim().min(2).required(t_i18n('This field is required')),
+  const { mandatoryAttributes } = useIsMandatoryAttribute(GROUPING_TYPE);
+  const basicShape = yupShapeConditionalRequired({
+    name: Yup.string().trim().min(2),
     confidence: Yup.number().nullable(),
-    context: Yup.string().trim().required(t_i18n('This field is required')),
+    context: Yup.string(),
     description: Yup.string().nullable(),
     content: Yup.string().nullable(),
-  };
-  const groupingValidator = useSchemaCreationValidation(
-    GROUPING_TYPE,
+    createdBy: Yup.object().nullable(),
+    objectMarking: Yup.array().nullable(),
+    file: Yup.mixed().nullable(),
+  }, mandatoryAttributes);
+  const validator = useDynamicSchemaCreationValidation(
+    mandatoryAttributes,
     basicShape,
   );
   const [commit] = useApiMutation<GroupingCreationMutation>(
@@ -173,19 +177,22 @@ export const GroupingCreationForm: FunctionComponent<GroupingFormProps> = ({
   return (
     <Formik
       initialValues={initialValues}
-      validationSchema={groupingValidator}
+      validationSchema={validator}
+      validateOnChange={false} // Validation will occur on submission, required fields all have *'s
+      validateOnBlur={false} // Validation will occur on submission, required fields all have *'s
       onSubmit={onSubmit}
       onReset={onClose}
     >
-      {({ submitForm, handleReset, isSubmitting, setFieldValue, values }) => (
+      {({ submitForm, handleReset, isSubmitting, setFieldValue, values, errors }) => (
         <Form style={{ margin: '20px 0 20px 0' }}>
           <Field
             component={TextField}
             name="name"
             label={t_i18n('Name')}
+            required={mandatoryAttributes.includes('name')}
             detectDuplicate={['Grouping']}
-            fullWidth
-            askAi
+            fullWidth={true}
+            askAi={true}
           />
           <ConfidenceField
             entityType="Grouping"
@@ -195,6 +202,7 @@ export const GroupingCreationForm: FunctionComponent<GroupingFormProps> = ({
             label={t_i18n('Context')}
             type="grouping-context-ov"
             name="context"
+            required={mandatoryAttributes.includes('context')}
             multiple={false}
             containerStyle={fieldSpacingContainerStyle}
             onChange={setFieldValue}
@@ -203,6 +211,7 @@ export const GroupingCreationForm: FunctionComponent<GroupingFormProps> = ({
             component={MarkdownField}
             name="description"
             label={t_i18n('Description')}
+            required={mandatoryAttributes.includes('description')}
             fullWidth={true}
             multiline={true}
             rows="4"
@@ -213,6 +222,8 @@ export const GroupingCreationForm: FunctionComponent<GroupingFormProps> = ({
             component={RichTextField}
             name="content"
             label={t_i18n('Content')}
+            required={mandatoryAttributes.includes('content')}
+            meta={{ error: errors.content }}
             fullWidth={true}
             style={{
               ...fieldSpacingContainerStyle,
@@ -223,22 +234,26 @@ export const GroupingCreationForm: FunctionComponent<GroupingFormProps> = ({
           />
           <CreatedByField
             name="createdBy"
+            required={mandatoryAttributes.includes('createdBy')}
             style={fieldSpacingContainerStyle}
             setFieldValue={setFieldValue}
           />
           <ObjectLabelField
             name="objectLabel"
+            required={mandatoryAttributes.includes('objectLabel')}
             style={fieldSpacingContainerStyle}
             setFieldValue={setFieldValue}
             values={values.objectLabel}
           />
           <ObjectMarkingField
             name="objectMarking"
+            required={mandatoryAttributes.includes('objectMarking')}
             style={fieldSpacingContainerStyle}
             setFieldValue={setFieldValue}
           />
           <ExternalReferencesField
             name="externalReferences"
+            required={mandatoryAttributes.includes('externalReferences')}
             style={fieldSpacingContainerStyle}
             setFieldValue={setFieldValue}
             values={values.externalReferences}
