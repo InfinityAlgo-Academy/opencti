@@ -32,6 +32,6 @@ export default class ReportPage {
   }
 
   selectAllReports() {
-    return this.page.getByTestId('report-page').getByRole('listitem').getByRole('checkbox').check();
+    return this.page.getByTestId('report-page').getByRole('listitem').getByRole('checkbox').click();
   }
 }
