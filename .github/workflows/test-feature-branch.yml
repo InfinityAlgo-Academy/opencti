@@ -62,7 +62,7 @@ jobs:
       - name: Build into Alpine
         run: |
           export python_short=$(python -V | awk '{ print $2 }' | awk -F. '{ print $1"."$2}')
-          mv /usr/lib/python$python_short/EXTERNALLY-MANAGED /usr/lib/python$python_short/EXTERNALLY-MANAGED.old
+          sudo mv /usr/lib/python$python_short/EXTERNALLY-MANAGED /usr/lib/python$python_short/EXTERNALLY-MANAGED.old
           cd opencti-platform/opencti-front
           yarn install
           yarn build
