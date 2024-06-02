@@ -107,13 +107,11 @@ const sentinelOptions = async (clusterNodes: Partial<SentinelAddress>[]): Promis
     preferredSlaves: conf.get('redis:sentinel_preferred_slaves'),
     sentinels: clusterNodes,
     enableTLSForSentinelMode: conf.get('redis:sentinel_tls') ?? false,
+    failoverDetector: true,
+    sentinelRetryStrategy: (times: number) => {
+      return Math.min(times * 10, 1000);
+    }
   };
-};
-
-export const reconnectOnError = (error: any) => {
-  const targetError = 'READONLY';
-  // Only reconnect when the error starts with "READONLY"
-  return error.message.slice(0, targetError.length) === targetError;
 };
 
 export const createRedisClient = async (provider: string, autoReconnect = false): Promise<Cluster | Redis> => {
@@ -126,10 +124,10 @@ export const createRedisClient = async (provider: string, autoReconnect = false)
     client = new Redis.Cluster(clusterNodes, clusterOpts);
   } else if (redisMode === 'sentinel') {
     const sentinelOpts = await sentinelOptions(clusterNodes);
-    client = new Redis({ ...sentinelOpts, reconnectOnError });
+    client = new Redis(sentinelOpts);
   } else {
     const singleOptions = await redisOptions(autoReconnect);
-    client = new Redis({ ...singleOptions, port: conf.get('redis:port'), host: conf.get('redis:hostname'), reconnectOnError });
+    client = new Redis({ ...singleOptions, port: conf.get('redis:port'), host: conf.get('redis:hostname') });
   }
 
   client.on('close', () => logApp.info(`[REDIS] Redis '${provider}' client closed`));
