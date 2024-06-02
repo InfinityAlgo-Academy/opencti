@@ -82,6 +82,12 @@ export const generateNatMap = (mappings: string[]): Record<string, { host: strin
   return natMap;
 };
 
+export const reconnectOnError = (error: any) => {
+  const targetErrors: string[] = ['READONLY', 'ETIMEDOUT'];
+  // Only reconnect when the error contains the targets errors
+  return targetErrors.filter((element: string) => error.message.split(' ').includes(element)).length > 0;
+};
+
 const clusterOptions = async (): Promise<ClusterOptions> => {
   const redisOpts = await redisOptions();
   return {
@@ -117,13 +123,6 @@ const sentinelOptions = async (clusterNodes: Partial<SentinelAddress>[]): Promis
   };
 };
 
-export const reconnectOnError = (error: any) => {
-  const targetError = 'READONLY';
-  // Only reconnect when the error starts with "READONLY"
-  return error.message.slice(0, targetError.length) === targetError;
-};
-
-
 export const createRedisClient = async (provider: string, autoReconnect = false): Promise<Cluster | Redis> => {
   let client: Cluster | Redis;
   const redisMode: string = conf.get('redis:mode');
@@ -134,7 +133,7 @@ export const createRedisClient = async (provider: string, autoReconnect = false)
     client = new Redis.Cluster(clusterNodes, clusterOpts);
   } else if (redisMode === 'sentinel') {
     const sentinelOpts = await sentinelOptions(clusterNodes);
-    client = new Redis(sentinelOpts);
+    client = new Redis({ ...sentinelOpts, reconnectOnError });
   } else {
     const singleOptions = await redisOptions(autoReconnect);
     client = new Redis({ ...singleOptions, port: conf.get('redis:port'), host: conf.get('redis:hostname') });
