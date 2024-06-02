@@ -110,9 +110,19 @@ const sentinelOptions = async (clusterNodes: Partial<SentinelAddress>[]): Promis
     failoverDetector: true,
     sentinelRetryStrategy: (times: number) => {
       return Math.min(times * 10, 1000);
+    },
+    sentinelReconnectStrategy: (times: number) => {
+      return Math.min(times * 10, 1000);
     }
   };
 };
+
+export const reconnectOnError = (error: any) => {
+  const targetError = 'READONLY';
+  // Only reconnect when the error starts with "READONLY"
+  return error.message.slice(0, targetError.length) === targetError;
+};
+
 
 export const createRedisClient = async (provider: string, autoReconnect = false): Promise<Cluster | Redis> => {
   let client: Cluster | Redis;
