@@ -106,8 +106,6 @@ const sentinelOptions = async (clusterNodes: Partial<SentinelAddress>[]): Promis
     role: conf.get('redis:sentinel_role'),
     preferredSlaves: conf.get('redis:sentinel_preferred_slaves'),
     sentinels: clusterNodes,
-    lazyConnect: true,
-    connectTimeout: 10000,
     sentinelRetryStrategy: (times) => {
       return Math.min(times * 10, 1000);
     },
