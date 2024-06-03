@@ -84,8 +84,12 @@ export const generateNatMap = (mappings: string[]): Record<string, { host: strin
 
 export const reconnectOnError = (error: any) => {
   const targetErrors: string[] = ['READONLY', 'ETIMEDOUT'];
-  // Only reconnect when the error contains the targets errors
-  return targetErrors.filter((element: string) => error.message.split(' ').includes(element)).length > 0;
+  // Force reconnect when the error contains the targets errors
+  if (error && error.message) {
+    logApp.error(`[REDIS] Redis error, will try to reconnect: '${error.message}'`);
+    return targetErrors.filter((element: string) => error.message.split(' ').includes(element)).length > 0;
+  }
+  return false;
 };
 
 const clusterOptions = async (): Promise<ClusterOptions> => {
@@ -113,13 +117,7 @@ const sentinelOptions = async (clusterNodes: Partial<SentinelAddress>[]): Promis
     preferredSlaves: conf.get('redis:sentinel_preferred_slaves'),
     sentinels: clusterNodes,
     enableTLSForSentinelMode: conf.get('redis:sentinel_tls') ?? false,
-    failoverDetector: true,
-    sentinelRetryStrategy: (times: number) => {
-      return Math.min(times * 10, 1000);
-    },
-    sentinelReconnectStrategy: (times: number) => {
-      return Math.min(times * 10, 1000);
-    }
+    failoverDetector: true
   };
 };
 
