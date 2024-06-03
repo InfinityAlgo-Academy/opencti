@@ -117,7 +117,6 @@ const sentinelOptions = async (clusterNodes: Partial<SentinelAddress>[]): Promis
     preferredSlaves: conf.get('redis:sentinel_preferred_slaves'),
     sentinels: clusterNodes,
     enableTLSForSentinelMode: conf.get('redis:sentinel_tls') ?? false,
-    failoverDetector: true
   };
 };
 
