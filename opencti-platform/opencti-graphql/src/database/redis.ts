@@ -112,7 +112,6 @@ const sentinelOptions = async (clusterNodes: Partial<SentinelAddress>[]): Promis
     sentinelReconnectStrategy: (times) => {
       return Math.min(times * 10, 1000);
     },
-    failoverDetector: true,
     enableTLSForSentinelMode: conf.get('redis:sentinel_tls') ?? false,
   };
 };
