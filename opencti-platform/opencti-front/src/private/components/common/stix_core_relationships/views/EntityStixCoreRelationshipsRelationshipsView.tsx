@@ -13,7 +13,8 @@ import Security from '../../../../../utils/Security';
 import { computeTargetStixCyberObservableTypes, computeTargetStixDomainObjectTypes, isStixCyberObservables } from '../../../../../utils/stixTypeUtils';
 import { PaginationLocalStorage } from '../../../../../utils/hooks/useLocalStorage';
 import { DataColumns, PaginationOptions } from '../../../../../components/list_lines';
-import { FilterGroup, isFilterGroupNotEmpty, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../../utils/filters/filtersUtils';
+import { isFilterGroupNotEmpty, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../../utils/filters/filtersUtils';
+import { FilterGroup } from '../../../../../utils/filters/filtersHelpers-types';
 
 interface EntityStixCoreRelationshipsRelationshipsViewProps {
   entityId: string
@@ -60,15 +61,6 @@ const EntityStixCoreRelationshipsRelationshipsView: FunctionComponent<EntityStix
     openExports,
     view,
   } = viewStorage;
-
-  const availableFilterKeys = [
-    'objectMarking',
-    'confidence',
-    'objectLabel',
-    'createdBy',
-    'creator_id',
-    'created',
-  ];
 
   const { platformModuleHelpers } = useAuth();
   const isObservables = isStixCyberObservables(stixCoreObjectTypes);
@@ -186,7 +178,6 @@ const EntityStixCoreRelationshipsRelationshipsView: FunctionComponent<EntityStix
         selectAll={selectAll}
         numberOfElements={numberOfElements}
         filters={filters}
-        availableFilterKeys={availableFilterKeys}
         availableEntityTypes={stixCoreObjectTypes}
         availableRelationshipTypes={relationshipTypes}
         handleToggleExports={storageHelpers.handleToggleExports}
@@ -200,6 +191,7 @@ const EntityStixCoreRelationshipsRelationshipsView: FunctionComponent<EntityStix
         paginationOptions={paginationOptions}
         enableEntitiesView={true}
         currentView={finalView}
+        entityTypes={['stix-core-relationship']}
       >
         <QueryRenderer
           query={

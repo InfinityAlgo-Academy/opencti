@@ -1351,7 +1351,7 @@ export const elFindByIds = async (context, user, ids, opts = {}) => {
       }
       const query = {
         index: computedIndices,
-        size: workingIds.length > ES_MAX_PAGINATION ? ES_MAX_PAGINATION : workingIds.length,
+        size: ES_MAX_PAGINATION,
         _source: baseData ? baseFields : true,
         body,
       };
@@ -1361,6 +1361,7 @@ export const elFindByIds = async (context, user, ids, opts = {}) => {
         throw DatabaseError('Find direct ids fail', { cause: err, query });
       });
       const elements = data.hits.hits;
+      if (elements.length > workingIds.length) logApp.warn('Search query returned more elements than expected', workingIds);
       if (elements.length > 0) {
         const convertedHits = await elConvertHits(elements, { withoutRels });
         hits.push(...convertedHits);
@@ -3258,7 +3259,7 @@ export const elReindexElements = async (context, user, ids, sourceIndex, destInd
         index: destIndex
       },
       script: { // remove old fields that are not mapped anymore but can be present in DB
-        source: "ctx._source.remove('fromType'); ctx._source.remove('toType'); ctx._source.remove('spec_version');"
+        source: "ctx._source.remove('fromType'); ctx._source.remove('toType'); ctx._source.remove('spec_version'); ctx._source.remove('representative');"
       },
     }
   };

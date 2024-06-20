@@ -51,15 +51,18 @@ export const scenarioElementsDistribution = async (context, user, args) => {
 
 export const resolveFiles = async (context, user, stixCoreObject) => {
   const opts = {
-    first: 20,
+    first: 1,
     prefixMimeTypes: undefined,
     entity_id: stixCoreObject.id,
     entity_type: stixCoreObject.entity_type
   };
   const importFiles = await paginatedForPathWithEnrichment(context, user, `import/${stixCoreObject.entity_type}/${stixCoreObject.id}`, stixCoreObject.id, opts);
   const fileIds = importFiles.edges.map((n) => n.node.id);
+  if (fileIds.length === 0) {
+    return [];
+  }
   const files = await elSearchFiles(context, user, {
-    first: 10,
+    first: 1,
     fileIds,
     connectionFormat: false,
     excludeFields: [],
@@ -141,6 +144,7 @@ export const generateOpenBasScenario = async (context, user, stixCoreObject, att
             # Instructions
             - Generate a subject for the following email.
             - The subject should be short and comprehensible.
+            - Just output the subject and nothing else.
             - Ensure that all words are accurately spelled and that the grammar is correct.
             
             # Email content
@@ -156,7 +160,7 @@ export const generateOpenBasScenario = async (context, user, stixCoreObject, att
         dependsOnDuration,
         {
           expectations: [],
-          subject: responseIncidentResponseSubject,
+          subject: responseIncidentResponseSubject.replace('Subject: ', '').replace('"', ''),
           body: responseIncidentResponse
         },
         [{ value: 'opencti', color: '#001bda' }, { value: 'csirt', color: '#c28b0d' }]
@@ -182,8 +186,9 @@ export const generateOpenBasScenario = async (context, user, stixCoreObject, att
       const responseCiso = await compute(null, promptCiso, user);
       const promptCisoSubject = `
             # Instructions
-            - Generate a subject for the following email
-            - The subject should be short and comprehensible
+            - Generate a subject for the following email.
+            - The subject should be short and comprehensible.
+            - Just output the subject and nothing else.
             - Ensure that all words are accurately spelled and that the grammar is correct.
             
             # Email content
@@ -199,7 +204,7 @@ export const generateOpenBasScenario = async (context, user, stixCoreObject, att
         dependsOnDuration,
         {
           expectations: [],
-          subject: responseCisoSubject,
+          subject: responseCisoSubject.replace('Subject: ', '').replace('"', ''),
           body: responseCiso
         },
         [{ value: 'opencti', color: '#001bda' }, { value: 'ciso', color: '#b41313' }]
@@ -257,8 +262,9 @@ export const generateOpenBasScenario = async (context, user, stixCoreObject, att
       const responseIncidentResponse = await compute(null, promptIncidentResponse, user);
       const promptIncidentResponseSubject = `
             # Instructions
-            - Generate a subject for the following email
-            - The subject should be short and comprehensible
+            - Generate a subject for the following email.
+            - The subject should be short and comprehensible.
+            - Just output the subject and nothing else.
             - Ensure that all words are accurately spelled and that the grammar is correct.
             
             # Email content
@@ -272,7 +278,7 @@ export const generateOpenBasScenario = async (context, user, stixCoreObject, att
         '2790bd39-37d4-4e39-be7e-53f3ca783f86',
         titleIncidentResponse,
         dependsOnDuration,
-        { expectations: [], subject: responseIncidentResponseSubject, body: responseIncidentResponse },
+        { expectations: [], subject: responseIncidentResponseSubject.replace('Subject: ', '').replace('"', ''), body: responseIncidentResponse },
         [{ value: 'opencti', color: '#001bda' }, { value: 'csirt', color: '#c28b0d' }]
       );
       dependsOnDuration += (interval * 60);
@@ -299,8 +305,9 @@ export const generateOpenBasScenario = async (context, user, stixCoreObject, att
       const responseCiso = await compute(null, promptCiso, user);
       const promptCisoSubject = `
             # Instructions
-            - Generate a subject for the following email
-            - The subject should be short and comprehensible
+            - Generate a subject for the following email.
+            - The subject should be short and comprehensible.
+            - Just output the subject and nothing else.
             - Ensure that all words are accurately spelled and that the grammar is correct.
             
             # Email content
@@ -314,7 +321,7 @@ export const generateOpenBasScenario = async (context, user, stixCoreObject, att
         '2790bd39-37d4-4e39-be7e-53f3ca783f86',
         titleCiso,
         dependsOnDuration,
-        { expectations: [], subject: responseCisoSubject, body: responseCiso },
+        { expectations: [], subject: responseCisoSubject.replace('Subject: ', '').replace('"', ''), body: responseCiso },
         [{ value: 'opencti', color: '#001bda' }, { value: 'ciso', color: '#b41313' }]
       );
       dependsOnDuration += (interval * 60);

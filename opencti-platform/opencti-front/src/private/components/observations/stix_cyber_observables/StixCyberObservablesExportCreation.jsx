@@ -8,7 +8,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Slide from '@mui/material/Slide';
-import { Add } from '@mui/icons-material';
+import { Add, InfoOutlined } from '@mui/icons-material';
 import { graphql, createFragmentContainer } from 'react-relay';
 import { Form, Formik, Field } from 'formik';
 import MenuItem from '@mui/material/MenuItem';
@@ -183,7 +183,12 @@ class StixCyberObservablesExportCreationComponent extends Component {
                       fullWidth={true}
                       data-testid="StixCyberObservablesExportCreationDialog"
                     >
-                      <DialogTitle>{t('Generate an export')}</DialogTitle>
+                      <DialogTitle>
+                        {t('Generate an export')}
+                        <Tooltip title={t('Your max shareable markings will be applied to the content max markings')}>
+                          <InfoOutlined sx={{ paddingLeft: 1 }} fontSize="small" />
+                        </Tooltip>
+                      </DialogTitle>
                       <QueryRenderer
                         query={markingDefinitionsLinesSearchQuery}
                         variables={{ first: 200 }}
@@ -231,6 +236,7 @@ class StixCyberObservablesExportCreationComponent extends Component {
                                   label={t('Content max marking definition levels')}
                                   onChange={(_, values) => this.handleSelectedContentMaxMarkingsChange(values)}
                                   style={fieldSpacingContainerStyle}
+                                  limitToMaxSharing
                                 />
                                 <ObjectMarkingField
                                   name="fileMarkings"

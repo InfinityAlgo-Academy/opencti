@@ -42,6 +42,7 @@ import { addFilter } from '../utils/filtering/filtering-utils';
 import { ENTITY_TYPE_INDICATOR } from '../modules/indicator/indicator-types';
 import { controlUserConfidenceAgainstElement } from '../utils/confidence-level';
 import { uploadToStorage } from '../database/file-storage-helper';
+import { isNumericAttribute } from '../schema/schema-attributes';
 
 export const findById = (context, user, stixCyberObservableId) => {
   return storeLoadById(context, user, stixCyberObservableId, ABSTRACT_STIX_CYBER_OBSERVABLE);
@@ -169,7 +170,9 @@ export const addStixCyberObservable = async (context, user, input) => {
     throw FunctionalError(`Observable type ${input.type} is not supported.`);
   }
   // If type is ok, get the correct data that represent the observable
+  // If called from artifactImport - internal_id must be kept.
   const {
+    internal_id,
     stix_id,
     x_opencti_score,
     x_opencti_description,
@@ -192,6 +195,7 @@ export const addStixCyberObservable = async (context, user, input) => {
     return artifactImport(context, user, { ...input, ...input[graphQLType] });
   }
   const observableInput = {
+    internal_id,
     stix_id,
     x_opencti_score,
     x_opencti_description,
@@ -273,6 +277,10 @@ export const stixCyberObservableEditField = async (context, user, stixCyberObser
     input,
     opts
   );
+  // Delete the key when updating a numeric field with an empty value (e.g. to delete this value) to avoid a schema error
+  Object.entries(stixCyberObservable).forEach(([key, value]) => {
+    if (isNumericAttribute(key) && value === '') delete stixCyberObservable[key];
+  });
   if (input[0].key === 'x_opencti_score') {
     const indicators = await listAllFromEntitiesThroughRelations(
       context,
@@ -397,15 +405,15 @@ export const artifactImport = async (context, user, args) => {
 };
 
 export const indicatorsPaginated = async (context, user, stixCyberObservableId, args) => {
-  return listEntitiesThroughRelationsPaginated(context, user, stixCyberObservableId, RELATION_BASED_ON, ENTITY_TYPE_INDICATOR, true, args);
+  return listEntitiesThroughRelationsPaginated(context, user, stixCyberObservableId, RELATION_BASED_ON, ENTITY_TYPE_INDICATOR, true, false, args);
 };
 
 export const vulnerabilitiesPaginated = async (context, user, stixCyberObservableId, args) => {
-  return listEntitiesThroughRelationsPaginated(context, user, stixCyberObservableId, RELATION_HAS, ENTITY_TYPE_VULNERABILITY, false, args);
+  return listEntitiesThroughRelationsPaginated(context, user, stixCyberObservableId, RELATION_HAS, ENTITY_TYPE_VULNERABILITY, false, false, args);
 };
 
 export const serviceDllsPaginated = async (context, user, stixCyberObservableId, args) => {
-  return listEntitiesThroughRelationsPaginated(context, user, stixCyberObservableId, RELATION_SERVICE_DLL, ENTITY_HASHED_OBSERVABLE_STIX_FILE, false, args);
+  return listEntitiesThroughRelationsPaginated(context, user, stixCyberObservableId, RELATION_SERVICE_DLL, ENTITY_HASHED_OBSERVABLE_STIX_FILE, false, false, args);
 };
 
 export const stixFileObsArtifact = async (context, user, stixCyberObservableId) => {

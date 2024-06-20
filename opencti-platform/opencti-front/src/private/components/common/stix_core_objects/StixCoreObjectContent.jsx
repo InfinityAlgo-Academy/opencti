@@ -29,7 +29,7 @@ import MarkdownDisplay from '../../../../components/MarkdownDisplay';
 import { FIVE_SECONDS } from '../../../../utils/Time';
 import withRouter from '../../../../utils/compat-router/withRouter';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `${APP_BASE_PATH}/static/ext/pdf.worker.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `${APP_BASE_PATH}/static/ext/pdf.worker.mjs`;
 
 const styles = () => ({
   container: {
@@ -438,7 +438,10 @@ class StixCoreObjectContentComponent extends Component {
     const htmlData = currentContent
       .replaceAll('id="undefined" ', '')
       .replaceAll(regex, '');
-    const ret = htmlToPdfmake(htmlData, { imagesByReference: true });
+    const ret = htmlToPdfmake(htmlData, {
+      imagesByReference: true,
+      ignoreStyles: ['font-family'],
+    });
     Promise.all(
       R.pipe(
         R.toPairs,

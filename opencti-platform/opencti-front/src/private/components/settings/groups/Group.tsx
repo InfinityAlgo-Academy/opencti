@@ -15,6 +15,7 @@ import { graphql, useFragment } from 'react-relay';
 import { Link } from 'react-router-dom';
 import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import GroupConfidenceLevel from '@components/settings/groups/GroupConfidenceLevel';
+import { uniq } from 'ramda';
 import FieldOrEmpty from '../../../../components/FieldOrEmpty';
 import { useFormatter } from '../../../../components/i18n';
 import ItemBoolean from '../../../../components/ItemBoolean';
@@ -28,6 +29,7 @@ import GroupPopover from './GroupPopover';
 import ItemIcon from '../../../../components/ItemIcon';
 import GroupHiddenTypesChipList from './GroupHiddenTypesChipList';
 import ExpandableMarkdown from '../../../../components/ExpandableMarkdown';
+import { checkIsMarkingAllowed } from '../../../../utils/markings/markingsFiltering';
 
 // Deprecated - https://mui.com/system/styles/basics/
 // Do not use it for new code.
@@ -103,6 +105,15 @@ const groupFragment = graphql`
     allowed_marking {
       id
       definition
+      definition_type
+      x_opencti_color
+      x_opencti_order
+    }
+    not_shareable_marking_types
+    max_shareable_marking {
+      id
+      definition
+      definition_type
       x_opencti_color
       x_opencti_order
     }
@@ -127,6 +138,13 @@ const Group = ({ groupData }: { groupData: Group_group$key }) => {
     R.descend(R.propOr(0, 'x_opencti_order')),
   ]);
   const allowedMarkings = markingsSort(group.allowed_marking ?? []);
+  const markingTypes = uniq(allowedMarkings.map((marking) => marking.definition_type)).filter((type) => !!type) as string[];
+  const maxShareableMarkings = markingsSort(group.max_shareable_marking ?? []);
+  const maxShareableMarkingsByType = new Map(markingTypes.map((type) => {
+    const sortedMaxMarkingsOfType = maxShareableMarkings.filter((m) => m.definition_type === type)
+      .sort((a, b) => b.x_opencti_order - a.x_opencti_order);
+    return [type, sortedMaxMarkingsOfType.length > 0 ? sortedMaxMarkingsOfType[0] : undefined];
+  }));
   // Handle only GLOBAL entity type for now
   const globalDefaultMarkings = markingsSort(
     (group.default_marking ?? []).find((d) => d.entity_type === 'GLOBAL')
@@ -255,7 +273,30 @@ const Group = ({ groupData }: { groupData: Group_group$key }) => {
                   </List>
                 </FieldOrEmpty>
               </Grid>
-              <Grid item={true} xs={6}>
+              <Grid item={true} xs={12}>
+                <Typography
+                  variant="h3"
+                  gutterBottom={true}
+                  style={{ float: 'left' }}
+                >
+                  {t_i18n('Max Confidence Level')}
+                </Typography>
+                <div className="clearfix"/>
+                <GroupConfidenceLevel
+                  confidenceLevel={group.group_confidence_level}
+                />
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+        <Grid item={true} xs={12} style={{ marginTop: 30 }}>
+          <Typography variant="h4" gutterBottom={true} style={{ float: 'left' }}>
+            {t_i18n('Markings')}
+          </Typography>
+          <div className="clearfix" />
+          <Paper classes={{ root: classes.paper }} variant="outlined">
+            <Grid container={true} spacing={3}>
+              <Grid item={true} xs={4}>
                 <Typography variant="h3" gutterBottom={true}>
                   {t_i18n('Default markings')}
                   <Tooltip
@@ -293,7 +334,7 @@ const Group = ({ groupData }: { groupData: Group_group$key }) => {
                   </List>
                 </FieldOrEmpty>
               </Grid>
-              <Grid item={true} xs={6}>
+              <Grid item={true} xs={4}>
                 <Typography variant="h3" gutterBottom={true}>
                   {t_i18n('Allowed markings')}
                 </Typography>
@@ -320,18 +361,88 @@ const Group = ({ groupData }: { groupData: Group_group$key }) => {
                   </List>
                 </FieldOrEmpty>
               </Grid>
-              <Grid item={true} xs={12}>
-                <Typography
-                  variant="h3"
-                  gutterBottom={true}
-                  style={{ float: 'left' }}
-                >
-                  {t_i18n('Max Confidence Level')}
+              <Grid item={true} xs={4}>
+                <Typography variant="h3" gutterBottom={true}>
+                  {t_i18n('Maximum shareable markings')}
                 </Typography>
-                <div className="clearfix"/>
-                <GroupConfidenceLevel
-                  confidenceLevel={group.group_confidence_level}
-                />
+                <FieldOrEmpty source={markingTypes}>
+                  <List>
+                    {markingTypes.map((type) => {
+                      const marking = maxShareableMarkingsByType.get(type);
+                      if (marking) {
+                        const isMarkingAllowed = checkIsMarkingAllowed(marking, allowedMarkings);
+                        return (
+                          <ListItem
+                            key={marking.id}
+                            dense={true}
+                            divider={true}
+                            button={false}
+                          >
+                            <Typography variant="h3" gutterBottom={true} width={150}>
+                              {truncate(type, 40)}
+                            </Typography>
+                            {isMarkingAllowed
+                              ? <>
+                                <ListItemIcon>
+                                  <ItemIcon
+                                    type="Marking-Definition"
+                                    color={marking.x_opencti_color ?? undefined}
+                                  />
+                                </ListItemIcon>
+                                <ListItemText
+                                  primary={truncate(marking.definition, 40)}
+                                />
+                              </>
+                              : <ListItemText
+                                  primary={t_i18n('No restrictions')}
+                                />
+                            }
+                            {!isMarkingAllowed
+                              && <Tooltip
+                                title={t_i18n(
+                                  'The maximum shareable marking set for this definition type is not allowed for this group, so users can only share their allowed markings independently from the maximum shareable marking set.',
+                                )}
+                                 >
+                                <WarningOutlined color="warning"/>
+                              </Tooltip>
+                            }
+                          </ListItem>
+                        );
+                      } if (group.not_shareable_marking_types.includes(type)) {
+                        return (
+                          <ListItem
+                            key={type}
+                            dense={true}
+                            divider={true}
+                            button={false}
+                          >
+                            <Typography variant="h3" gutterBottom={true} width={100}>
+                              {truncate(type, 40)}
+                            </Typography>
+                            <ListItemText
+                              primary={t_i18n('Not shareable')}
+                            />
+                          </ListItem>
+                        );
+                      }
+                      return (
+                        <ListItem
+                          key={type}
+                          dense={true}
+                          divider={true}
+                          button={false}
+                        >
+                          <Typography variant="h3" gutterBottom={true} width={100}>
+                            {truncate(type, 40)}
+                          </Typography>
+                          <ListItemText
+                            primary={t_i18n('No restrictions')}
+                          />
+                        </ListItem>
+                      );
+                    })}
+                  </List>
+                </FieldOrEmpty>
               </Grid>
             </Grid>
           </Paper>

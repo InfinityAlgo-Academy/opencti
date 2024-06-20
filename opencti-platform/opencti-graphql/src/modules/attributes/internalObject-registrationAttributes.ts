@@ -2,9 +2,13 @@ import * as R from 'ramda';
 import { type AttributeDefinition, authorizedMembers, createdAt, creators, errors, id, updatedAt } from '../../schema/attribute-definition';
 import { schemaAttributesDefinition } from '../../schema/schema-attributes';
 import {
+  ENTITY_TYPE_ACTIVITY,
+  ENTITY_TYPE_BACKGROUND_TASK,
   ENTITY_TYPE_CAPABILITY,
   ENTITY_TYPE_CONNECTOR,
+  ENTITY_TYPE_FEED,
   ENTITY_TYPE_GROUP,
+  ENTITY_TYPE_HISTORY,
   ENTITY_TYPE_MIGRATION_REFERENCE,
   ENTITY_TYPE_MIGRATION_STATUS,
   ENTITY_TYPE_RETENTION_RULE,
@@ -16,15 +20,12 @@ import {
   ENTITY_TYPE_STATUS_TEMPLATE,
   ENTITY_TYPE_STREAM_COLLECTION,
   ENTITY_TYPE_SYNC,
-  ENTITY_TYPE_BACKGROUND_TASK,
   ENTITY_TYPE_TAXII_COLLECTION,
   ENTITY_TYPE_USER,
-  ENTITY_TYPE_FEED,
-  ENTITY_TYPE_HISTORY,
-  ENTITY_TYPE_WORK,
-  ENTITY_TYPE_ACTIVITY
+  ENTITY_TYPE_WORK
 } from '../../schema/internalObject';
 import { ENTITY_TYPE_IDENTITY_ORGANIZATION } from '../organization/organization-types';
+import { ENTITY_TYPE_MARKING_DEFINITION } from '../../schema/stixMetaObject';
 
 const HistoryDefinition: AttributeDefinition[] = [
   { name: 'event_type', label: 'Event type', type: 'string', format: 'enum', values: ['authentication', 'read', 'mutation', 'file', 'command'], editDefault: false, mandatoryType: 'internal', multiple: false, upsert: false, isFilterable: true },
@@ -160,7 +161,6 @@ const internalObjectsAttributes: { [k: string]: Array<AttributeDefinition> } = {
   [ENTITY_TYPE_SETTINGS]: [
     { name: 'platform_title', label: 'Platform title', type: 'string', format: 'short', mandatoryType: 'no', editDefault: false, multiple: false, upsert: false, isFilterable: false },
     { name: 'platform_organization', label: 'Platform organization', type: 'string', format: 'short', mandatoryType: 'no', editDefault: false, multiple: false, upsert: false, isFilterable: false },
-    { name: 'platform_data_sharing_max_markings', label: 'Platform data sharing max markings', type: 'string', format: 'short', mandatoryType: 'no', editDefault: false, multiple: true, upsert: false, isFilterable: false },
     { name: 'platform_favicon', label: 'Platform favicon', type: 'string', format: 'short', mandatoryType: 'no', editDefault: false, multiple: false, upsert: false, isFilterable: false },
     { name: 'platform_email', label: 'Platform email', type: 'string', format: 'short', mandatoryType: 'no', editDefault: false, multiple: false, upsert: false, isFilterable: false },
     { name: 'platform_theme', label: 'Theme', type: 'string', format: 'short', mandatoryType: 'no', editDefault: false, multiple: false, upsert: false, isFilterable: false },
@@ -232,6 +232,20 @@ const internalObjectsAttributes: { [k: string]: Array<AttributeDefinition> } = {
     },
     { name: 'default_dashboard', label: 'Default dashboard', type: 'string', format: 'short', mandatoryType: 'no', editDefault: false, multiple: false, upsert: true, isFilterable: true },
     { name: 'default_hidden_types', label: 'Default hidden types', type: 'string', format: 'short', mandatoryType: 'no', editDefault: false, multiple: true, upsert: false, isFilterable: true },
+    { name: 'max_shareable_markings',
+      label: 'Max shareable markings',
+      type: 'object',
+      format: 'standard',
+      mandatoryType: 'no',
+      editDefault: false,
+      multiple: true,
+      upsert: false,
+      isFilterable: true,
+      mappings: [
+        { name: 'type', label: 'Marking Type', type: 'string', format: 'short', editDefault: false, mandatoryType: 'no', multiple: false, upsert: true, isFilterable: true },
+        { name: 'value', label: 'Marking', type: 'string', format: 'id', entityTypes: [ENTITY_TYPE_MARKING_DEFINITION], editDefault: false, mandatoryType: 'no', multiple: false, upsert: true, isFilterable: true },
+      ],
+    },
     { name: 'group_confidence_level',
       label: 'Group Confidence Level',
       type: 'object',

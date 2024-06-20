@@ -1,5 +1,6 @@
 import {
   askElementEnrichmentForConnector,
+  askElementAnalysisForConnector,
   batchMarkingDefinitions,
   casesPaginated,
   containersPaginated,
@@ -30,6 +31,7 @@ import {
   stixCoreObjectsMultiNumber,
   stixCoreObjectsMultiTimeSeries,
   stixCoreObjectsNumber,
+  stixCoreObjectsPaginated,
   stixCoreObjectsTimeSeries,
   stixCoreObjectsTimeSeriesByAuthor,
   stixCoreRelationships
@@ -56,6 +58,7 @@ const stixCoreObjectResolvers = {
     stixCoreObjectRaw: (_, { id }, context) => stixLoadByIdStringify(context, context.user, id),
     globalSearch: (_, args, context) => findAll(context, context.user, { ...args, globalSearch: true }),
     stixCoreObjects: (_, args, context) => findAll(context, context.user, args),
+    stixCoreObjectsRegardingOf: (_, args, context) => stixCoreObjectsPaginated(context, context.user, args),
     stixCoreObjectsTimeSeries: (_, args, context) => {
       if (args.authorId && args.authorId.length > 0) {
         return stixCoreObjectsTimeSeriesByAuthor(context, context.user, args);
@@ -144,6 +147,7 @@ const stixCoreObjectResolvers = {
       importPush: (args) => stixCoreObjectImportPush(context, context.user, id, args.file, args),
       exportAsk: ({ input }) => stixCoreObjectExportAsk(context, context.user, id, input),
       exportPush: (args) => stixCoreObjectExportPush(context, context.user, id, args),
+      askAnalysis: ({ contentSource, contentType, connectorId }) => askElementAnalysisForConnector(context, context.user, id, contentSource, contentType, connectorId),
     }),
     stixCoreObjectsExportAsk: (_, { input }, context) => stixCoreObjectsExportAsk(context, context.user, input),
     stixCoreObjectsExportPush: (_, { entity_id, entity_type, file, file_markings, listFilters }, context) => {

@@ -304,6 +304,11 @@ export enum AdministrativeAreasOrdering {
   XOpenctiWorkflowId = 'x_opencti_workflow_id'
 }
 
+export enum AnalysisContentType {
+  Fields = 'fields',
+  File = 'file'
+}
+
 export type AppDebugDistribution = {
   __typename?: 'AppDebugDistribution';
   label: Scalars['String']['output'];
@@ -3099,7 +3104,6 @@ export enum CitiesOrdering {
   Aliases = 'aliases',
   Created = 'created',
   CreatedAt = 'created_at',
-  Description = 'description',
   Modified = 'modified',
   Name = 'name',
   ObjectLabel = 'objectLabel',
@@ -3448,6 +3452,7 @@ export type ConnectorMetadata = {
 
 export enum ConnectorType {
   ExternalImport = 'EXTERNAL_IMPORT',
+  InternalAnalysis = 'INTERNAL_ANALYSIS',
   InternalEnrichment = 'INTERNAL_ENRICHMENT',
   InternalExportFile = 'INTERNAL_EXPORT_FILE',
   InternalImportFile = 'INTERNAL_IMPORT_FILE',
@@ -3712,7 +3717,6 @@ export enum CountriesOrdering {
   Score = '_score',
   Created = 'created',
   CreatedAt = 'created_at',
-  Description = 'description',
   Modified = 'modified',
   Name = 'name',
   UpdatedAt = 'updated_at',
@@ -7432,7 +7436,6 @@ export type FileEdge = {
 
 export type FileMetadata = {
   __typename?: 'FileMetadata';
-  content_markings?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
   creator?: Maybe<Creator>;
   creator_id?: Maybe<Scalars['String']['output']>;
   description?: Maybe<Scalars['String']['output']>;
@@ -7547,8 +7550,10 @@ export type Group = BasicObject & InternalObject & {
   entity_type: Scalars['String']['output'];
   group_confidence_level?: Maybe<ConfidenceLevel>;
   id: Scalars['ID']['output'];
+  max_shareable_marking: Array<MarkingDefinition>;
   members?: Maybe<UserConnection>;
   name: Scalars['String']['output'];
+  not_shareable_marking_types: Array<Scalars['String']['output']>;
   parent_types: Array<Maybe<Scalars['String']['output']>>;
   roles?: Maybe<RoleConnection>;
   standard_id: Scalars['String']['output'];
@@ -12152,6 +12157,7 @@ export type MeUser = BasicObject & InternalObject & {
   individual_id?: Maybe<Scalars['String']['output']>;
   language?: Maybe<Scalars['String']['output']>;
   lastname?: Maybe<Scalars['String']['output']>;
+  max_shareable_marking?: Maybe<Array<MarkingDefinition>>;
   name: Scalars['String']['output'];
   objectOrganization?: Maybe<MeOrganizationConnection>;
   otp_activated?: Maybe<Scalars['Boolean']['output']>;
@@ -12382,7 +12388,9 @@ export type MediaContentAddInput = {
 
 export type Member = {
   __typename?: 'Member';
+  effective_confidence_level?: Maybe<EffectiveConfidenceLevel>;
   entity_type: Scalars['String']['output'];
+  group_confidence_level?: Maybe<ConfidenceLevel>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
 };
@@ -17814,6 +17822,7 @@ export type Query = {
   city?: Maybe<City>;
   connector?: Maybe<Connector>;
   connectors?: Maybe<Array<Maybe<Connector>>>;
+  connectorsForAnalysis?: Maybe<Array<Maybe<Connector>>>;
   connectorsForExport?: Maybe<Array<Maybe<Connector>>>;
   connectorsForImport?: Maybe<Array<Maybe<Connector>>>;
   connectorsForNotification?: Maybe<Array<Maybe<Connector>>>;
@@ -17982,7 +17991,7 @@ export type Query = {
   rules?: Maybe<Array<Maybe<Rule>>>;
   runtimeAttributes?: Maybe<AttributeConnection>;
   schemaAttributeNames?: Maybe<AttributeConnection>;
-  schemaRelationsRefTypesMapping: Array<StixRelationshipSchema>;
+  schemaRelationsRefTypesMapping: Array<StixRelationshipRefSchema>;
   schemaRelationsTypesMapping: Array<StixRelationshipSchema>;
   sector?: Maybe<Sector>;
   sectors?: Maybe<SectorConnection>;
@@ -18003,6 +18012,7 @@ export type Query = {
   stixCoreObjectsMultiNumber?: Maybe<Array<Maybe<Number>>>;
   stixCoreObjectsMultiTimeSeries?: Maybe<Array<Maybe<MultiTimeSeries>>>;
   stixCoreObjectsNumber?: Maybe<Number>;
+  stixCoreObjectsRegardingOf?: Maybe<StixCoreObjectConnection>;
   stixCoreObjectsTimeSeries?: Maybe<Array<Maybe<TimeSeries>>>;
   stixCoreRelationship?: Maybe<StixCoreRelationship>;
   stixCoreRelationships?: Maybe<StixCoreRelationshipConnection>;
@@ -18694,6 +18704,7 @@ export type QueryGroupingsTimeSeriesArgs = {
 
 export type QueryGroupsArgs = {
   after?: InputMaybe<Scalars['ID']['input']>;
+  filters?: InputMaybe<FilterGroup>;
   first?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<GroupsOrdering>;
   orderMode?: InputMaybe<OrderingMode>;
@@ -19674,6 +19685,19 @@ export type QueryStixCoreObjectsNumberArgs = {
   onlyInferred?: InputMaybe<Scalars['Boolean']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
+  types?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+};
+
+
+export type QueryStixCoreObjectsRegardingOfArgs = {
+  after?: InputMaybe<Scalars['ID']['input']>;
+  entityId?: InputMaybe<Scalars['ID']['input']>;
+  filters?: InputMaybe<FilterGroup>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StixCoreObjectsOrdering>;
+  orderMode?: InputMaybe<OrderingMode>;
+  relationshipTypes?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  search?: InputMaybe<Scalars['String']['input']>;
   types?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
 };
 
@@ -20878,7 +20902,6 @@ export enum RegionsOrdering {
   Score = '_score',
   Created = 'created',
   CreatedAt = 'created_at',
-  Description = 'description',
   Modified = 'modified',
   Name = 'name',
   UpdatedAt = 'updated_at',
@@ -21671,7 +21694,6 @@ export enum SectorsOrdering {
   Score = '_score',
   Created = 'created',
   CreatedAt = 'created_at',
-  Description = 'description',
   Modified = 'modified',
   Name = 'name',
   ObjectMarking = 'objectMarking',
@@ -21721,7 +21743,6 @@ export type Settings = BasicObject & InternalObject & {
   platform_consent_confirm_text?: Maybe<Scalars['String']['output']>;
   platform_consent_message?: Maybe<Scalars['String']['output']>;
   platform_critical_alerts: Array<PlatformCriticalAlert>;
-  platform_data_sharing_max_markings?: Maybe<Array<MarkingDefinition>>;
   platform_demo?: Maybe<Scalars['Boolean']['output']>;
   platform_email?: Maybe<Scalars['String']['output']>;
   platform_favicon?: Maybe<Scalars['String']['output']>;
@@ -22296,6 +22317,7 @@ export type StixCoreObjectEdge = {
 
 export type StixCoreObjectEditMutations = {
   __typename?: 'StixCoreObjectEditMutations';
+  askAnalysis?: Maybe<Work>;
   askEnrichment?: Maybe<Work>;
   delete?: Maybe<Scalars['ID']['output']>;
   exportAsk?: Maybe<Array<File>>;
@@ -22306,6 +22328,13 @@ export type StixCoreObjectEditMutations = {
   relationsAdd?: Maybe<StixCoreObject>;
   restrictionOrganizationAdd?: Maybe<StixCoreObject>;
   restrictionOrganizationDelete?: Maybe<StixCoreObject>;
+};
+
+
+export type StixCoreObjectEditMutationsAskAnalysisArgs = {
+  connectorId?: InputMaybe<Scalars['ID']['input']>;
+  contentSource: Scalars['String']['input'];
+  contentType: AnalysisContentType;
 };
 
 
@@ -23836,6 +23865,18 @@ export type StixRelationshipEditMutations = {
   delete?: Maybe<Scalars['ID']['output']>;
 };
 
+export type StixRelationshipRefSchema = {
+  __typename?: 'StixRelationshipRefSchema';
+  key: Scalars['String']['output'];
+  values: Array<StixRelationshipRefSchemaValue>;
+};
+
+export type StixRelationshipRefSchemaValue = {
+  __typename?: 'StixRelationshipRefSchemaValue';
+  name: Scalars['String']['output'];
+  toTypes: Array<Scalars['String']['output']>;
+};
+
 export type StixRelationshipSchema = {
   __typename?: 'StixRelationshipSchema';
   key: Scalars['String']['output'];
@@ -24136,7 +24177,6 @@ export type StreamCollectionEditMutationsFieldPatchArgs = {
 
 export enum StreamCollectionOrdering {
   Score = '_score',
-  Description = 'description',
   Id = 'id',
   Name = 'name',
   StreamLive = 'stream_live',
@@ -25046,7 +25086,6 @@ export type TaxiiCollectionEditMutationsFieldPatchArgs = {
 
 export enum TaxiiCollectionOrdering {
   Score = '_score',
-  Description = 'description',
   Id = 'id',
   Name = 'name'
 }
@@ -28637,6 +28676,7 @@ export type ResolversTypes = ResolversObject<{
   AdministrativeAreaConnection: ResolverTypeWrapper<Omit<AdministrativeAreaConnection, 'edges'> & { edges?: Maybe<Array<ResolversTypes['AdministrativeAreaEdge']>> }>;
   AdministrativeAreaEdge: ResolverTypeWrapper<Omit<AdministrativeAreaEdge, 'node'> & { node: ResolversTypes['AdministrativeArea'] }>;
   AdministrativeAreasOrdering: AdministrativeAreasOrdering;
+  AnalysisContentType: AnalysisContentType;
   Any: ResolverTypeWrapper<Scalars['Any']['output']>;
   AppDebugDistribution: ResolverTypeWrapper<AppDebugDistribution>;
   AppDebugStatistics: ResolverTypeWrapper<AppDebugStatistics>;
@@ -29285,6 +29325,8 @@ export type ResolversTypes = ResolversObject<{
   StixRelationshipConnection: ResolverTypeWrapper<Omit<StixRelationshipConnection, 'edges'> & { edges?: Maybe<Array<Maybe<ResolversTypes['StixRelationshipEdge']>>> }>;
   StixRelationshipEdge: ResolverTypeWrapper<Omit<StixRelationshipEdge, 'node'> & { node: ResolversTypes['StixRelationship'] }>;
   StixRelationshipEditMutations: ResolverTypeWrapper<StixRelationshipEditMutations>;
+  StixRelationshipRefSchema: ResolverTypeWrapper<StixRelationshipRefSchema>;
+  StixRelationshipRefSchemaValue: ResolverTypeWrapper<StixRelationshipRefSchemaValue>;
   StixRelationshipSchema: ResolverTypeWrapper<StixRelationshipSchema>;
   StixRelationshipsOrdering: StixRelationshipsOrdering;
   StixRelationshipsTimeSeriesParameters: StixRelationshipsTimeSeriesParameters;
@@ -30001,6 +30043,8 @@ export type ResolversParentTypes = ResolversObject<{
   StixRelationshipConnection: Omit<StixRelationshipConnection, 'edges'> & { edges?: Maybe<Array<Maybe<ResolversParentTypes['StixRelationshipEdge']>>> };
   StixRelationshipEdge: Omit<StixRelationshipEdge, 'node'> & { node: ResolversParentTypes['StixRelationship'] };
   StixRelationshipEditMutations: StixRelationshipEditMutations;
+  StixRelationshipRefSchema: StixRelationshipRefSchema;
+  StixRelationshipRefSchemaValue: StixRelationshipRefSchemaValue;
   StixRelationshipSchema: StixRelationshipSchema;
   StixRelationshipsTimeSeriesParameters: StixRelationshipsTimeSeriesParameters;
   StixSightingRelationship: Omit<StixSightingRelationship, 'cases' | 'containers' | 'createdBy' | 'from' | 'groupings' | 'notes' | 'objectOrganization' | 'opinions' | 'reports' | 'to'> & { cases?: Maybe<ResolversParentTypes['CaseConnection']>, containers?: Maybe<ResolversParentTypes['ContainerConnection']>, createdBy?: Maybe<ResolversParentTypes['Identity']>, from?: Maybe<ResolversParentTypes['StixObjectOrStixRelationshipOrCreator']>, groupings?: Maybe<ResolversParentTypes['GroupingConnection']>, notes?: Maybe<ResolversParentTypes['NoteConnection']>, objectOrganization?: Maybe<Array<ResolversParentTypes['Organization']>>, opinions?: Maybe<ResolversParentTypes['OpinionConnection']>, reports?: Maybe<ResolversParentTypes['ReportConnection']>, to?: Maybe<ResolversParentTypes['StixObjectOrStixRelationshipOrCreator']> };
@@ -32625,7 +32669,6 @@ export type FileEdgeResolvers<ContextType = any, ParentType extends ResolversPar
 }>;
 
 export type FileMetadataResolvers<ContextType = any, ParentType extends ResolversParentTypes['FileMetadata'] = ResolversParentTypes['FileMetadata']> = ResolversObject<{
-  content_markings?: Resolver<Maybe<Array<Maybe<ResolversTypes['String']>>>, ParentType, ContextType>;
   creator?: Resolver<Maybe<ResolversTypes['Creator']>, ParentType, ContextType>;
   creator_id?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -32694,8 +32737,10 @@ export type GroupResolvers<ContextType = any, ParentType extends ResolversParent
   entity_type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   group_confidence_level?: Resolver<Maybe<ResolversTypes['ConfidenceLevel']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  max_shareable_marking?: Resolver<Array<ResolversTypes['MarkingDefinition']>, ParentType, ContextType>;
   members?: Resolver<Maybe<ResolversTypes['UserConnection']>, ParentType, ContextType, Partial<GroupMembersArgs>>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  not_shareable_marking_types?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   parent_types?: Resolver<Array<Maybe<ResolversTypes['String']>>, ParentType, ContextType>;
   roles?: Resolver<Maybe<ResolversTypes['RoleConnection']>, ParentType, ContextType, Partial<GroupRolesArgs>>;
   standard_id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -34242,6 +34287,7 @@ export type MeUserResolvers<ContextType = any, ParentType extends ResolversParen
   individual_id?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   language?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   lastname?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  max_shareable_marking?: Resolver<Maybe<Array<ResolversTypes['MarkingDefinition']>>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   objectOrganization?: Resolver<Maybe<ResolversTypes['MeOrganizationConnection']>, ParentType, ContextType>;
   otp_activated?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
@@ -34317,7 +34363,9 @@ export type MediaContentResolvers<ContextType = any, ParentType extends Resolver
 }>;
 
 export type MemberResolvers<ContextType = any, ParentType extends ResolversParentTypes['Member'] = ResolversParentTypes['Member']> = ResolversObject<{
+  effective_confidence_level?: Resolver<Maybe<ResolversTypes['EffectiveConfidenceLevel']>, ParentType, ContextType>;
   entity_type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  group_confidence_level?: Resolver<Maybe<ResolversTypes['ConfidenceLevel']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -35758,6 +35806,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   city?: Resolver<Maybe<ResolversTypes['City']>, ParentType, ContextType, Partial<QueryCityArgs>>;
   connector?: Resolver<Maybe<ResolversTypes['Connector']>, ParentType, ContextType, RequireFields<QueryConnectorArgs, 'id'>>;
   connectors?: Resolver<Maybe<Array<Maybe<ResolversTypes['Connector']>>>, ParentType, ContextType>;
+  connectorsForAnalysis?: Resolver<Maybe<Array<Maybe<ResolversTypes['Connector']>>>, ParentType, ContextType>;
   connectorsForExport?: Resolver<Maybe<Array<Maybe<ResolversTypes['Connector']>>>, ParentType, ContextType>;
   connectorsForImport?: Resolver<Maybe<Array<Maybe<ResolversTypes['Connector']>>>, ParentType, ContextType>;
   connectorsForNotification?: Resolver<Maybe<Array<Maybe<ResolversTypes['Connector']>>>, ParentType, ContextType>;
@@ -35926,7 +35975,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   rules?: Resolver<Maybe<Array<Maybe<ResolversTypes['Rule']>>>, ParentType, ContextType>;
   runtimeAttributes?: Resolver<Maybe<ResolversTypes['AttributeConnection']>, ParentType, ContextType, RequireFields<QueryRuntimeAttributesArgs, 'attributeName'>>;
   schemaAttributeNames?: Resolver<Maybe<ResolversTypes['AttributeConnection']>, ParentType, ContextType, RequireFields<QuerySchemaAttributeNamesArgs, 'elementType'>>;
-  schemaRelationsRefTypesMapping?: Resolver<Array<ResolversTypes['StixRelationshipSchema']>, ParentType, ContextType>;
+  schemaRelationsRefTypesMapping?: Resolver<Array<ResolversTypes['StixRelationshipRefSchema']>, ParentType, ContextType>;
   schemaRelationsTypesMapping?: Resolver<Array<ResolversTypes['StixRelationshipSchema']>, ParentType, ContextType>;
   sector?: Resolver<Maybe<ResolversTypes['Sector']>, ParentType, ContextType, Partial<QuerySectorArgs>>;
   sectors?: Resolver<Maybe<ResolversTypes['SectorConnection']>, ParentType, ContextType, Partial<QuerySectorsArgs>>;
@@ -35947,6 +35996,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   stixCoreObjectsMultiNumber?: Resolver<Maybe<Array<Maybe<ResolversTypes['Number']>>>, ParentType, ContextType, Partial<QueryStixCoreObjectsMultiNumberArgs>>;
   stixCoreObjectsMultiTimeSeries?: Resolver<Maybe<Array<Maybe<ResolversTypes['MultiTimeSeries']>>>, ParentType, ContextType, RequireFields<QueryStixCoreObjectsMultiTimeSeriesArgs, 'interval' | 'startDate'>>;
   stixCoreObjectsNumber?: Resolver<Maybe<ResolversTypes['Number']>, ParentType, ContextType, Partial<QueryStixCoreObjectsNumberArgs>>;
+  stixCoreObjectsRegardingOf?: Resolver<Maybe<ResolversTypes['StixCoreObjectConnection']>, ParentType, ContextType, Partial<QueryStixCoreObjectsRegardingOfArgs>>;
   stixCoreObjectsTimeSeries?: Resolver<Maybe<Array<Maybe<ResolversTypes['TimeSeries']>>>, ParentType, ContextType, RequireFields<QueryStixCoreObjectsTimeSeriesArgs, 'field' | 'interval' | 'operation' | 'startDate'>>;
   stixCoreRelationship?: Resolver<Maybe<ResolversTypes['StixCoreRelationship']>, ParentType, ContextType, Partial<QueryStixCoreRelationshipArgs>>;
   stixCoreRelationships?: Resolver<Maybe<ResolversTypes['StixCoreRelationshipConnection']>, ParentType, ContextType, Partial<QueryStixCoreRelationshipsArgs>>;
@@ -36525,7 +36575,6 @@ export type SettingsResolvers<ContextType = any, ParentType extends ResolversPar
   platform_consent_confirm_text?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   platform_consent_message?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   platform_critical_alerts?: Resolver<Array<ResolversTypes['PlatformCriticalAlert']>, ParentType, ContextType>;
-  platform_data_sharing_max_markings?: Resolver<Maybe<Array<ResolversTypes['MarkingDefinition']>>, ParentType, ContextType>;
   platform_demo?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   platform_email?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   platform_favicon?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -36758,6 +36807,7 @@ export type StixCoreObjectEdgeResolvers<ContextType = any, ParentType extends Re
 }>;
 
 export type StixCoreObjectEditMutationsResolvers<ContextType = any, ParentType extends ResolversParentTypes['StixCoreObjectEditMutations'] = ResolversParentTypes['StixCoreObjectEditMutations']> = ResolversObject<{
+  askAnalysis?: Resolver<Maybe<ResolversTypes['Work']>, ParentType, ContextType, RequireFields<StixCoreObjectEditMutationsAskAnalysisArgs, 'contentSource' | 'contentType'>>;
   askEnrichment?: Resolver<Maybe<ResolversTypes['Work']>, ParentType, ContextType, RequireFields<StixCoreObjectEditMutationsAskEnrichmentArgs, 'connectorId'>>;
   delete?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
   exportAsk?: Resolver<Maybe<Array<ResolversTypes['File']>>, ParentType, ContextType, RequireFields<StixCoreObjectEditMutationsExportAskArgs, 'input'>>;
@@ -37261,6 +37311,18 @@ export type StixRelationshipEdgeResolvers<ContextType = any, ParentType extends 
 
 export type StixRelationshipEditMutationsResolvers<ContextType = any, ParentType extends ResolversParentTypes['StixRelationshipEditMutations'] = ResolversParentTypes['StixRelationshipEditMutations']> = ResolversObject<{
   delete?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type StixRelationshipRefSchemaResolvers<ContextType = any, ParentType extends ResolversParentTypes['StixRelationshipRefSchema'] = ResolversParentTypes['StixRelationshipRefSchema']> = ResolversObject<{
+  key?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  values?: Resolver<Array<ResolversTypes['StixRelationshipRefSchemaValue']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type StixRelationshipRefSchemaValueResolvers<ContextType = any, ParentType extends ResolversParentTypes['StixRelationshipRefSchemaValue'] = ResolversParentTypes['StixRelationshipRefSchemaValue']> = ResolversObject<{
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  toTypes?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -39221,6 +39283,8 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   StixRelationshipConnection?: StixRelationshipConnectionResolvers<ContextType>;
   StixRelationshipEdge?: StixRelationshipEdgeResolvers<ContextType>;
   StixRelationshipEditMutations?: StixRelationshipEditMutationsResolvers<ContextType>;
+  StixRelationshipRefSchema?: StixRelationshipRefSchemaResolvers<ContextType>;
+  StixRelationshipRefSchemaValue?: StixRelationshipRefSchemaValueResolvers<ContextType>;
   StixRelationshipSchema?: StixRelationshipSchemaResolvers<ContextType>;
   StixSightingRelationship?: StixSightingRelationshipResolvers<ContextType>;
   StixSightingRelationshipConnection?: StixSightingRelationshipConnectionResolvers<ContextType>;

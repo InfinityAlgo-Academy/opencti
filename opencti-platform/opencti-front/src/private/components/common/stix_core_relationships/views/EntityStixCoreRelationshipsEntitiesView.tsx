@@ -12,7 +12,8 @@ import { computeTargetStixCyberObservableTypes, computeTargetStixDomainObjectTyp
 import { PaginationLocalStorage } from '../../../../../utils/hooks/useLocalStorage';
 import { DataColumns, PaginationOptions } from '../../../../../components/list_lines';
 import { EntityStixCoreRelationshipsEntitiesViewLinesPaginationQuery$variables } from './__generated__/EntityStixCoreRelationshipsEntitiesViewLinesPaginationQuery.graphql';
-import { Filter, FilterGroup, isFilterGroupNotEmpty, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../../utils/filters/filtersUtils';
+import { isFilterGroupNotEmpty, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../../utils/filters/filtersUtils';
+import { FilterGroup } from '../../../../../utils/filters/filtersHelpers-types';
 
 interface EntityStixCoreRelationshipsEntitiesViewProps {
   entityId: string;
@@ -109,26 +110,16 @@ EntityStixCoreRelationshipsEntitiesViewProps
 
   // Filters due to screen context
   const userFilters = useRemoveIdAndIncorrectKeysFromFilterGroupObject(filters, stixCoreObjectTypes.length > 0 ? stixCoreObjectTypes : ['Stix-Core-Object']);
-  const stixCoreObjectFilter: Filter[] = stixCoreObjectTypes.length > 0
-    ? [{ key: 'entity_type', operator: 'eq', mode: 'or', values: stixCoreObjectTypes }]
-    : [];
   const contextFilters: FilterGroup = {
     mode: 'and',
-    filters: [
-      ...stixCoreObjectFilter,
-      { key: 'regardingOf',
-        operator: 'eq',
-        mode: 'and',
-        values: [
-          { key: 'id', values: [entityId], operator: 'eq', mode: 'or' },
-          { key: 'relationship_type', values: relationshipTypes, operator: 'eq', mode: 'or' },
-        ] as unknown as string[], // Workaround for typescript waiting for better solution
-      },
-    ],
+    filters: [],
     filterGroups: userFilters && isFilterGroupNotEmpty(userFilters) ? [userFilters] : [],
   };
 
   const paginationOptions = {
+    entityId,
+    relationshipTypes,
+    types: stixCoreObjectTypes,
     search: searchTerm,
     orderBy: sortBy && sortBy in dataColumns && dataColumns[sortBy].isSortable ? sortBy : 'name',
     orderMode: orderAsc ? 'asc' : 'desc',

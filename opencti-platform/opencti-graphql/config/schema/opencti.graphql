@@ -511,7 +511,6 @@ input TaxiiCollectionAddInput {
 }
 enum TaxiiCollectionOrdering {
   name
-  description
   id
   _score
 }
@@ -617,7 +616,6 @@ input StreamCollectionAddInput {
 }
 enum StreamCollectionOrdering {
   name
-  description
   stream_public
   id
   stream_live
@@ -803,7 +801,6 @@ type FileMetadata {
   entity: StixObject
   labels_text: String
   labels: [String]
-  content_markings: [String]
   file_markings: [String]
   creator_id: String
   external_reference_id: String
@@ -1126,7 +1123,6 @@ type Settings implements InternalObject & BasicObject {
   parent_types: [String!]! @auth
   # Settings
   platform_organization: Organization
-  platform_data_sharing_max_markings: [MarkingDefinition!]
   platform_title: String
   platform_favicon: String
   platform_email: String @auth
@@ -1246,6 +1242,8 @@ type Group implements InternalObject & BasicObject {
   roles(orderBy: RolesOrdering, orderMode: OrderingMode): RoleConnection
   allowed_marking: [MarkingDefinition!]
   default_marking: [DefaultMarking!]
+  not_shareable_marking_types: [String!]!
+  max_shareable_marking: [MarkingDefinition!]!
   default_hidden_types: [String!]
   group_confidence_level: ConfidenceLevel
   # Technical
@@ -1331,7 +1329,12 @@ type Member {
   id: ID! # internal_id
   name: String!
   entity_type: String!
+  # entity_type == User
+  effective_confidence_level: EffectiveConfidenceLevel
+  # entity_type == Group
+  group_confidence_level: ConfidenceLevel
 }
+
 type MemberAccess {
   id: ID! # internal_id
   name: String!
@@ -1456,6 +1459,7 @@ type MeUser implements BasicObject & InternalObject {
   effective_confidence_level: EffectiveConfidenceLevel
   allowed_marking: [MarkingDefinition!]
   default_marking: [DefaultMarking!]
+  max_shareable_marking: [MarkingDefinition!]
   otp_mandatory: Boolean
   groups(
     orderBy: GroupsOrdering
@@ -1587,6 +1591,7 @@ enum ConnectorType {
   EXTERNAL_IMPORT
   INTERNAL_IMPORT_FILE
   INTERNAL_ENRICHMENT
+  INTERNAL_ANALYSIS
   INTERNAL_EXPORT_FILE
   STREAM
 }
@@ -4100,7 +4105,6 @@ input IndividualAddInput {
 ################ Sectors
 enum SectorsOrdering {
   name
-  description
   created
   modified
   created_at
@@ -5081,7 +5085,6 @@ input PositionAddInput {
 ################ Cities
 enum CitiesOrdering {
   name
-  description
   aliases
   created
   modified
@@ -5243,7 +5246,6 @@ input CityAddInput {
 
 enum CountriesOrdering {
   name
-  description
   created
   modified
   created_at
@@ -5402,7 +5404,6 @@ input CountryAddInput {
 ################ Regions
 enum RegionsOrdering {
   name
-  description
   created
   modified
   created_at
@@ -9836,7 +9837,7 @@ type TrackingNumber implements BasicObject & StixObject & StixCoreObject & StixC
   updated_at: DateTime!
   # inferences
   x_opencti_inferences: [Inference]
-    # StixCoreObject
+  # StixCoreObject
   createdBy: Identity
   numberOfConnectedElement: Int!
   objectMarking: [MarkingDefinition!]
@@ -9946,7 +9947,7 @@ type Credential implements BasicObject & StixObject & StixCoreObject & StixCyber
   updated_at: DateTime!
   # inferences
   x_opencti_inferences: [Inference]
-    # StixCoreObject
+  # StixCoreObject
   createdBy: Identity
   numberOfConnectedElement: Int!
   objectMarking: [MarkingDefinition!]
@@ -10412,7 +10413,7 @@ type InternalRelationship implements BasicRelationship {
   creators: [Creator!]
 }
 input InternalRelationshipAddInput {
-  relationship_type: String! # Will be check by code
+  relationship_type: String! # Will be checked by code
   fromId: ID
   toId: ID
 }
@@ -10760,6 +10761,15 @@ interface StixRelationship {
 type StixRelationshipSchema {
   key: String!
   values: [String!]!
+}
+
+type StixRelationshipRefSchemaValue {
+  name: String!
+  toTypes: [String!]!
+}
+type StixRelationshipRefSchema {
+  key: String!
+  values: [StixRelationshipRefSchemaValue!]!
 }
 
 ############## StixCoreRelationships
@@ -11191,7 +11201,7 @@ type Query {
 
   settings: Settings! @public # Some inner information are public
   group(id: String!): Group @auth(for: [SETTINGS_SETACCESSES, VIRTUAL_ORGANIZATION_ADMIN])
-  groups(first: Int, after: ID, orderBy: GroupsOrdering, orderMode: OrderingMode, search: String): GroupConnection
+  groups(first: Int, after: ID, orderBy: GroupsOrdering, orderMode: OrderingMode, search: String, filters: FilterGroup): GroupConnection
   @auth(for: [SETTINGS_SETACCESSES, VIRTUAL_ORGANIZATION_ADMIN])
   roles(first: Int, after: ID, orderBy: RolesOrdering, orderMode: OrderingMode, search: String): RoleConnection
   @auth(for: [SETTINGS_SETACCESSES])
@@ -11225,6 +11235,7 @@ type Query {
   connectorsForWorker: [Connector] @auth(for: [MODULES])
   connectorsForExport: [Connector] @auth(for: [KNOWLEDGE])
   connectorsForImport: [Connector] @auth(for: [KNOWLEDGE])
+  connectorsForAnalysis: [Connector] @auth(for: [KNOWLEDGE])
   connectorsForNotification: [Connector] @auth(for: [SETTINGS_SETACCESSES])
   work(id: ID!): Work @auth(for: [MODULES])
   works(
@@ -11366,6 +11377,17 @@ type Query {
   stixCoreObjectRaw(id: String!): String @auth(for: [KNOWLEDGE])
   stixCoreObject(id: String!): StixCoreObject @auth(for: [KNOWLEDGE])
   stixCoreObjects(
+    first: Int
+    after: ID
+    types: [String]
+    orderBy: StixCoreObjectsOrdering
+    orderMode: OrderingMode
+    filters: FilterGroup
+    search: String
+  ): StixCoreObjectConnection @auth(for: [KNOWLEDGE])
+  stixCoreObjectsRegardingOf(
+    entityId: ID,
+    relationshipTypes: [String],
     first: Int
     after: ID
     types: [String]
@@ -12016,7 +12038,7 @@ type Query {
     dynamicTo: FilterGroup
   ): Number @auth(for: [KNOWLEDGE, EXPLORE])
   schemaRelationsTypesMapping: [StixRelationshipSchema!]! @auth
-  schemaRelationsRefTypesMapping: [StixRelationshipSchema!]! @auth
+  schemaRelationsRefTypesMapping: [StixRelationshipRefSchema!]! @auth
   filterKeysSchema: [FilterKeysSchema!]! @auth
 
   ######## STIX CORE RELATIONSHIPS
@@ -12404,6 +12426,11 @@ type KillChainPhaseEditMutations {
 
 ######## STIX CORE OBJECT ENTITIES
 
+enum AnalysisContentType {
+  fields
+  file
+}
+
 type StixCoreObjectEditMutations {
   delete: ID @auth(for: [KNOWLEDGE_KNUPDATE_KNDELETE])
   relationAdd(input: StixRefRelationshipAddInput!): StixRefRelationship
@@ -12415,6 +12442,7 @@ type StixCoreObjectEditMutations {
   importPush(file: Upload!, fileMarkings: [String], version: DateTime, noTriggerImport: Boolean): File @auth(for: [KNOWLEDGE_KNUPLOAD])
   exportAsk(input: ExportAskInput!): [File!]  @auth(for: [KNOWLEDGE_KNGETEXPORT_KNASKEXPORT])
   exportPush(file: Upload!): Boolean @auth(for: [CONNECTORAPI])
+  askAnalysis(contentSource: String!, contentType: AnalysisContentType!, connectorId: ID): Work @auth(for: [KNOWLEDGE_KNUPDATE])
 }
 
 ######## STIX DOMAIN OBJECT ENTITIES
@@ -12907,7 +12935,7 @@ type Mutation {
     Text: TextAddInput
     UserAgent: UserAgentAddInput
     BankAccount: BankAccountAddInput
-Credential: CredentialAddInput
+    Credential: CredentialAddInput
     TrackingNumber: TrackingNumberAddInput
     PhoneNumber: PhoneNumberAddInput
     PaymentCard: PaymentCardAddInput

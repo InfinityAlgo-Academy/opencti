@@ -29,7 +29,8 @@ import { commitMutation } from '../../../../relay/environment';
 import usePreloadedFragment from '../../../../utils/hooks/usePreloadedFragment';
 import { CaseTemplateLine_node$key } from './__generated__/CaseTemplateLine_node.graphql';
 import { CaseTemplateLineFragment } from './CaseTemplateLine';
-import { FilterGroup, isFilterGroupNotEmpty, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../utils/filters/filtersUtils';
+import { isFilterGroupNotEmpty, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../utils/filters/filtersUtils';
+import { FilterGroup } from '../../../../utils/filters/filtersHelpers-types';
 
 // Deprecated - https://mui.com/system/styles/basics/
 // Do not use it for new code.
@@ -217,7 +218,7 @@ const CaseTemplateTasks = () => {
       description: {
         label: 'Description',
         width: '65%',
-        isSortable: true,
+        isSortable: false,
         render: (node: CaseTemplateTasksLine_node$data) => node.description,
       },
     };

@@ -12,7 +12,8 @@ import { DataColumns, PaginationOptions } from '../../../../../../components/lis
 import { StixDomainObjectIndicatorsLinesQuery$data } from '../../../../observations/indicators/__generated__/StixDomainObjectIndicatorsLinesQuery.graphql';
 import useAuth from '../../../../../../utils/hooks/useAuth';
 import { QueryRenderer } from '../../../../../../relay/environment';
-import { FilterGroup, isFilterGroupNotEmpty, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../../../utils/filters/filtersUtils';
+import { isFilterGroupNotEmpty, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../../../utils/filters/filtersUtils';
+import { FilterGroup } from '../../../../../../utils/filters/filtersHelpers-types';
 
 interface EntityStixCoreRelationshipsIndicatorsEntitiesViewProps {
   entityId: string
@@ -106,7 +107,13 @@ const EntityStixCoreRelationshipsIndicatorsEntitiesView: FunctionComponent<Entit
     mode: 'and',
     filters: [
       { key: 'entity_type', values: ['Indicator'], mode: 'or', operator: 'eq' },
-      { key: 'indicates', values: [entityId], mode: 'or', operator: 'eq' },
+      {
+        key: 'regardingOf',
+        values: [
+          { key: 'id', values: [entityId] },
+          { key: 'relationship_type', values: ['indicates'] },
+        ],
+      },
     ],
     filterGroups: userFilters && isFilterGroupNotEmpty(userFilters) ? [userFilters] : [],
   };

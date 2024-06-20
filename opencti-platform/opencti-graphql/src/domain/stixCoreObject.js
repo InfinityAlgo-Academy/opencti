@@ -3,7 +3,7 @@ import { createEntity, createRelationRaw, deleteElementById, distributionEntitie
 import { internalFindByIds, internalLoadById, listEntitiesPaginated, listEntitiesThroughRelationsPaginated, storeLoadById, storeLoadByIds } from '../database/middleware-loader';
 import { findAll as relationFindAll } from './stixCoreRelationship';
 import { delEditContext, lockResource, notify, setEditContext, storeUpdateEvent } from '../database/redis';
-import { BUS_TOPICS } from '../config/conf';
+import { BUS_TOPICS, logApp } from '../config/conf';
 import { FunctionalError, LockTimeoutError, TYPE_LOCK_ERROR, UnsupportedError } from '../config/errors';
 import { isStixCoreObject, stixCoreObjectOptions } from '../schema/stixCoreObject';
 import { findById as findStatusById } from './status';
@@ -12,6 +12,7 @@ import {
   ABSTRACT_STIX_CORE_OBJECT,
   ABSTRACT_STIX_DOMAIN_OBJECT,
   buildRefRelationKey,
+  CONNECTOR_INTERNAL_ANALYSIS,
   CONNECTOR_INTERNAL_ENRICHMENT,
   ENTITY_TYPE_CONTAINER,
   INPUT_EXTERNAL_REFS,
@@ -30,7 +31,7 @@ import { createWork, workToExportFile } from './work';
 import { pushToConnector } from '../database/rabbitmq';
 import { now } from '../utils/format';
 import { ENTITY_TYPE_CONNECTOR } from '../schema/internalObject';
-import { deleteFile, storeFileConverter } from '../database/file-storage';
+import { deleteFile, loadFile, storeFileConverter } from '../database/file-storage';
 import { findById as documentFindById } from '../modules/internal/document/document-domain';
 import { elCount, elUpdateElement } from '../database/engine';
 import { generateStandardId, getInstanceIds } from '../schema/identifier';
@@ -49,6 +50,7 @@ import { ENTITY_TYPE_CONTAINER_GROUPING } from '../modules/grouping/grouping-typ
 import { getEntitiesMapFromCache } from '../database/cache';
 import { isUserCanAccessStoreElement, SYSTEM_USER } from '../utils/access';
 import { uploadToStorage } from '../database/file-storage-helper';
+import { connectorsForAnalysis } from '../database/repository';
 
 export const findAll = async (context, user, args) => {
   let types = [];
@@ -78,6 +80,19 @@ export const findAll = async (context, user, args) => {
 
 export const findById = async (context, user, stixCoreObjectId) => {
   return storeLoadById(context, user, stixCoreObjectId, ABSTRACT_STIX_CORE_OBJECT);
+};
+
+export const stixCoreObjectsPaginated = async (context, user, args) => {
+  let types = [];
+  if (isNotEmptyField(args.types)) {
+    types = args.types.filter((type) => isStixCoreObject(type));
+  }
+  if (types.length === 0) {
+    types.push(ABSTRACT_STIX_CORE_OBJECT);
+  }
+  const completeArgs = { ...args, bothDirection: true };
+
+  return listEntitiesThroughRelationsPaginated(context, user, args.entityId, args.relationshipTypes, types, false, true, completeArgs);
 };
 
 export const batchInternalRels = async (context, user, elements, opts = {}) => {
@@ -141,35 +156,35 @@ export const containersPaginated = async (context, user, stixCoreObjectId, opts)
   if (!finalEntityTypes.every((t) => isStixDomainObjectContainer(t))) {
     throw FunctionalError(`Only ${ENTITY_TYPE_CONTAINER} can be query through this method.`);
   }
-  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, finalEntityTypes, true, opts);
+  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, finalEntityTypes, true, false, opts);
 };
 
 export const reportsPaginated = async (context, user, stixCoreObjectId, opts) => {
-  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, ENTITY_TYPE_CONTAINER_REPORT, true, opts);
+  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, ENTITY_TYPE_CONTAINER_REPORT, true, false, opts);
 };
 
 export const groupingsPaginated = async (context, user, stixCoreObjectId, opts) => {
-  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, ENTITY_TYPE_CONTAINER_GROUPING, true, opts);
+  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, ENTITY_TYPE_CONTAINER_GROUPING, true, false, opts);
 };
 
 export const casesPaginated = async (context, user, stixCoreObjectId, opts) => {
-  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, ENTITY_TYPE_CONTAINER_CASE, true, opts);
+  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, ENTITY_TYPE_CONTAINER_CASE, true, false, opts);
 };
 
 export const notesPaginated = async (context, user, stixCoreObjectId, opts) => {
-  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, ENTITY_TYPE_CONTAINER_NOTE, true, opts);
+  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, ENTITY_TYPE_CONTAINER_NOTE, true, false, opts);
 };
 
 export const opinionsPaginated = async (context, user, stixCoreObjectId, opts) => {
-  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, ENTITY_TYPE_CONTAINER_OPINION, true, opts);
+  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, ENTITY_TYPE_CONTAINER_OPINION, true, false, opts);
 };
 
 export const observedDataPaginated = async (context, user, stixCoreObjectId, opts) => {
-  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, ENTITY_TYPE_CONTAINER_OBSERVED_DATA, true, opts);
+  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_OBJECT, ENTITY_TYPE_CONTAINER_OBSERVED_DATA, true, false, opts);
 };
 
 export const externalReferencesPaginated = async (context, user, stixCoreObjectId, opts) => {
-  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_EXTERNAL_REFERENCE, ENTITY_TYPE_EXTERNAL_REFERENCE, false, opts);
+  return listEntitiesThroughRelationsPaginated(context, user, stixCoreObjectId, RELATION_EXTERNAL_REFERENCE, ENTITY_TYPE_EXTERNAL_REFERENCE, false, false, opts);
 };
 
 export const stixCoreRelationships = (context, user, stixCoreObjectId, args) => {
@@ -233,6 +248,112 @@ export const askElementEnrichmentForConnector = async (context, user, enrichedId
     context_data: contextData,
   });
   return work;
+};
+
+export const CONTENT_TYPE_FIELDS = 'fields';
+export const CONTENT_TYPE_FILE = 'file';
+
+export const askElementAnalysisForConnector = async (context, user, analyzedId, contentSource, contentType, connectorId) => {
+  logApp.debug(`[JOBS] ask analysis for content type ${contentType} and content source ${contentSource}`);
+
+  if (contentType === CONTENT_TYPE_FIELDS) return await askFieldsAnalysisForConnector(context, user, analyzedId, contentSource, connectorId);
+  if (contentType === CONTENT_TYPE_FILE) return await askFileAnalysisForConnector(context, user, analyzedId, contentSource, connectorId);
+  throw new Error(`Content type ${contentType} not recognized`);
+};
+
+export const CONTENT_SOURCE_CONTENT_MAPPING = 'content_mapping';
+
+const askFieldsAnalysisForConnector = async (context, user, analyzedId, contentSource, connectorId) => {
+  let connectors = await connectorsForAnalysis(context, user);
+  if (connectorId) {
+    connectors = R.filter((n) => n.id === connectorId, connectors);
+  }
+  if (connectors.length > 0) {
+    // If a connectorId was specified, we use it, otherwise we get the first available connector by default. This way query can be called even without specifiying connectorId
+    const connector = connectors[0];
+    const element = await internalLoadById(context, user, analyzedId);
+    const work = await createWork(context, user, connector, 'Content fields analysis', element.standard_id);
+
+    if (contentSource !== CONTENT_SOURCE_CONTENT_MAPPING) {
+      throw new Error(`Fields content source not handled: ${contentSource}`);
+    }
+
+    const contentMappingFields = ['description', 'content'];
+    const content_fields = contentMappingFields.join(' ');
+
+    const message = {
+      internal: {
+        work_id: work.id, // Related action for history
+        applicant_id: null, // No specific user asking for the analysis
+      },
+      event: {
+        event_type: CONNECTOR_INTERNAL_ANALYSIS,
+        entity_id: element.standard_id,
+        entity_type: element.entity_type,
+        content_type: CONTENT_TYPE_FIELDS,
+        content_source: contentSource,
+        content_fields,
+      },
+    };
+
+    await pushToConnector(connector.internal_id, message);
+    await publishAnalysisAction(user, analyzedId, connector, element);
+    return work;
+  }
+  throw new Error('No connector found for analysis');
+};
+
+const askFileAnalysisForConnector = async (context, user, analyzedId, contentSource, connectorId) => {
+  const file = await loadFile(user, contentSource);
+
+  let connectors = await connectorsForAnalysis(context, user, file.metaData.mimetype);
+  if (connectorId) {
+    connectors = R.filter((n) => n.id === connectorId, connectors);
+  }
+  if (connectors.length > 0) {
+    const connector = connectors[0];
+    const element = await internalLoadById(context, user, analyzedId);
+    const work = await createWork(context, user, connector, 'Content file analysis', element.standard_id);
+
+    const message = {
+      internal: {
+        work_id: work.id, // Related action for history
+        applicant_id: null, // No specific user asking for the analysis
+      },
+      event: {
+        event_type: CONNECTOR_INTERNAL_ANALYSIS,
+        entity_id: element.standard_id,
+        entity_type: element.entity_type,
+        content_type: CONTENT_TYPE_FILE,
+        file_id: file.id,
+        file_mime: file.metaData.mimetype,
+        file_fetch: `/storage/get/${file.id}`, // Path to get the file
+      },
+    };
+
+    await pushToConnector(connector.internal_id, message);
+    await publishAnalysisAction(user, analyzedId, connector, element);
+    return work;
+  }
+  throw new Error('No connector found for analysis');
+};
+
+const publishAnalysisAction = async (user, analyzedId, connector, element) => {
+  const baseData = {
+    id: analyzedId,
+    connector_id: connector.id,
+    connector_name: connector.name,
+    entity_name: extractEntityRepresentativeName(element),
+    entity_type: element.entity_type
+  };
+  const contextData = completeContextDataForEntity(baseData, element);
+  await publishUserAction({
+    user,
+    event_access: 'extended',
+    event_type: 'command',
+    event_scope: 'analyze',
+    context_data: contextData,
+  });
 };
 
 // region stats
@@ -389,7 +510,7 @@ export const stixCoreObjectExportPush = async (context, user, entityId, args) =>
 
 export const stixCoreObjectImportPush = async (context, user, id, file, args = {}) => {
   let lock;
-  const { noTriggerImport, version: fileVersion, fileMarkings: file_markings } = args;
+  const { noTriggerImport, version: fileVersion, fileMarkings: file_markings, importContextEntities } = args;
   const previous = await storeLoadByIdWithRefs(context, user, id);
   if (!previous) {
     throw UnsupportedError('Cant upload a file an none existing element', { id });
@@ -409,7 +530,7 @@ export const stixCoreObjectImportPush = async (context, user, id, file, args = {
       const key = `${filePath}/${filename}`;
       meta.external_reference_id = generateStandardId(ENTITY_TYPE_EXTERNAL_REFERENCE, { url: `/storage/get/${key}` });
     }
-    const { upload: up, untouched } = await uploadToStorage(context, user, filePath, file, { meta, noTriggerImport, entity: previous, file_markings });
+    const { upload: up, untouched } = await uploadToStorage(context, user, filePath, file, { meta, noTriggerImport, entity: previous, file_markings, importContextEntities });
     if (untouched) {
       // When synchronizing the version can be the same.
       // If it's the case, just return without any x_opencti_files modifications

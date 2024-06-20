@@ -530,7 +530,6 @@ input TaxiiCollectionAddInput {
 
 enum TaxiiCollectionOrdering {
   name
-  description
   id
   _score
 }
@@ -640,7 +639,6 @@ input StreamCollectionAddInput {
 
 enum StreamCollectionOrdering {
   name
-  description
   stream_public
   id
   stream_live
@@ -840,7 +838,6 @@ type FileMetadata {
   entity: StixObject
   labels_text: String
   labels: [String]
-  content_markings: [String]
   file_markings: [String]
   creator_id: String
   external_reference_id: String
@@ -1179,7 +1176,6 @@ type Settings implements InternalObject & BasicObject {
   entity_type: String!
   parent_types: [String!]!
   platform_organization: Organization
-  platform_data_sharing_max_markings: [MarkingDefinition!]
   platform_title: String
   platform_favicon: String
   platform_email: String
@@ -1294,6 +1290,8 @@ type Group implements InternalObject & BasicObject {
   roles(orderBy: RolesOrdering, orderMode: OrderingMode): RoleConnection
   allowed_marking: [MarkingDefinition!]
   default_marking: [DefaultMarking!]
+  not_shareable_marking_types: [String!]!
+  max_shareable_marking: [MarkingDefinition!]!
   default_hidden_types: [String!]
   group_confidence_level: ConfidenceLevel
   editContext: [EditUserContext!]
@@ -1392,6 +1390,8 @@ type Member {
   id: ID!
   name: String!
   entity_type: String!
+  effective_confidence_level: EffectiveConfidenceLevel
+  group_confidence_level: ConfidenceLevel
 }
 
 type MemberAccess {
@@ -1518,6 +1518,7 @@ type MeUser implements BasicObject & InternalObject {
   effective_confidence_level: EffectiveConfidenceLevel
   allowed_marking: [MarkingDefinition!]
   default_marking: [DefaultMarking!]
+  max_shareable_marking: [MarkingDefinition!]
   otp_mandatory: Boolean
   groups(orderBy: GroupsOrdering, orderMode: OrderingMode): GroupConnection
   default_dashboards: [Workspace!]!
@@ -1649,6 +1650,7 @@ enum ConnectorType {
   EXTERNAL_IMPORT
   INTERNAL_IMPORT_FILE
   INTERNAL_ENRICHMENT
+  INTERNAL_ANALYSIS
   INTERNAL_EXPORT_FILE
   STREAM
 }
@@ -3381,7 +3383,6 @@ input IndividualAddInput {
 
 enum SectorsOrdering {
   name
-  description
   created
   modified
   created_at
@@ -4018,7 +4019,6 @@ input PositionAddInput {
 
 enum CitiesOrdering {
   name
-  description
   aliases
   created
   modified
@@ -4123,7 +4123,6 @@ input CityAddInput {
 
 enum CountriesOrdering {
   name
-  description
   created
   modified
   created_at
@@ -4224,7 +4223,6 @@ input CountryAddInput {
 
 enum RegionsOrdering {
   name
-  description
   created
   modified
   created_at
@@ -7012,6 +7010,16 @@ type StixRelationshipSchema {
   values: [String!]!
 }
 
+type StixRelationshipRefSchemaValue {
+  name: String!
+  toTypes: [String!]!
+}
+
+type StixRelationshipRefSchema {
+  key: String!
+  values: [StixRelationshipRefSchemaValue!]!
+}
+
 enum StixCoreRelationshipsOrdering {
   entity_type
   relationship_type
@@ -7342,7 +7350,7 @@ type Query {
   indexedFilesMetrics: FilesMetrics
   settings: Settings!
   group(id: String!): Group
-  groups(first: Int, after: ID, orderBy: GroupsOrdering, orderMode: OrderingMode, search: String): GroupConnection
+  groups(first: Int, after: ID, orderBy: GroupsOrdering, orderMode: OrderingMode, search: String, filters: FilterGroup): GroupConnection
   roles(first: Int, after: ID, orderBy: RolesOrdering, orderMode: OrderingMode, search: String): RoleConnection
   me: MeUser!
   otpGeneration: OtpElement
@@ -7360,6 +7368,7 @@ type Query {
   connectorsForWorker: [Connector]
   connectorsForExport: [Connector]
   connectorsForImport: [Connector]
+  connectorsForAnalysis: [Connector]
   connectorsForNotification: [Connector]
   work(id: ID!): Work
   works(first: Int, after: ID, orderBy: WorksOrdering, orderMode: OrderingMode, search: String, filters: FilterGroup): WorkConnection
@@ -7398,6 +7407,7 @@ type Query {
   stixCoreObjectRaw(id: String!): String
   stixCoreObject(id: String!): StixCoreObject
   stixCoreObjects(first: Int, after: ID, types: [String], orderBy: StixCoreObjectsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String): StixCoreObjectConnection
+  stixCoreObjectsRegardingOf(entityId: ID, relationshipTypes: [String], first: Int, after: ID, types: [String], orderBy: StixCoreObjectsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String): StixCoreObjectConnection
   globalSearch(first: Int, after: ID, search: String, types: [String], orderBy: StixCoreObjectsOrdering, orderMode: OrderingMode, filters: FilterGroup): StixCoreObjectConnection
   stixCoreObjectsExportFiles(first: Int, exportContext: ExportContext!): FileConnection
   stixCoreObjectsTimeSeries(authorId: String, field: String!, operation: StatsOperation!, startDate: DateTime!, endDate: DateTime, interval: String!, onlyInferred: Boolean, types: [String], filters: FilterGroup, search: String): [TimeSeries]
@@ -7497,7 +7507,7 @@ type Query {
   stixRelationshipsDistribution(field: String!, operation: StatsOperation!, startDate: DateTime, endDate: DateTime, dateAttribute: String, isTo: Boolean, limit: Int, order: String, fromOrToId: [String], elementWithTargetTypes: [String], fromId: [String], fromRole: String, fromTypes: [String], toId: [String], toRole: String, toTypes: [String], relationship_type: [String], confidences: [Int], search: String, filters: FilterGroup, dynamicFrom: FilterGroup, dynamicTo: FilterGroup, aggregateOnConnections: Boolean): [Distribution]
   stixRelationshipsNumber(dateAttribute: String, authorId: String, noDirection: Boolean, endDate: DateTime, onlyInferred: Boolean, fromOrToId: [String], elementWithTargetTypes: [String], fromId: [String], fromRole: String, fromTypes: [String], toId: [String], toRole: String, toTypes: [String], relationship_type: [String], confidences: [Int], search: String, filters: FilterGroup, dynamicFrom: FilterGroup, dynamicTo: FilterGroup): Number
   schemaRelationsTypesMapping: [StixRelationshipSchema!]!
-  schemaRelationsRefTypesMapping: [StixRelationshipSchema!]!
+  schemaRelationsRefTypesMapping: [StixRelationshipRefSchema!]!
   filterKeysSchema: [FilterKeysSchema!]!
   stixCoreRelationship(id: String): StixCoreRelationship
   stixCoreRelationships(first: Int, after: ID, orderBy: StixCoreRelationshipsOrdering, orderMode: OrderingMode, fromOrToId: [String], elementWithTargetTypes: [String], fromId: [String], fromRole: String, fromTypes: [String], toId: [String], toRole: String, toTypes: [String], relationship_type: [String], startTimeStart: DateTime, startTimeStop: DateTime, stopTimeStart: DateTime, stopTimeStop: DateTime, firstSeenStart: DateTime, firstSeenStop: DateTime, lastSeenStart: DateTime, lastSeenStop: DateTime, startDate: DateTime, endDate: DateTime, confidences: [Int], search: String, filters: FilterGroup, stix: Boolean): StixCoreRelationshipConnection
@@ -7771,6 +7781,11 @@ type KillChainPhaseEditMutations {
   relationDelete(toId: StixRef!, relationship_type: String!): KillChainPhase
 }
 
+enum AnalysisContentType {
+  fields
+  file
+}
+
 type StixCoreObjectEditMutations {
   delete: ID
   relationAdd(input: StixRefRelationshipAddInput!): StixRefRelationship
@@ -7782,6 +7797,7 @@ type StixCoreObjectEditMutations {
   importPush(file: Upload!, fileMarkings: [String], version: DateTime, noTriggerImport: Boolean): File
   exportAsk(input: ExportAskInput!): [File!]
   exportPush(file: Upload!): Boolean
+  askAnalysis(contentSource: String!, contentType: AnalysisContentType!, connectorId: ID): Work
 }
 
 input StixDomainObjectFileEditInput {

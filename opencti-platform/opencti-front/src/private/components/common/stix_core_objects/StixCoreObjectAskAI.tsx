@@ -51,6 +51,7 @@ import { fieldSpacingContainerStyle } from '../../../../utils/field';
 import { resolveLink } from '../../../../utils/Entity';
 import useGranted, { KNOWLEDGE_KNUPLOAD } from '../../../../utils/hooks/useGranted';
 import useApiMutation from '../../../../utils/hooks/useApiMutation';
+import { MESSAGING$ } from '../../../../relay/environment';
 
 // region types
 interface StixCoreObjectAskAiProps {
@@ -145,7 +146,7 @@ const StixCoreObjectAskAI: FunctionComponent<StixCoreObjectAskAiProps> = ({ inst
   const [commitMutationContainerReport] = useApiMutation<StixCoreObjectAskAIContainerReportMutation>(stixCoreObjectAskAIContainerReportMutation);
   const [commitMutationSummarizeFiles] = useApiMutation<StixCoreObjectAskAISummarizeFilesMutation>(stixCoreObjectAskAISummarizeFilesMutation);
   const [commitMutationConvertFilesToStix] = useApiMutation<StixCoreObjectAskAIConvertFilesToStixMutation>(stixCoreObjectAskAIConvertFilesToStixMutation);
-  const handleAskAi = () => {
+  const handleAskAiContent = () => {
     handleCloseOptions();
     setDisableResponse(true);
     const id = uuid();
@@ -210,7 +211,21 @@ const StixCoreObjectAskAI: FunctionComponent<StixCoreObjectAskAiProps> = ({ inst
         });
         break;
       default:
-        // do nothing
+      // do nothing
+    }
+  };
+  const handleAskAi = () => {
+    // check paragraphs value is correct
+    if (action === 'container-report' || action === 'summarize-files') {
+      if (Number.isNaN(paragraphs)) {
+        MESSAGING$.notifyError('Number of paragraphs should be a number');
+      } else if (paragraphs <= 0) {
+        MESSAGING$.notifyError('Number of paragraphs should be greather than 0');
+      } else {
+        handleAskAiContent();
+      }
+    } else {
+      handleAskAiContent();
     }
   };
   const handleCancelDestination = () => {
@@ -235,40 +250,41 @@ const StixCoreObjectAskAI: FunctionComponent<StixCoreObjectAskAiProps> = ({ inst
           });
         },
       });
+    } else if (destination === 'file') {
+      let fileName = newFileName ?? instanceName;
+      if (format === 'text') {
+        fileName += '.txt';
+      } else if (format === 'html') {
+        fileName += '.html';
+      } else if (format === 'markdown') {
+        fileName += '.md';
+      } else if (format === 'json') {
+        fileName += '.json';
+      }
+      const blob = new Blob([acceptedResult ?? ''], {
+        type,
+      });
+      const file = new File([blob], fileName, {
+        type,
+      });
+      const fileMarkings = instanceMarkings ?? [];
+      commitMutationCreateFile({
+        variables: {
+          id: instanceId,
+          file,
+          fileMarkings,
+          noTriggerImport: false,
+        },
+        onCompleted: (response: StixCoreObjectContentFilesUploadStixCoreObjectMutation$data) => {
+          setAcceptedResult(null);
+          setIsSubmitting(false);
+          navigate({
+            pathname: `${resolveLink(instanceType)}/${instanceId}/${type === 'container' && format !== 'json' ? 'content' : 'files'}`,
+            search: `${createSearchParams({ forceFile: 'true', currentFileId: response?.stixCoreObjectEdit?.importPush?.id ?? '' })}`,
+          });
+        },
+      });
     }
-    let fileName = newFileName ?? instanceName;
-    if (format === 'text') {
-      fileName += '.txt';
-    } else if (format === 'html') {
-      fileName += '.html';
-    } else if (format === 'markdown') {
-      fileName += '.md';
-    } else if (format === 'json') {
-      fileName += '.json';
-    }
-    const blob = new Blob([acceptedResult ?? ''], {
-      type,
-    });
-    const file = new File([blob], fileName, {
-      type,
-    });
-    const fileMarkings = instanceMarkings ?? [];
-    commitMutationCreateFile({
-      variables: {
-        id: instanceId,
-        file,
-        fileMarkings,
-        noTriggerImport: false,
-      },
-      onCompleted: (response: StixCoreObjectContentFilesUploadStixCoreObjectMutation$data) => {
-        setAcceptedResult(null);
-        setIsSubmitting(false);
-        navigate({
-          pathname: `${resolveLink(instanceType)}/${instanceId}/${type === 'container' && format !== 'json' ? 'content' : 'files'}`,
-          search: `${createSearchParams({ forceFile: 'true', currentFileId: response?.stixCoreObjectEdit?.importPush?.id ?? '' })}`,
-        });
-      },
-    });
   };
   return (
     <>
@@ -349,7 +365,7 @@ const StixCoreObjectAskAI: FunctionComponent<StixCoreObjectAskAiProps> = ({ inst
               fullWidth={true}
               type="number"
               value={paragraphs}
-              onChange={(event) => setParagraphs(Number.isNaN(parseInt(event.target.value, 10)) ? 1 : parseInt(event.target.value, 10))}
+              onChange={(event) => setParagraphs(parseInt(event.target.value, 10))}
               style={fieldSpacingContainerStyle}
             />
           )}

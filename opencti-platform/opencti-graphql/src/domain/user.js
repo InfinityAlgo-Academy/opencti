@@ -15,7 +15,7 @@ import {
   PLATFORM_VERSION,
 } from '../config/conf';
 import { AuthenticationFailure, DatabaseError, ForbiddenAccess, FunctionalError, UnsupportedError } from '../config/errors';
-import { getEntitiesListFromCache, getEntitiesMapFromCache, getEntityFromCache } from '../database/cache';
+import { getEntitiesListFromCache, getEntitiesMapFromCache, getEntityFromCache, resetCacheForEntity } from '../database/cache';
 import { elLoadBy, elRawDeleteByQuery } from '../database/engine';
 import { createEntity, createRelation, deleteElementById, deleteRelationsByFromAndTo, patchAttribute, updateAttribute, updatedInputsToData } from '../database/middleware';
 import {
@@ -44,7 +44,7 @@ import {
   RELATION_HAS_CAPABILITY,
   RELATION_HAS_ROLE,
   RELATION_MEMBER_OF,
-  RELATION_PARTICIPATE_TO,
+  RELATION_PARTICIPATE_TO
 } from '../schema/internalRelationship';
 import { ENTITY_TYPE_IDENTITY_INDIVIDUAL } from '../schema/stixDomainObject';
 import { ENTITY_TYPE_MARKING_DEFINITION } from '../schema/stixMetaObject';
@@ -71,6 +71,7 @@ import { extractFilterKeys } from '../utils/filtering/filtering-utils';
 import { testFilterGroup, testStringFilter } from '../utils/filtering/boolean-logic-engine';
 import { computeUserEffectiveConfidenceLevel } from '../utils/confidence-level';
 import { STATIC_NOTIFIER_EMAIL, STATIC_NOTIFIER_UI } from '../modules/notifier/notifier-statics';
+import { cleanMarkings } from '../utils/markingDefinition-utils';
 
 const BEARER = 'Bearer ';
 const BASIC = 'Basic ';
@@ -226,15 +227,15 @@ export const batchCreators = async (context, user, userListIds) => {
 };
 
 export const userOrganizationsPaginated = async (context, user, userId, opts) => {
-  return listEntitiesThroughRelationsPaginated(context, user, userId, RELATION_PARTICIPATE_TO, ENTITY_TYPE_IDENTITY_ORGANIZATION, false, opts);
+  return listEntitiesThroughRelationsPaginated(context, user, userId, RELATION_PARTICIPATE_TO, ENTITY_TYPE_IDENTITY_ORGANIZATION, false, false, opts);
 };
 
 export const userGroupsPaginated = async (context, user, userId, opts) => {
-  return listEntitiesThroughRelationsPaginated(context, user, userId, RELATION_MEMBER_OF, ENTITY_TYPE_GROUP, false, opts);
+  return listEntitiesThroughRelationsPaginated(context, user, userId, RELATION_MEMBER_OF, ENTITY_TYPE_GROUP, false, false, opts);
 };
 
 export const groupRolesPaginated = async (context, user, groupId, opts) => {
-  return listEntitiesThroughRelationsPaginated(context, user, groupId, RELATION_HAS_ROLE, ENTITY_TYPE_ROLE, false, opts);
+  return listEntitiesThroughRelationsPaginated(context, user, groupId, RELATION_HAS_ROLE, ENTITY_TYPE_ROLE, false, false, opts);
 };
 
 export const batchRolesForUsers = async (context, user, userIds, opts = {}) => {
@@ -297,21 +298,53 @@ export const computeAvailableMarkings = (userMarkings, allMarkings) => {
   return R.uniqBy((m) => m.id, computedMarkings);
 };
 
+// Return all the available markings a user can share
+export const getAvailableDataSharingMarkings = async (context, user) => {
+  const maxMarkings = user.max_shareable_marking;
+  const allMarkings = await getEntitiesListFromCache(context, SYSTEM_USER, ENTITY_TYPE_MARKING_DEFINITION);
+  return computeAvailableMarkings(maxMarkings, allMarkings);
+};
+
+export const checkUserCanShareMarkings = async (context, user, markingsToShare) => {
+  const shareableMarkings = await getAvailableDataSharingMarkings(context, user);
+  const contentMaxMarkingsIsShareable = markingsToShare.every((m) => (
+    shareableMarkings.some((shareableMarking) => m.definition_type === shareableMarking.definition_type && m.x_opencti_order <= shareableMarking.x_opencti_order)));
+  if (!contentMaxMarkingsIsShareable) {
+    throw new Error('You are not allowed to share these markings.');
+  }
+};
+
 const getUserAndGlobalMarkings = async (context, userId, userGroups, capabilities) => {
   const groupIds = userGroups.map((r) => r.id);
   const userCapabilities = capabilities.map((c) => c.name);
   const shouldBypass = userCapabilities.includes(BYPASS) || userId === OPENCTI_ADMIN_UUID;
   const allMarkingsPromise = getEntitiesListFromCache(context, SYSTEM_USER, ENTITY_TYPE_MARKING_DEFINITION);
-  let userMarkingsPromise;
-  if (shouldBypass) { // Bypass user have all platform markings
-    userMarkingsPromise = allMarkingsPromise;
-  } else { // Standard user have markings related to his groups
-    userMarkingsPromise = listAllToEntitiesThroughRelations(context, SYSTEM_USER, groupIds, RELATION_ACCESSES_TO, ENTITY_TYPE_MARKING_DEFINITION);
-  }
   const defaultGroupMarkingsPromise = defaultMarkingDefinitionsFromGroups(context, groupIds);
-  const [userMarkings, markings, defaultMarkings] = await Promise.all([userMarkingsPromise, allMarkingsPromise, defaultGroupMarkingsPromise]);
-  const computedMarkings = computeAvailableMarkings(userMarkings, markings);
-  return { user: computedMarkings, all: markings, default: defaultMarkings };
+  let userMarkings;
+  let maxShareableMarkings;
+  const [all, defaultMarkings] = await Promise.all([allMarkingsPromise, defaultGroupMarkingsPromise]);
+
+  if (shouldBypass) { // Bypass user have all platform markings and can share all markings
+    userMarkings = all;
+    maxShareableMarkings = all;
+  } else { // Standard user have markings related to his groups
+    userMarkings = await listAllToEntitiesThroughRelations(context, SYSTEM_USER, groupIds, RELATION_ACCESSES_TO, ENTITY_TYPE_MARKING_DEFINITION);
+
+    const notShareableMarkings = userGroups.flatMap(
+      ({ max_shareable_markings }) => max_shareable_markings?.filter(({ value }) => value === 'none')
+        .map(({ type }) => type)
+    );
+
+    maxShareableMarkings = userGroups.flatMap(({ max_shareable_markings }) => max_shareable_markings?.filter(({ value }) => value !== 'none')).filter((m) => !!m);
+
+    const allShareableMarkings = all.filter(({ definition_type }) => (
+      !notShareableMarkings.includes(definition_type) && !maxShareableMarkings.some(({ type }) => type === definition_type)
+    )).filter(({ id }) => userMarkings.some((m) => m.id === id)).map(({ id }) => id);
+    maxShareableMarkings = [...maxShareableMarkings.map(({ value }) => value), ...allShareableMarkings];
+  }
+
+  const computedMarkings = computeAvailableMarkings(userMarkings, all);
+  return { user: computedMarkings, all, default: defaultMarkings, max_shareable: await cleanMarkings(context, maxShareableMarkings) };
 };
 
 export const getRoles = async (context, userGroups) => {
@@ -398,7 +431,9 @@ export const assignOrganizationToUser = async (context, user, userId, organizati
     message: `adds ${created.toType} \`${extractEntityRepresentativeName(created.to)}\` to user \`${actionEmail}\``,
     context_data: { id: organizationId, entity_type: ENTITY_TYPE_USER, input }
   });
+
   await userSessionRefresh(userId);
+  resetCacheForEntity(ENTITY_TYPE_SETTINGS);
   return user;
 };
 
@@ -951,7 +986,7 @@ export const userDeleteOrganizationRelation = async (context, user, userId, toId
   }
 
   const { to } = await deleteRelationsByFromAndTo(context, user, userId, toId, RELATION_PARTICIPATE_TO, ABSTRACT_INTERNAL_RELATIONSHIP);
-  if (to.authorized_authorities.includes(userId)) {
+  if (to.authorized_authorities?.includes(userId)) {
     const indexOfMember = to.authorized_authorities.indexOf(userId);
     to.authorized_authorities.splice(indexOfMember, 1);
     const patch = { authorized_authorities: to.authorized_authorities };
@@ -970,6 +1005,7 @@ export const userDeleteOrganizationRelation = async (context, user, userId, toId
     context_data: { id: userId, entity_type: ENTITY_TYPE_USER, input }
   });
   await userSessionRefresh(userId);
+  resetCacheForEntity(ENTITY_TYPE_SETTINGS);
   return notify(BUS_TOPICS[ENTITY_TYPE_USER].EDIT_TOPIC, targetUser, user);
 };
 
@@ -1173,6 +1209,12 @@ const buildSessionUser = (origin, impersonate, provider, settings) => {
       internal_id: m.internal_id,
       definition_type: m.definition_type,
     })),
+    max_shareable_marking: user.max_shareable_marking.map((m) => ({
+      id: m.id,
+      standard_id: m.standard_id,
+      internal_id: m.internal_id,
+      definition_type: m.definition_type,
+    })),
     default_marking: user.default_marking?.map((entry) => ({
       entity_type: entry.entity_type,
       values: entry.values?.map((m) => ({
@@ -1268,6 +1310,7 @@ export const buildCompleteUser = async (context, client) => {
     allowed_marking: marking.user,
     all_marking: marking.all,
     default_marking: marking.default,
+    max_shareable_marking: marking.max_shareable,
     effective_confidence_level,
   };
 };

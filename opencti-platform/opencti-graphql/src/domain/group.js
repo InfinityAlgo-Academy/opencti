@@ -47,6 +47,15 @@ export const groupAllowedMarkings = async (context, user, groupId) => {
   return listAllToEntitiesThroughRelations(context, user, groupId, RELATION_ACCESSES_TO, ENTITY_TYPE_MARKING_DEFINITION);
 };
 
+export const groupNotShareableMarkingTypes = (group) => group.max_shareable_markings?.filter(({ value }) => value === 'none')
+  .map(({ type }) => type) ?? [];
+
+export const groupMaxShareableMarkings = async (context, user, group) => {
+  const markings = await getEntitiesMapFromCache(context, SYSTEM_USER, ENTITY_TYPE_MARKING_DEFINITION);
+  return group.max_shareable_markings?.filter(({ value }) => value !== 'none')
+    .map(({ value }) => markings.get(value)) ?? [];
+};
+
 export const defaultMarkingDefinitions = async (context, group) => {
   const defaultMarking = group.default_marking ?? [];
   return defaultMarking.map(async (entry) => {
@@ -99,11 +108,11 @@ export const defaultMarkingDefinitionsFromGroups = async (context, groupIds) => 
 };
 
 export const rolesPaginated = async (context, user, groupId, args) => {
-  return listEntitiesThroughRelationsPaginated(context, user, groupId, RELATION_HAS_ROLE, ENTITY_TYPE_ROLE, false, args);
+  return listEntitiesThroughRelationsPaginated(context, user, groupId, RELATION_HAS_ROLE, ENTITY_TYPE_ROLE, false, false, args);
 };
 
 export const membersPaginated = async (context, user, groupId, args) => {
-  return listEntitiesThroughRelationsPaginated(context, user, groupId, RELATION_MEMBER_OF, ENTITY_TYPE_USER, true, args);
+  return listEntitiesThroughRelationsPaginated(context, user, groupId, RELATION_MEMBER_OF, ENTITY_TYPE_USER, true, false, args);
 };
 
 export const groupDelete = async (context, user, groupId) => {
@@ -130,7 +139,7 @@ export const groupEditField = async (context, user, groupId, input) => {
     context_data: { id: groupId, entity_type: ENTITY_TYPE_GROUP, input }
   });
   // on editing the group confidence level, all memebers might have changed their effective level
-  if (input.find((i) => i.key === 'group_confidence_level')) {
+  if (input.find((i) => ['group_confidence_level', 'max_shareable_markings'].includes(i.key))) {
     await groupSessionRefresh(context, user, groupId);
   }
   return notify(BUS_TOPICS[ENTITY_TYPE_GROUP].EDIT_TOPIC, element, user);
