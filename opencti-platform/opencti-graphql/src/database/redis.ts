@@ -106,7 +106,6 @@ const sentinelOptions = async (clusterNodes: Partial<SentinelAddress>[]): Promis
     role: conf.get('redis:sentinel_role'),
     preferredSlaves: conf.get('redis:sentinel_preferred_slaves'),
     sentinels: clusterNodes,
-    connectTimeout: 5000,
     failoverDetector: true,
     sentinelRetryStrategy: (times) => {
       return Math.min(times * 10, 1000);
@@ -128,7 +127,21 @@ export const createRedisClient = async (provider: string, autoReconnect = false)
     client = new Redis.Cluster(clusterNodes, clusterOpts);
   } else if (redisMode === 'sentinel') {
     const sentinelOpts = await sentinelOptions(clusterNodes);
-    client = new Redis(sentinelOpts);
+    client = new Redis({ ...sentinelOpts,
+      reconnectOnError: (error: Error & { code?: string }) => {
+        // Only reconnect when "ECONNRESET" is occurred
+        if (error?.code === 'ECONNRESET') {
+          console.warn(
+            `Redis connection occurred ${error.message}, retrying...`
+          );
+          return 2;
+        }
+        console.error(
+          `Redis connection error, ${error?.code}, ${error.message}`
+        );
+        return false;
+      }
+    });
   } else {
     const singleOptions = await redisOptions(autoReconnect);
     client = new Redis({ ...singleOptions, port: conf.get('redis:port'), host: conf.get('redis:hostname') });
