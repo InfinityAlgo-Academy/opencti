@@ -106,7 +106,7 @@ const sentinelOptions = async (clusterNodes: Partial<SentinelAddress>[]): Promis
     role: conf.get('redis:sentinel_role'),
     preferredSlaves: conf.get('redis:sentinel_preferred_slaves'),
     sentinels: clusterNodes,
-    // connectTimeout: 0,
+    connectTimeout: 0,
     failoverDetector: true,
     sentinelRetryStrategy: (times) => {
       return Math.min(times * 10, 1000);
