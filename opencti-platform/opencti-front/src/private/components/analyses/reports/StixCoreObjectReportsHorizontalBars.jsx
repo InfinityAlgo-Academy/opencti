@@ -26,29 +26,29 @@ const styles = () => ({
 });
 
 const stixCoreObjectReportsHorizontalBarsDistributionQuery = graphql`
-  query StixCoreObjectReportsHorizontalBarsDistributionQuery(
-    $objectId: String
-    $field: String!
-    $operation: StatsOperation!
-    $limit: Int
-  ) {
-    reportsDistribution(
-      objectId: $objectId
-      field: $field
-      operation: $operation
-      limit: $limit
+    query StixCoreObjectReportsHorizontalBarsDistributionQuery(
+        $objectId: String
+        $field: String!
+        $operation: StatsOperation!
+        $limit: Int
     ) {
-      label
-      value
-      entity {
-        ... on StixObject {
-          representative {
-            main
-          }
+        reportsDistribution(
+            objectId: $objectId
+            field: $field
+            operation: $operation
+            limit: $limit
+        ) {
+            label
+            value
+            entity {
+                ... on StixObject {
+                    representative {
+                        main
+                    }
+                }
+            }
         }
-      }
     }
-  }
 `;
 
 class StixCoreObjectReportsHorizontalBars extends Component {
@@ -67,8 +67,8 @@ class StixCoreObjectReportsHorizontalBars extends Component {
         render={({ props }) => {
           if (
             props
-            && props.reportsDistribution
-            && props.reportsDistribution.length > 0
+                        && props.reportsDistribution
+                        && props.reportsDistribution.length > 0
           ) {
             const data = props.reportsDistribution.map((n) => ({
               x: getMainRepresentative(n.entity) || n.label,

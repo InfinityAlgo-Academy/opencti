@@ -813,6 +813,9 @@ type FileMetadata {
   description: String
   order: Int
   inCarousel: Boolean
+  analysis_content_source: String
+  analysis_content_type: String
+  analysis_type: String
 }
 type File {
   id: ID!
@@ -1708,6 +1711,7 @@ type Connector implements BasicObject & InternalObject {
   auto: Boolean
   only_contextual: Boolean
   playbook_compatible: Boolean
+  connector_trigger_filters: String
   connector_type: String
   connector_scope: [String!]
   connector_state: String
@@ -11243,7 +11247,7 @@ type Query {
   role(id: String!): Role @auth(for: [SETTINGS_SETACCESSES])
   capabilities(first: Int): CapabilityConnection @auth(for: [SETTINGS_SETACCESSES])
   connector(id: String!): Connector @auth(for: [MODULES])
-  connectors: [Connector] @auth(for: [MODULES])
+  connectors: [Connector!] @auth(for: [MODULES])
   connectorsForWorker: [Connector] @auth(for: [MODULES])
   connectorsForExport: [Connector] @auth(for: [KNOWLEDGE])
   connectorsForImport: [Connector] @auth(for: [KNOWLEDGE])
@@ -11388,6 +11392,7 @@ type Query {
 
   stixCoreObjectRaw(id: String!): String @auth(for: [KNOWLEDGE])
   stixCoreObject(id: String!): StixCoreObject @auth(for: [KNOWLEDGE])
+  stixCoreObjectAnalysis(id: ID!, contentSource: String!, contentType: AnalysisContentType!): Analysis @auth(for: [KNOWLEDGE])
   stixCoreObjects(
     first: Int
     after: ID
@@ -11574,6 +11579,7 @@ type Query {
     filters: FilterGroup
     search: String
   ): StixObjectOrStixRelationshipConnection @auth(for: [KNOWLEDGE])
+  containersNumber(objectId: String, endDate: DateTime): Number @auth(for: [KNOWLEDGE, EXPLORE])
   note(id: String): Note @auth(for: [KNOWLEDGE])
   notes(
     first: Int
@@ -12443,6 +12449,32 @@ enum AnalysisContentType {
   file
 }
 
+enum AnalysisContentType {
+  fields
+  file
+}
+
+union Analysis = MappingAnalysis
+
+input MappingAnalysisInput {
+  mappedEntities: [MappedEntityInput]
+}
+
+type MappingAnalysis {
+  analysisType: String!
+  mappedEntities: [MappedEntity!]
+}
+
+input MappedEntityInput {
+  matchedString: String!
+  matchedEntityId: String!
+}
+
+type MappedEntity {
+  matchedString: String!
+  matchedEntity: StixCoreObject!
+}
+
 type StixCoreObjectEditMutations {
   delete: ID @auth(for: [KNOWLEDGE_KNUPDATE_KNDELETE])
   relationAdd(input: StixRefRelationshipAddInput!): StixRefRelationship
@@ -12451,10 +12483,12 @@ type StixCoreObjectEditMutations {
   restrictionOrganizationAdd(organizationId: ID!): StixCoreObject @auth(for: [KNOWLEDGE_KNUPDATE_KNORGARESTRICT])
   restrictionOrganizationDelete(organizationId: ID!): StixCoreObject @auth(for: [KNOWLEDGE_KNUPDATE_KNORGARESTRICT])
   askEnrichment(connectorId: ID!): Work @auth(for: [KNOWLEDGE_KNENRICHMENT])
+  askAnalysis(contentSource: String!, contentType: AnalysisContentType!, connectorId: ID): Work @auth(for: [KNOWLEDGE_KNUPDATE])
+  analysisPush(file: Upload!, contentSource: String!, contentType: AnalysisContentType!, analysisType: String!): File @auth(for: [CONNECTORAPI])
+  analysisClear(contentSource: String!, contentType: AnalysisContentType!): Boolean @auth(for: [KNOWLEDGE_KNUPDATE])
   importPush(file: Upload!, fileMarkings: [String], version: DateTime, noTriggerImport: Boolean): File @auth(for: [KNOWLEDGE_KNUPLOAD])
   exportAsk(input: ExportAskInput!): [File!]  @auth(for: [KNOWLEDGE_KNGETEXPORT_KNASKEXPORT])
   exportPush(file: Upload!): Boolean @auth(for: [CONNECTORAPI])
-  askAnalysis(contentSource: String!, contentType: AnalysisContentType!, connectorId: ID): Work @auth(for: [KNOWLEDGE_KNUPDATE])
 }
 
 ######## STIX DOMAIN OBJECT ENTITIES
@@ -12807,6 +12841,7 @@ type Mutation {
   registerConnector(input: RegisterConnectorInput): Connector @auth(for: [CONNECTORAPI])
   resetStateConnector(id: ID!): Connector @auth(for: [MODULES_MODMANAGE])
   deleteConnector(id: ID!): ID! @auth(for: [MODULES_MODMANAGE])
+  updateConnectorTrigger(id: ID!, input: [EditInput]!): Connector @auth(for: [MODULES_MODMANAGE])
   runtimeAttributeEdit(id: String!, previous: String!, current: String!): ID! @auth(for: [SETTINGS])
   feedAdd(input: FeedAddInput!): Feed @auth(for: [TAXIIAPI_SETCOLLECTIONS])
   feedDelete(id: ID!): ID! @auth(for: [TAXIIAPI_SETCOLLECTIONS])

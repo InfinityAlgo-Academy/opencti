@@ -41,7 +41,6 @@ import { useIsEnforceReference } from '../../../../utils/hooks/useEntitySettings
 import StixCoreObjectQuickSubscription from '../stix_core_objects/StixCoreObjectQuickSubscription';
 import { getMainRepresentative } from '../../../../utils/defaultRepresentatives';
 import Transition from '../../../../components/Transition';
-import Loader, { LoaderVariant } from '../../../../components/Loader';
 
 // Deprecated - https://mui.com/system/styles/basics/
 // Do not use it for new code.
@@ -342,7 +341,7 @@ const StixDomainObjectHeader = (props) => {
   const triggerData = useLazyLoadQuery(stixCoreObjectQuickSubscriptionContentQuery, { first: 20, ...triggersPaginationOptions });
 
   return (
-    <React.Suspense fallback={<Loader variant={LoaderVariant.inElement} />}>
+    <React.Suspense fallback={<span />}>
       <Tooltip title={getMainRepresentative(stixDomainObject)}>
         <Typography
           variant="h1"
@@ -471,21 +470,21 @@ const StixDomainObjectHeader = (props) => {
         <Security needs={[KNOWLEDGE_KNUPDATE]}>
           {aliases.length > 5 ? (
             <IconButton
-              style={{ float: 'left', marginTop: -8 }}
+              style={{ float: 'left', marginTop: -5 }}
               color="primary"
               aria-label="More"
               onClick={handleToggleOpenAliases}
-              size="large"
+              size="medium"
             >
               <DotsHorizontalCircleOutline fontSize="small" />
             </IconButton>
           ) : (
             <IconButton
-              style={{ float: 'left', marginTop: -8 }}
+              style={{ float: 'left', marginTop: -5 }}
               color="primary"
               aria-label="Alias"
               onClick={handleToggleCreateAlias}
-              size="large"
+              size="medium"
             >
               {openAlias ? (
                 <Close fontSize="small" />
