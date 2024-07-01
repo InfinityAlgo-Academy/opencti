@@ -87,7 +87,7 @@ steps:
 
 
   - name: frontend-e2e-tests
-    image: node:20.14.0
+    image: node:20-bookworm
     volumes:
     - name: cache-node-frontend-e2e
       path: /drone/src/opencti-platform/opencti-front/node_modules
@@ -102,11 +102,6 @@ steps:
       - apt-get -y install netcat-traditional
       - cd opencti-platform/opencti-front
       - yarn install
-      - export PYTHONHOME=/usr/bin/python3
-      - export PYTHONPATH=/usr/bin/python3
-      - echo $PYTHONHOME
-      - echo $PYTHONPATH
-      - python3 -V
       - npx playwright install --with-deps chromium
       - yarn build
       - yarn test:e2e
