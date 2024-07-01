@@ -98,7 +98,6 @@ steps:
       E2E_TEST: true
       TEAMS_WEBHOOK: teams-webhook-url
     commands:
-      - python -V
       - echo $PYTHONHOME
       - echo PYTHONPATH
       - apt-get update
