@@ -102,7 +102,8 @@ steps:
       - apt-get -y install netcat-traditional
       - cd opencti-platform/opencti-front
       - yarn install
-      - export PYTHONHOME=/usr/lib/python3.11
+      - export PYTHONHOME=
+      - export PYTHONPATH=
       - echo $PYTHONHOME
       - echo $PYTHONPATH
       - python3 -V
