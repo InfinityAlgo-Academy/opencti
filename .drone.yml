@@ -102,7 +102,6 @@ steps:
       - apt-get -y install netcat-traditional
       - cd opencti-platform/opencti-front
       - yarn install
-      - python -V
       - python3 -V
       - echo [$PYTHONHOME] [$PYTHONPATH]
       - npx playwright install --with-deps chromium
