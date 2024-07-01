@@ -98,12 +98,13 @@ steps:
       E2E_TEST: true
       TEAMS_WEBHOOK: teams-webhook-url
     commands:
-      - echo $PYTHONHOME
-      - echo PYTHONPATH
       - apt-get update
       - apt-get -y install netcat-traditional
       - cd opencti-platform/opencti-front
       - yarn install
+      - echo $PYTHONHOME
+      - echo $PYTHONPATH
+      - python -V
       - npx playwright install --with-deps chromium
       - yarn build
       - yarn test:e2e
