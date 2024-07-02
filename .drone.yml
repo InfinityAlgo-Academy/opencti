@@ -104,6 +104,7 @@ steps:
       - yarn install
       - python3 -V
       - echo [$PYTHONHOME] [$PYTHONPATH]
+      - npx playwright --version
 #      - npx playwright install --with-deps chromium
       - yarn build
       - yarn test:e2e
