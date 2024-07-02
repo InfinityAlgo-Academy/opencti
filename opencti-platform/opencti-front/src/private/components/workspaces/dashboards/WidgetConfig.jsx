@@ -1386,6 +1386,7 @@ const WidgetConfig = ({ workspace, widget, onComplete, closeMenu }) => {
                   size='small'
                   onClick={handleToggleWidgetActionMenuOpen}
                   data-testid="widget-action-selection"
+                  aria-label={t_i18n('Widget Action Selection')}
                 >
                   <ArrowDropDownIcon/>
                 </Button>
