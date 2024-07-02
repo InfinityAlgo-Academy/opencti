@@ -1414,7 +1414,7 @@ const WidgetConfig = ({ workspace, widget, onComplete, closeMenu }) => {
                             <MenuItem
                               key={option}
                               selected={index === widgetActionSelectedIndex}
-                              onClick={(event) => handleWidgetActionMenuItemClick(index)}
+                              onClick={() => handleWidgetActionMenuItemClick(index)}
                             >
                               {option.text}
                             </MenuItem>
