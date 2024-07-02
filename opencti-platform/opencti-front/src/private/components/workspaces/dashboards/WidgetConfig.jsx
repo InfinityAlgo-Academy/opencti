@@ -579,7 +579,7 @@ const WidgetConfig = ({ workspace, widget, onComplete, closeMenu }) => {
   const handleToggleWidgetActionMenuOpen = () => {
     setWidgetActionMenuOpen(!widgetActionMenuOpen);
   };
-  const handleWidgetActionMenuItemClick = (event, index) => {
+  const handleWidgetActionMenuItemClick = (index) => {
     setWidgetActionSelectedIndex(index);
     setWidgetActionMenuOpen(false);
   };
@@ -1372,7 +1372,7 @@ const WidgetConfig = ({ workspace, widget, onComplete, closeMenu }) => {
         <>
           <VisuallyHiddenInput type="file" accept={'application/JSON'} ref={inputRef} onChange={handleWidgetImport} />
           <Security needs={[EXPLORE_EXUPDATE]}>
-          {FAB_REPLACED && (
+            {FAB_REPLACED && (
             <div>
               <ButtonGroup
                 variant='contained'
@@ -1413,7 +1413,7 @@ const WidgetConfig = ({ workspace, widget, onComplete, closeMenu }) => {
                             <MenuItem
                               key={option}
                               selected={index === widgetActionSelectedIndex}
-                              onClick={(event) => handleWidgetActionMenuItemClick(event, index)}
+                              onClick={(event) => handleWidgetActionMenuItemClick(index)}
                             >
                               {option.text}
                             </MenuItem>
@@ -1425,32 +1425,32 @@ const WidgetConfig = ({ workspace, widget, onComplete, closeMenu }) => {
                 )}
               </Popper>
             </div>
-          )
-         }
-          {!FAB_REPLACED && (
-          <SpeedDial
-            className={classes.createButton}
-            ariaLabel="Create"
-            icon={<SpeedDialIcon />}
-            FabProps={{ color: 'primary' }}
-          >
-            <SpeedDialAction
-              title={t_i18n('Create a widget')}
-              icon={<WidgetsOutlined />}
-              tooltipTitle={t_i18n('Create a widget')}
-              onClick={() => setOpen(true)}
-              FabProps={{ classes: { root: classes.speedDialButton } }}
-            />
-            <SpeedDialAction
-              title={t_i18n('Import a widget')}
-              icon={<CloudUploadOutlined />}
-              tooltipTitle={t_i18n('Import a widget')}
-              onClick={() => inputRef.current?.click()}
-              FabProps={{ classes: { root: classes.speedDialButton } }}
-            />
-          </SpeedDial>
-          )
-        }
+            )
+          }
+            {!FAB_REPLACED && (
+            <SpeedDial
+              className={classes.createButton}
+              ariaLabel="Create"
+              icon={<SpeedDialIcon />}
+              FabProps={{ color: 'primary' }}
+            >
+              <SpeedDialAction
+                title={t_i18n('Create a widget')}
+                icon={<WidgetsOutlined />}
+                tooltipTitle={t_i18n('Create a widget')}
+                onClick={() => setOpen(true)}
+                FabProps={{ classes: { root: classes.speedDialButton } }}
+              />
+              <SpeedDialAction
+                title={t_i18n('Import a widget')}
+                icon={<CloudUploadOutlined />}
+                tooltipTitle={t_i18n('Import a widget')}
+                onClick={() => inputRef.current?.click()}
+                FabProps={{ classes: { root: classes.speedDialButton } }}
+              />
+            </SpeedDial>
+            )
+          }
           </Security>
         </>
       )}
