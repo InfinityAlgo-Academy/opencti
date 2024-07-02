@@ -156,7 +156,7 @@ steps:
     when:
       status: [success, failure]
     depends_on:
-      - api-tests
+#      - api-tests
       - frontend-tests
       - frontend-e2e-tests
 
