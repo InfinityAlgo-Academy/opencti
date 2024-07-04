@@ -115,6 +115,7 @@ const sentinelOptions = async (clusterNodes: Partial<SentinelAddress>[]): Promis
       return Math.min(times * 10, 1000);
     },
     enableTLSForSentinelMode: conf.get('redis:sentinel_tls') ?? false,
+    updateSentinels: false,
   };
 };
 
