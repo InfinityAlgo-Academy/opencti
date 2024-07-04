@@ -29,6 +29,7 @@ export const KNOWLEDGE_KNUPDATE = 'KNOWLEDGE_KNUPDATE';
 export const KNOWLEDGE_ORGANIZATION_RESTRICT = 'KNOWLEDGE_KNUPDATE_KNORGARESTRICT';
 export const SETTINGS = 'SETTINGS';
 export const VIRTUAL_ORGANIZATION_ADMIN = 'VIRTUAL_ORGANIZATION_ADMIN';
+export const SETTINGS_SECURITYACTIVITY = 'SETTINGS_SECURITYACTIVITY';
 
 export const ROLE_DEFAULT = 'Default';
 export const ROLE_ADMINISTRATOR = 'Administrator';
@@ -355,7 +356,7 @@ export const isBypassUser = (user: AuthUser): boolean => {
 };
 
 export const isUserHasCapability = (user: AuthUser, capability: string): boolean => {
-  return isBypassUser(user) || R.find((s) => s.name === capability, user.capabilities || []) !== undefined;
+  return isBypassUser(user) || (user.capabilities || []).some((s) => s.name.includes(capability));
 };
 
 export const isUserHasCapabilities = (user: AuthUser, capabilities: string[] = []) => {

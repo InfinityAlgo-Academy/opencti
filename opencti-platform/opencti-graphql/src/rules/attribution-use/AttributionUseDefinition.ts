@@ -4,7 +4,7 @@ import type { RuleDefinition } from '../../types/rules';
 const id = 'attribution_use';
 const name = 'Usage propagation via attribution';
 const description = 'Propagate a usage from a child to its parent via attribution.';
-const category = 'Report propagation';
+const category = 'Parent-child propagation';
 const display = {
   if: [
     {
@@ -27,7 +27,7 @@ const display = {
       action: 'CREATE',
       relation: 'relationship_uses',
       source: 'Entity C',
-      source_color: '#ff9800',
+      source_color: '#00bcd4',
       target: 'Entity B',
       target_color: '#4caf50',
     },

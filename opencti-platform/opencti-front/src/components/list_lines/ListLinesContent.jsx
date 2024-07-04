@@ -140,9 +140,11 @@ class ListLinesContent extends Component {
       connectionKey,
       isTo,
       redirectionMode,
-      contentMapping,
+      handleRemoveSuggestedMappingLine,
+      contentMappingCount,
       contentMappingData,
       bypassEditionRestriction,
+      enableReferences,
     } = this.props;
     const edge = dataList[index];
     if (!edge) {
@@ -182,9 +184,11 @@ class ListLinesContent extends Component {
             onToggleShiftEntity={this._onRowShiftClick.bind(this)}
             index={index}
             redirectionMode={redirectionMode}
-            contentMapping={contentMapping}
+            handleRemoveSuggestedMappingLine={handleRemoveSuggestedMappingLine}
+            contentMappingCount={contentMappingCount}
             contentMappingData={contentMappingData}
             bypassEditionRestriction={bypassEditionRestriction}
+            enableReferences={enableReferences}
           />
         ) : (
           React.cloneElement(LineComponent, {
@@ -207,9 +211,10 @@ class ListLinesContent extends Component {
             onToggleShiftEntity: this._onRowShiftClick.bind(this),
             index,
             redirectionMode,
-            contentMapping,
+            contentMappingCount,
             contentMappingData,
             bypassEditionRestriction,
+            enableReferences,
           })
         )}
       </div>
@@ -348,9 +353,11 @@ ListLinesContent.propTypes = {
   redirectionMode: PropTypes.string,
   addedElements: PropTypes.object,
   containerRef: PropTypes.object,
-  contentMapping: PropTypes.object,
+  contentMappingCount: PropTypes.object,
   contentMappingData: PropTypes.object,
+  handleRemoveSuggestedMappingLine: PropTypes.func,
   bypassEditionRestriction: PropTypes.bool,
+  enableReferences: PropTypes.bool,
 };
 
 export default R.compose(inject18n, withStyles(styles))(ListLinesContent);

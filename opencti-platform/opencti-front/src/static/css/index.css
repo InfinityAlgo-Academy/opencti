@@ -2,6 +2,10 @@
   scrollbar-width: thin;
 }
 
+#root{
+  height: 100vh;
+}
+
 :focus {
   outline: 0;
 }
@@ -127,4 +131,8 @@ input[type="file"] {
 
 .marker-yellow {
   background-color: rgb(255, 255, 0) !important;
+}
+
+.marker-blue, .flexible-marker-blue {
+  background-color: rgb(15, 188, 255) !important;
 }

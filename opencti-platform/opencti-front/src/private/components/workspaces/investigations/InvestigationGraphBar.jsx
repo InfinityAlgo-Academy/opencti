@@ -44,7 +44,7 @@ import InvestigationAddStixCoreObjects from './InvestigationAddStixCoreObjects';
 import inject18n from '../../../../components/i18n';
 import SearchInput from '../../../../components/SearchInput';
 import { parseDomain } from '../../../../utils/Graph';
-import { EXPLORE_EXUPDATE } from '../../../../utils/hooks/useGranted';
+import { INVESTIGATION_INUPDATE } from '../../../../utils/hooks/useGranted';
 import Security from '../../../../utils/Security';
 import { truncate } from '../../../../utils/String';
 import { dateFormat } from '../../../../utils/Time';
@@ -57,7 +57,7 @@ import StixSightingRelationshipEdition from '../../events/stix_sighting_relation
 
 const styles = () => ({
   bottomNav: {
-    zIndex: 1000,
+    zIndex: 1,
     display: 'flex',
     overflow: 'hidden',
   },
@@ -368,7 +368,9 @@ class InvestigationGraphBar extends Component {
             PaperProps={{
               variant: 'elevation',
               elevation: 1,
-              style: { bottom: bannerSettings.bannerHeightNumber },
+              style: {
+                bottom: bannerSettings.bannerHeightNumber,
+              },
             }}
           >
             <div
@@ -793,7 +795,7 @@ class InvestigationGraphBar extends Component {
                 </div>
                 {workspace && (
                   <Security
-                    needs={[EXPLORE_EXUPDATE]}
+                    needs={[INVESTIGATION_INUPDATE]}
                     hasAccess={
                       workspace.currentUserAccessRight === 'admin'
                       || workspace.currentUserAccessRight === 'edit'

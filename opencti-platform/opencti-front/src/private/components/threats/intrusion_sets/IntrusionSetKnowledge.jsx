@@ -43,6 +43,7 @@ class IntrusionSetKnowledgeComponent extends Component {
             element={
               <StixDomainObjectThreatKnowledge
                 stixDomainObjectId={intrusionSet.id}
+                stixDomainObjectName={intrusionSet.name}
                 stixDomainObjectType="Intrusion-Set"
               />
             }
@@ -104,7 +105,6 @@ class IntrusionSetKnowledgeComponent extends Component {
             element={
               <StixDomainObjectAttackPatterns
                 stixDomainObjectId={intrusionSet.id}
-                entityLink={link}
                 defaultStartTime={intrusionSet.first_seen}
                 defaultStopTime={intrusionSet.last_seen}
               />

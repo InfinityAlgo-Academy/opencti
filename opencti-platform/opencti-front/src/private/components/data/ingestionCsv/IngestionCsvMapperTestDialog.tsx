@@ -37,6 +37,7 @@ interface IngestionCsvMapperTestDialogProps {
     ingestion_running?: boolean | null,
     csv_mapper_id: string | Option,
     user_id: string | Option
+    markings: Option[]
   }
   setIsCreateDisabled?: React.Dispatch<React.SetStateAction<boolean>>
 }
@@ -49,7 +50,7 @@ const IngestionCsvMapperTestDialog: FunctionComponent<IngestionCsvMapperTestDial
 }) => {
   const { t_i18n } = useFormatter();
   const [result, setResult] = useState<IngestionCsvMapperTestDialogMutation$data | undefined>(undefined);
-  const [commitTest] = useApiMutation(ingestionCsvMapperTestMutation);
+  const [commitTest] = useApiMutation(ingestionCsvMapperTestMutation, undefined, { errorMessage: 'Something went wrong. Please check the configuration.' });
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleClose = () => {
@@ -71,6 +72,7 @@ const IngestionCsvMapperTestDialog: FunctionComponent<IngestionCsvMapperTestDial
           ingestion_running: values.ingestion_running,
           user_id: typeof values.user_id === 'string' ? values.user_id : values.user_id.value,
           csv_mapper_id: typeof values.csv_mapper_id === 'string' ? values.csv_mapper_id : values.csv_mapper_id.value,
+          markings: values.markings.map((marking) => marking.value),
         },
       },
       onCompleted: (data) => {

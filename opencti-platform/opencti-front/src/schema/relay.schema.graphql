@@ -51,13 +51,20 @@ enum Capabilities {
   EXPLORE_EXUPDATE
   EXPLORE_EXUPDATE_EXDELETE
   EXPLORE_EXUPDATE_PUBLISH
+  INVESTIGATION
+  INVESTIGATION_INUPDATE
+  INVESTIGATION_INUPDATE_INDELETE
   MODULES
   MODULES_MODMANAGE
   SETTINGS
+  SETTINGS_SETPARAMETERS
   SETTINGS_SETACCESSES
   SETTINGS_SETMARKINGS
   SETTINGS_SETLABELS
+  SETTINGS_SETCUSTOMIZATION
   SETTINGS_SECURITYACTIVITY
+  SETTINGS_FILEINDEXING
+  SETTINGS_SUPPORT
   TAXIIAPI
   TAXIIAPI_SETCOLLECTIONS
   INGESTION
@@ -947,6 +954,8 @@ enum BackgroundTaskActionType {
   RULE_ELEMENT_RESCAN
   SHARE
   UNSHARE
+  SHARE_MULTIPLE
+  UNSHARE_MULTIPLE
 }
 
 enum BackgroundTaskContextType {
@@ -1060,6 +1069,7 @@ input BackgroundTaskContextInput {
 }
 
 input BackgroundTaskActionInput {
+  containerId: String
   type: BackgroundTaskActionType!
   context: BackgroundTaskContextInput
 }
@@ -1498,6 +1508,7 @@ type User implements BasicObject & InternalObject {
   unit_system: UnitSystem
   submenu_show_icons: Boolean
   submenu_auto_collapse: Boolean
+  monochrome_labels: Boolean
   editContext: [EditUserContext!]
 }
 
@@ -1538,6 +1549,7 @@ type MeUser implements BasicObject & InternalObject {
   unit_system: UnitSystem
   submenu_show_icons: Boolean
   submenu_auto_collapse: Boolean
+  monochrome_labels: Boolean
 }
 
 type SessionDetail {
@@ -1567,6 +1579,7 @@ input UserAddInput {
   unit_system: String
   submenu_show_icons: Boolean
   submenu_auto_collapse: Boolean
+  monochrome_labels: Boolean
   groups: [ID!]
   user_confidence_level: ConfidenceLevelInput
 }
@@ -1758,8 +1771,8 @@ type ConnectorConfiguration {
 }
 
 type ConnectorQueueDetails {
-  messages_number: Int!
-  messages_size: Int!
+  messages_number: Float!
+  messages_size: Float!
 }
 
 type Connector implements BasicObject & InternalObject {
@@ -2455,6 +2468,7 @@ enum CampaignsOrdering {
   modified
   created_at
   updated_at
+  objectMarking
   x_opencti_workflow_id
   confidence
   _score
@@ -3723,6 +3737,8 @@ enum IntrusionSetsOrdering {
   created_at
   updated_at
   x_opencti_workflow_id
+  resource_level
+  primary_motivation
   confidence
   _score
 }
@@ -4350,6 +4366,7 @@ enum MalwaresOrdering {
   objectMarking
   objectLabel
   x_opencti_workflow_id
+  is_family
   confidence
   _score
 }
@@ -4465,7 +4482,10 @@ enum ThreatActorsOrdering {
   updated_at
   x_opencti_workflow_id
   confidence
+  sophistication
+  resource_level
   _score
+  threat_actor_types
 }
 
 type ThreatActorGroupConnection {
@@ -7243,6 +7263,7 @@ input StixSightingRelationshipAddInput {
   externalReferences: [String]
   clientMutationId: String
   update: Boolean
+  x_opencti_workflow_id: String
 }
 
 enum StixRefRelationshipsOrdering {
@@ -7811,6 +7832,8 @@ input MappingAnalysisInput {
 
 type MappingAnalysis {
   analysisType: String!
+  analysisStatus: State
+  analysisDate: DateTime
   mappedEntities: [MappedEntity!]
 }
 
@@ -7822,6 +7845,7 @@ input MappedEntityInput {
 type MappedEntity {
   matchedString: String!
   matchedEntity: StixCoreObject!
+  isEntityInContainer: Boolean!
 }
 
 type StixCoreObjectEditMutations {
@@ -8088,10 +8112,11 @@ type StixCyberObservableEditMutations {
   relationAdd(input: StixRefRelationshipAddInput!): StixRefRelationship
   relationsAdd(input: StixRefRelationshipsAddInput!): StixCyberObservable
   relationDelete(toId: StixRef!, relationship_type: String!): StixCyberObservable
-  promote: StixCyberObservable
+  promoteToIndicator: Indicator
   importPush(file: Upload!, version: DateTime, noTriggerImport: Boolean): File
   exportAsk(format: String!, exportType: String!, maxMarkingDefinition: String): [File!]
   exportPush(file: Upload!): Boolean
+  promote: StixCyberObservable @deprecated(reason: "[>=6.2 & <6.5]. Use `promoteToIndicator`.")
 }
 
 type StixRelationshipEditMutations {
@@ -8157,7 +8182,6 @@ type Mutation {
   otpUserDeactivation(id: ID!): MeUser
   otpLogin(input: UserOTPLoginInput): Boolean
   settingsEdit(id: ID!): SettingsEditMutations
-  otpSetActivation(input: UserOTPActivationInput): User
   subTypeEdit(id: ID!): SubTypeEditMutations
   statusTemplateAdd(input: StatusTemplateAddInput!): StatusTemplate!
   statusTemplateDelete(id: ID!): ID!
@@ -8182,7 +8206,6 @@ type Mutation {
   resetStateConnector(id: ID!): Connector
   deleteConnector(id: ID!): ID!
   updateConnectorTrigger(id: ID!, input: [EditInput]!): Connector
-  runtimeAttributeEdit(id: String!, previous: String!, current: String!): ID!
   feedAdd(input: FeedAddInput!): Feed
   feedDelete(id: ID!): ID!
   feedEdit(id: ID!, input: FeedAddInput!): Feed!
@@ -8967,6 +8990,7 @@ input NarrativeAddInput {
   clientMutationId: String
   update: Boolean
   file: Upload
+  x_opencti_workflow_id: String
 }
 
 type ResolvedInstanceFilter {
@@ -9225,6 +9249,7 @@ input DataComponentAddInput {
   aliases: [String]
   dataSource: String
   file: Upload
+  x_opencti_workflow_id: String
 }
 
 type DataSource implements BasicObject & StixObject & StixCoreObject & StixDomainObject {
@@ -9325,6 +9350,7 @@ input DataSourceAddInput {
   collection_layers: [String!]
   dataComponents: [String]
   file: Upload
+  x_opencti_workflow_id: String
 }
 
 enum VocabularyCategory {
@@ -10684,6 +10710,8 @@ enum ThreatActorsIndividualOrdering {
   created_at
   updated_at
   x_opencti_workflow_id
+  sophistication
+  resource_level
   confidence
   _score
 }
@@ -10970,6 +10998,7 @@ type IngestionCsv implements InternalObject & BasicObject {
   ingestion_running: Boolean
   current_state_hash: String
   current_state_date: DateTime
+  markings: [String!]
 }
 
 enum IngestionCsvOrdering {
@@ -11001,6 +11030,7 @@ input IngestionCsvAddInput {
   csv_mapper_id: String!
   ingestion_running: Boolean
   user_id: String!
+  markings: [String!]
 }
 
 enum IndicatorsOrdering {

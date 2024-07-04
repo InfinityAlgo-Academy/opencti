@@ -17,6 +17,7 @@ import { debounce } from 'rxjs/operators';
 import ToggleButton from '@mui/material/ToggleButton';
 import Tooltip from '@mui/material/Tooltip';
 import { ToggleButtonGroup } from '@mui/material';
+import { allEntitiesKeyList } from './common/bulk/utils/querySearchEntityByText';
 import ItemIcon from '../../components/ItemIcon';
 import { searchStixCoreObjectsLinesSearchQuery } from './search/SearchStixCoreObjectsLines';
 import { fetchQuery } from '../../relay/environment';
@@ -153,6 +154,7 @@ const inlineStylesHeaders = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     paddingRight: 10,
+    cursor: 'default',
   },
   created_at: {
     float: 'left',
@@ -286,20 +288,7 @@ const SearchBulk = () => {
                 mode: 'and',
                 filters: [
                   {
-                    key: [
-                      'name',
-                      'aliases',
-                      'x_opencti_aliases',
-                      'x_mitre_id',
-                      'value',
-                      'subject',
-                      'attribute_abstract',
-                      'hashes.MD5',
-                      'hashes.SHA-1',
-                      'hashes.SHA-256',
-                      'hashes.SHA-512',
-                      'x_opencti_additional_names',
-                    ],
+                    key: allEntitiesKeyList,
                     values,
                   },
                 ],
@@ -346,13 +335,9 @@ const SearchBulk = () => {
                           value: getMainRepresentative(resolvedStixCoreObject),
                           labels: resolvedStixCoreObject.objectLabel,
                           markings: resolvedStixCoreObject.objectMarking,
-                          containersNumber: resolvedStixCoreObject.containersNumber,
-                          updated_at: resolvedStixCoreObject.updated_at,
-                          author: R.pathOr(
-                            '',
-                            ['createdBy', 'name'],
-                            resolvedStixCoreObject,
-                          ),
+                          analyses: resolvedStixCoreObject.containersNumber.total,
+                          created_at: resolvedStixCoreObject.created_at,
+                          author: resolvedStixCoreObject.createdBy?.name ?? '-',
                           creators: (resolvedStixCoreObject.creators ?? [])
                             .map((c) => c?.name)
                             .join(', '),
@@ -371,8 +356,9 @@ const SearchBulk = () => {
                   });
                 })
             ).flat();
+            const finalResult = R.uniqBy((o) => o.id, result);
             setLoading(false);
-            setResolvedEntities(result);
+            setResolvedEntities(finalResult);
             setPaginationOptions(searchPaginationOptions);
           } else {
             setResolvedEntities([]);
@@ -385,12 +371,23 @@ const SearchBulk = () => {
       subscription.unsubscribe();
     };
   });
+
   useEffect(() => {
     SEARCH$.next({ action: 'Search' });
   }, [textFieldValue, setResolvedEntities]);
   const reverseBy = (field) => {
     setSortBy(field);
-    setOrderAsc(!orderAsc);
+    setOrderAsc((prevOrderAsc) => !prevOrderAsc);
+    const newOrder = !orderAsc;
+    const sort = (a, b) => {
+      if (a[field] < b[field]) {
+        return newOrder ? -1 : 1;
+      } if (a[field] > b[field]) {
+        return newOrder ? 1 : -1;
+      }
+      return 0;
+    };
+    setResolvedEntities(resolvedEntities.sort(sort));
   };
   const SortHeader = (field, label, isSortable) => {
     const sortComponent = orderAsc ? (
@@ -428,12 +425,6 @@ const SearchBulk = () => {
         .join('\n'),
     );
   };
-  const sort = R.sortWith(
-    orderAsc ? [R.ascend(R.prop(sortBy))] : [R.descend(R.prop(sortBy))],
-  );
-  const sortedResolvedEntities = sortBy
-    ? sort(resolvedEntities)
-    : resolvedEntities;
   return (
     <>
       <Breadcrumbs variant="standard" elements={[{ label: t_i18n('Search') }, { label: t_i18n('Bulk search'), current: true }]} />
@@ -536,7 +527,7 @@ const SearchBulk = () => {
                       {SortHeader('value', 'Value', true)}
                       {SortHeader('author', 'Author', true)}
                       {SortHeader('creator', 'Creators', true)}
-                      {SortHeader('labels', 'Labels', true)}
+                      {SortHeader('labels', 'Labels', false)}
                       {SortHeader('created_at', 'Creation date', true)}
                       {SortHeader('analyses', 'Analyses', true)}
                       {SortHeader('markings', 'Markings', true)}
@@ -547,7 +538,7 @@ const SearchBulk = () => {
                 &nbsp;
                 </ListItemIcon>
               </ListItem>
-              {sortedResolvedEntities.map((entity) => {
+              {resolvedEntities.map((entity) => {
                 const inPlatform = entity.in_platform;
                 const link = inPlatform && `${resolveLink(entity.type)}/${entity.id}`;
                 const linkAnalyses = `${link}/analyses`;
@@ -642,12 +633,12 @@ const SearchBulk = () => {
                                 ].includes(entity.type) ? (
                                   <Chip
                                     classes={{ root: classes.chipNoLink }}
-                                    label={n(entity.containersNumber.total)}
+                                    label={n(entity.analyses)}
                                   />
                                   ) : (
                                     <Chip
                                       classes={{ root: classes.chip }}
-                                      label={n(entity.containersNumber.total)}
+                                      label={n(entity.analyses)}
                                       component={Link}
                                       to={linkAnalyses}
                                     />

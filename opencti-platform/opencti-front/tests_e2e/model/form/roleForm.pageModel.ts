@@ -29,7 +29,7 @@ export default class RoleFormPage {
     return this.page.locator('li').filter({ hasText: 'Create / Update knowledge' }).getByRole('checkbox');
   }
 
-  getAccessAdministrationCheckbox() {
-    return this.page.getByRole('list').locator('li').filter({ hasText: 'Access administration' }).getByRole('checkbox');
+  getManageCustomizationCheckbox() {
+    return this.page.getByRole('list').locator('li').filter({ hasText: 'Manage customization' }).getByRole('checkbox');
   }
 }

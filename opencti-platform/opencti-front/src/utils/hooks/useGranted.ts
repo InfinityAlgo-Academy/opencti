@@ -19,6 +19,9 @@ export const EXPLORE = 'EXPLORE';
 export const EXPLORE_EXUPDATE = 'EXPLORE_EXUPDATE';
 export const EXPLORE_EXUPDATE_EXDELETE = 'EXPLORE_EXUPDATE_EXDELETE';
 export const EXPLORE_EXUPDATE_PUBLISH = 'EXPLORE_EXUPDATE_PUBLISH';
+export const INVESTIGATION = 'INVESTIGATION';
+export const INVESTIGATION_INUPDATE = 'INVESTIGATION_INUPDATE';
+export const INVESTIGATION_INUPDATE_INDELETE = 'INVESTIGATION_INUPDATE_INDELETE';
 export const MODULES = 'MODULES';
 export const MODULES_MODMANAGE = 'MODULES_MODMANAGE';
 export const SETTINGS = 'SETTINGS';
@@ -28,15 +31,19 @@ export const TAXIIAPI_SETCOLLECTIONS = 'TAXIIAPI_SETCOLLECTIONS';
 export const INGESTION = 'INGESTION';
 export const INGESTION_SETINGESTIONS = 'INGESTION_SETINGESTIONS';
 export const CSVMAPPERS = 'CSVMAPPERS';
+export const SETTINGS_SETPARAMETERS = 'SETTINGS_SETPARAMETERS';
 export const SETTINGS_SETACCESSES = 'SETTINGS_SETACCESSES';
 export const SETTINGS_SETMARKINGS = 'SETTINGS_SETMARKINGS';
+export const SETTINGS_SETCUSTOMIZATION = 'SETTINGS_SETCUSTOMIZATION';
 export const SETTINGS_SETLABELS = 'SETTINGS_SETLABELS';
 export const SETTINGS_SECURITYACTIVITY = 'SETTINGS_SECURITYACTIVITY';
+export const SETTINGS_FILEINDEXING = 'SETTINGS_FILEINDEXING';
+export const SETTINGS_SUPPORT = 'SETTINGS_SUPPORT';
 
 export const isOnlyOrganizationAdmin = () => {
   const { me: user } = useAuth();
   const userCapabilities = user.capabilities.map((n) => n.name);
-  return userCapabilities.includes(VIRTUAL_ORGANIZATION_ADMIN) && !userCapabilities.includes(BYPASS) && !userCapabilities.includes(SETTINGS);
+  return userCapabilities.includes(VIRTUAL_ORGANIZATION_ADMIN) && !userCapabilities.includes(BYPASS) && !userCapabilities.includes(SETTINGS_SETACCESSES);
 };
 
 const useGranted = (capabilities: string[], matchAll = false): boolean => {

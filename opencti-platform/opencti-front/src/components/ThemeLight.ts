@@ -14,14 +14,14 @@ const THEME_LIGHT_DEFAULT_PAPER = '#ffffff';
 const THEME_LIGHT_DEFAULT_NAV = '#ffffff';
 
 const ThemeLight = (
-  logo: string | null,
-  logo_collapsed: string | null,
-  background: string | null,
-  paper: string | null,
-  nav: string | null,
-  primary: string | null,
-  secondary: string | null,
-  accent: string | null,
+  logo: string | null = null,
+  logo_collapsed: string | null = null,
+  background: string | null = null,
+  paper: string | null = null,
+  nav: string | null = null,
+  primary: string | null = null,
+  secondary: string | null = null,
+  accent: string | null = null,
 ): ExtendedThemeOptions => ({
   logo: logo || fileUri(LogoText),
   logo_collapsed: logo_collapsed || fileUri(LogoCollapsed),
@@ -33,9 +33,13 @@ const ThemeLight = (
       main: '#f44336',
       dark: '#c62828',
     },
-    success: { main: '#03A847' },
+    success: { main: '#03a847' },
     primary: { main: THEME_LIGHT_DEFAULT_PRIMARY || '#0066ff' },
     secondary: { main: secondary || THEME_LIGHT_DEFAULT_SECONDARY },
+    pagination: {
+      main: '#000000',
+      border: hexToRGB('#000000', 0.5),
+    },
     chip: { main: '#000000' },
     ee: {
       main: EE_COLOR,
@@ -165,7 +169,7 @@ const ThemeLight = (
             WebkitTextFillColor: '#000000 !important',
             caretColor: 'transparent !important',
             WebkitBoxShadow:
-              '0 0 0 1000px rgba(4, 8, 17, 0.88) inset !important',
+                '0 0 0 1000px rgba(4, 8, 17, 0.88) inset !important',
             borderTopLeftRadius: 'inherit',
             borderTopRightRadius: 'inherit',
           },

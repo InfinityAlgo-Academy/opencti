@@ -1148,6 +1148,7 @@ export type BackgroundTaskAction = {
 };
 
 export type BackgroundTaskActionInput = {
+  containerId?: InputMaybe<Scalars['String']['input']>;
   context?: InputMaybe<BackgroundTaskContextInput>;
   type: BackgroundTaskActionType;
 };
@@ -1164,7 +1165,9 @@ export enum BackgroundTaskActionType {
   Restore = 'RESTORE',
   RuleElementRescan = 'RULE_ELEMENT_RESCAN',
   Share = 'SHARE',
-  Unshare = 'UNSHARE'
+  ShareMultiple = 'SHARE_MULTIPLE',
+  Unshare = 'UNSHARE',
+  UnshareMultiple = 'UNSHARE_MULTIPLE'
 }
 
 export type BackgroundTaskConnection = {
@@ -1706,6 +1709,7 @@ export enum CampaignsOrdering {
   LastSeen = 'last_seen',
   Modified = 'modified',
   Name = 'name',
+  ObjectMarking = 'objectMarking',
   RolePlayed = 'role_played',
   UpdatedAt = 'updated_at',
   XOpenctiWorkflowId = 'x_opencti_workflow_id'
@@ -1720,6 +1724,9 @@ export enum Capabilities {
   ExploreExupdatePublish = 'EXPLORE_EXUPDATE_PUBLISH',
   Ingestion = 'INGESTION',
   IngestionSetingestions = 'INGESTION_SETINGESTIONS',
+  Investigation = 'INVESTIGATION',
+  InvestigationInupdate = 'INVESTIGATION_INUPDATE',
+  InvestigationInupdateIndelete = 'INVESTIGATION_INUPDATE_INDELETE',
   Knowledge = 'KNOWLEDGE',
   KnowledgeKnaskimport = 'KNOWLEDGE_KNASKIMPORT',
   KnowledgeKnenrichment = 'KNOWLEDGE_KNENRICHMENT',
@@ -1734,10 +1741,14 @@ export enum Capabilities {
   Modules = 'MODULES',
   ModulesModmanage = 'MODULES_MODMANAGE',
   Settings = 'SETTINGS',
+  SettingsFileindexing = 'SETTINGS_FILEINDEXING',
   SettingsSecurityactivity = 'SETTINGS_SECURITYACTIVITY',
   SettingsSetaccesses = 'SETTINGS_SETACCESSES',
+  SettingsSetcustomization = 'SETTINGS_SETCUSTOMIZATION',
   SettingsSetlabels = 'SETTINGS_SETLABELS',
   SettingsSetmarkings = 'SETTINGS_SETMARKINGS',
+  SettingsSetparameters = 'SETTINGS_SETPARAMETERS',
+  SettingsSupport = 'SETTINGS_SUPPORT',
   Taxiiapi = 'TAXIIAPI',
   TaxiiapiSetcollections = 'TAXIIAPI_SETCOLLECTIONS',
   VirtualOrganizationAdmin = 'VIRTUAL_ORGANIZATION_ADMIN'
@@ -3459,8 +3470,8 @@ export type ConnectorMetadata = {
 
 export type ConnectorQueueDetails = {
   __typename?: 'ConnectorQueueDetails';
-  messages_number: Scalars['Int']['output'];
-  messages_size: Scalars['Int']['output'];
+  messages_number: Scalars['Float']['output'];
+  messages_size: Scalars['Float']['output'];
 };
 
 export enum ConnectorType {
@@ -5179,6 +5190,7 @@ export type DataComponentAddInput = {
   stix_id?: InputMaybe<Scalars['StixId']['input']>;
   update?: InputMaybe<Scalars['Boolean']['input']>;
   x_opencti_stix_ids?: InputMaybe<Array<InputMaybe<Scalars['StixId']['input']>>>;
+  x_opencti_workflow_id?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type DataComponentConnection = {
@@ -5412,6 +5424,7 @@ export type DataSourceAddInput = {
   update?: InputMaybe<Scalars['Boolean']['input']>;
   x_mitre_platforms?: InputMaybe<Array<Scalars['String']['input']>>;
   x_opencti_stix_ids?: InputMaybe<Array<InputMaybe<Scalars['StixId']['input']>>>;
+  x_opencti_workflow_id?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type DataSourceConnection = {
@@ -10126,6 +10139,7 @@ export type IngestionCsv = BasicObject & InternalObject & {
   entity_type: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   ingestion_running?: Maybe<Scalars['Boolean']['output']>;
+  markings?: Maybe<Array<Scalars['String']['output']>>;
   name: Scalars['String']['output'];
   parent_types: Array<Maybe<Scalars['String']['output']>>;
   standard_id: Scalars['String']['output'];
@@ -10142,6 +10156,7 @@ export type IngestionCsvAddInput = {
   current_state_date?: InputMaybe<Scalars['DateTime']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   ingestion_running?: InputMaybe<Scalars['Boolean']['input']>;
+  markings?: InputMaybe<Array<Scalars['String']['input']>>;
   name: Scalars['String']['input'];
   uri: Scalars['String']['input'];
   user_id: Scalars['String']['input'];
@@ -10572,6 +10587,8 @@ export enum IntrusionSetsOrdering {
   CreatedAt = 'created_at',
   Modified = 'modified',
   Name = 'name',
+  PrimaryMotivation = 'primary_motivation',
+  ResourceLevel = 'resource_level',
   UpdatedAt = 'updated_at',
   XOpenctiWorkflowId = 'x_opencti_workflow_id'
 }
@@ -12018,6 +12035,7 @@ export enum MalwaresOrdering {
   Created = 'created',
   CreatedAt = 'created_at',
   FirstSeen = 'first_seen',
+  IsFamily = 'is_family',
   LastSeen = 'last_seen',
   MalwareTypes = 'malware_types',
   Modified = 'modified',
@@ -12043,6 +12061,7 @@ export type ManagerConfiguration = BasicObject & InternalObject & {
 
 export type MappedEntity = {
   __typename?: 'MappedEntity';
+  isEntityInContainer: Scalars['Boolean']['output'];
   matchedEntity: StixCoreObject;
   matchedString: Scalars['String']['output'];
 };
@@ -12054,6 +12073,8 @@ export type MappedEntityInput = {
 
 export type MappingAnalysis = {
   __typename?: 'MappingAnalysis';
+  analysisDate?: Maybe<Scalars['DateTime']['output']>;
+  analysisStatus?: Maybe<State>;
   analysisType: Scalars['String']['output'];
   mappedEntities?: Maybe<Array<MappedEntity>>;
 };
@@ -12195,6 +12216,7 @@ export type MeUser = BasicObject & InternalObject & {
   language?: Maybe<Scalars['String']['output']>;
   lastname?: Maybe<Scalars['String']['output']>;
   max_shareable_marking?: Maybe<Array<MarkingDefinition>>;
+  monochrome_labels?: Maybe<Scalars['Boolean']['output']>;
   name: Scalars['String']['output'];
   objectOrganization?: Maybe<MeOrganizationConnection>;
   otp_activated?: Maybe<Scalars['Boolean']['output']>;
@@ -12694,7 +12716,6 @@ export type Mutation = {
   otpActivation?: Maybe<MeUser>;
   otpDeactivation?: Maybe<MeUser>;
   otpLogin?: Maybe<Scalars['Boolean']['output']>;
-  otpSetActivation?: Maybe<User>;
   otpUserDeactivation?: Maybe<MeUser>;
   pingConnector?: Maybe<Connector>;
   playbookAdd?: Maybe<Playbook>;
@@ -12728,7 +12749,6 @@ export type Mutation = {
   roleEdit?: Maybe<RoleEditMutations>;
   ruleManagerClean: RuleManager;
   ruleSetActivation: Rule;
-  runtimeAttributeEdit: Scalars['ID']['output'];
   sectorAdd?: Maybe<Sector>;
   sectorEdit?: Maybe<SectorEditMutations>;
   sessionKill?: Maybe<Scalars['ID']['output']>;
@@ -13973,11 +13993,6 @@ export type MutationOtpLoginArgs = {
 };
 
 
-export type MutationOtpSetActivationArgs = {
-  input?: InputMaybe<UserOtpActivationInput>;
-};
-
-
 export type MutationOtpUserDeactivationArgs = {
   id: Scalars['ID']['input'];
 };
@@ -14160,13 +14175,6 @@ export type MutationRuleManagerCleanArgs = {
 export type MutationRuleSetActivationArgs = {
   enable: Scalars['Boolean']['input'];
   id: Scalars['ID']['input'];
-};
-
-
-export type MutationRuntimeAttributeEditArgs = {
-  current: Scalars['String']['input'];
-  id: Scalars['String']['input'];
-  previous: Scalars['String']['input'];
 };
 
 
@@ -15163,6 +15171,7 @@ export type NarrativeAddInput = {
   stix_id?: InputMaybe<Scalars['StixId']['input']>;
   update?: InputMaybe<Scalars['Boolean']['input']>;
   x_opencti_stix_ids?: InputMaybe<Array<InputMaybe<Scalars['StixId']['input']>>>;
+  x_opencti_workflow_id?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type NarrativeConnection = {
@@ -23008,7 +23017,9 @@ export type StixCyberObservableEditMutations = {
   exportPush?: Maybe<Scalars['Boolean']['output']>;
   fieldPatch?: Maybe<StixCyberObservable>;
   importPush?: Maybe<File>;
+  /** @deprecated [>=6.2 & <6.5]. Use `promoteToIndicator`. */
   promote?: Maybe<StixCyberObservable>;
+  promoteToIndicator?: Maybe<Indicator>;
   relationAdd?: Maybe<StixRefRelationship>;
   relationDelete?: Maybe<StixCyberObservable>;
   relationsAdd?: Maybe<StixCyberObservable>;
@@ -24105,6 +24116,7 @@ export type StixSightingRelationshipAddInput = {
   update?: InputMaybe<Scalars['Boolean']['input']>;
   x_opencti_negative?: InputMaybe<Scalars['Boolean']['input']>;
   x_opencti_stix_ids?: InputMaybe<Array<InputMaybe<Scalars['StixId']['input']>>>;
+  x_opencti_workflow_id?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type StixSightingRelationshipConnection = {
@@ -26104,6 +26116,8 @@ export enum ThreatActorsIndividualOrdering {
   CreatedAt = 'created_at',
   Modified = 'modified',
   Name = 'name',
+  ResourceLevel = 'resource_level',
+  Sophistication = 'sophistication',
   UpdatedAt = 'updated_at',
   XOpenctiWorkflowId = 'x_opencti_workflow_id'
 }
@@ -26115,6 +26129,9 @@ export enum ThreatActorsOrdering {
   CreatedAt = 'created_at',
   Modified = 'modified',
   Name = 'name',
+  ResourceLevel = 'resource_level',
+  Sophistication = 'sophistication',
+  ThreatActorTypes = 'threat_actor_types',
   UpdatedAt = 'updated_at',
   XOpenctiWorkflowId = 'x_opencti_workflow_id'
 }
@@ -26916,6 +26933,7 @@ export type User = BasicObject & InternalObject & {
   individual_id?: Maybe<Scalars['String']['output']>;
   language?: Maybe<Scalars['String']['output']>;
   lastname?: Maybe<Scalars['String']['output']>;
+  monochrome_labels?: Maybe<Scalars['Boolean']['output']>;
   name: Scalars['String']['output'];
   objectOrganization?: Maybe<OrganizationConnection>;
   otp_activated?: Maybe<Scalars['Boolean']['output']>;
@@ -27168,6 +27186,7 @@ export type UserAddInput = {
   groups?: InputMaybe<Array<Scalars['ID']['input']>>;
   language?: InputMaybe<Scalars['String']['input']>;
   lastname?: InputMaybe<Scalars['String']['input']>;
+  monochrome_labels?: InputMaybe<Scalars['Boolean']['input']>;
   name: Scalars['String']['input'];
   objectOrganization?: InputMaybe<Array<Scalars['ID']['input']>>;
   password: Scalars['String']['input'];
@@ -29368,7 +29387,7 @@ export type ResolversTypes = ResolversObject<{
   StixCyberObservable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['StixCyberObservable']>;
   StixCyberObservableConnection: ResolverTypeWrapper<Omit<StixCyberObservableConnection, 'edges'> & { edges: Array<ResolversTypes['StixCyberObservableEdge']> }>;
   StixCyberObservableEdge: ResolverTypeWrapper<Omit<StixCyberObservableEdge, 'node'> & { node: ResolversTypes['StixCyberObservable'] }>;
-  StixCyberObservableEditMutations: ResolverTypeWrapper<Omit<StixCyberObservableEditMutations, 'contextClean' | 'contextPatch' | 'fieldPatch' | 'promote' | 'relationAdd' | 'relationDelete' | 'relationsAdd'> & { contextClean?: Maybe<ResolversTypes['StixCyberObservable']>, contextPatch?: Maybe<ResolversTypes['StixCyberObservable']>, fieldPatch?: Maybe<ResolversTypes['StixCyberObservable']>, promote?: Maybe<ResolversTypes['StixCyberObservable']>, relationAdd?: Maybe<ResolversTypes['StixRefRelationship']>, relationDelete?: Maybe<ResolversTypes['StixCyberObservable']>, relationsAdd?: Maybe<ResolversTypes['StixCyberObservable']> }>;
+  StixCyberObservableEditMutations: ResolverTypeWrapper<Omit<StixCyberObservableEditMutations, 'contextClean' | 'contextPatch' | 'fieldPatch' | 'promote' | 'promoteToIndicator' | 'relationAdd' | 'relationDelete' | 'relationsAdd'> & { contextClean?: Maybe<ResolversTypes['StixCyberObservable']>, contextPatch?: Maybe<ResolversTypes['StixCyberObservable']>, fieldPatch?: Maybe<ResolversTypes['StixCyberObservable']>, promote?: Maybe<ResolversTypes['StixCyberObservable']>, promoteToIndicator?: Maybe<ResolversTypes['Indicator']>, relationAdd?: Maybe<ResolversTypes['StixRefRelationship']>, relationDelete?: Maybe<ResolversTypes['StixCyberObservable']>, relationsAdd?: Maybe<ResolversTypes['StixCyberObservable']> }>;
   StixCyberObservablesExportAskInput: StixCyberObservablesExportAskInput;
   StixCyberObservablesOrdering: StixCyberObservablesOrdering;
   StixDomainObject: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['StixDomainObject']>;
@@ -30097,7 +30116,7 @@ export type ResolversParentTypes = ResolversObject<{
   StixCyberObservable: ResolversInterfaceTypes<ResolversParentTypes>['StixCyberObservable'];
   StixCyberObservableConnection: Omit<StixCyberObservableConnection, 'edges'> & { edges: Array<ResolversParentTypes['StixCyberObservableEdge']> };
   StixCyberObservableEdge: Omit<StixCyberObservableEdge, 'node'> & { node: ResolversParentTypes['StixCyberObservable'] };
-  StixCyberObservableEditMutations: Omit<StixCyberObservableEditMutations, 'contextClean' | 'contextPatch' | 'fieldPatch' | 'promote' | 'relationAdd' | 'relationDelete' | 'relationsAdd'> & { contextClean?: Maybe<ResolversParentTypes['StixCyberObservable']>, contextPatch?: Maybe<ResolversParentTypes['StixCyberObservable']>, fieldPatch?: Maybe<ResolversParentTypes['StixCyberObservable']>, promote?: Maybe<ResolversParentTypes['StixCyberObservable']>, relationAdd?: Maybe<ResolversParentTypes['StixRefRelationship']>, relationDelete?: Maybe<ResolversParentTypes['StixCyberObservable']>, relationsAdd?: Maybe<ResolversParentTypes['StixCyberObservable']> };
+  StixCyberObservableEditMutations: Omit<StixCyberObservableEditMutations, 'contextClean' | 'contextPatch' | 'fieldPatch' | 'promote' | 'promoteToIndicator' | 'relationAdd' | 'relationDelete' | 'relationsAdd'> & { contextClean?: Maybe<ResolversParentTypes['StixCyberObservable']>, contextPatch?: Maybe<ResolversParentTypes['StixCyberObservable']>, fieldPatch?: Maybe<ResolversParentTypes['StixCyberObservable']>, promote?: Maybe<ResolversParentTypes['StixCyberObservable']>, promoteToIndicator?: Maybe<ResolversParentTypes['Indicator']>, relationAdd?: Maybe<ResolversParentTypes['StixRefRelationship']>, relationDelete?: Maybe<ResolversParentTypes['StixCyberObservable']>, relationsAdd?: Maybe<ResolversParentTypes['StixCyberObservable']> };
   StixCyberObservablesExportAskInput: StixCyberObservablesExportAskInput;
   StixDomainObject: ResolversInterfaceTypes<ResolversParentTypes>['StixDomainObject'];
   StixDomainObjectAddInput: StixDomainObjectAddInput;
@@ -31414,8 +31433,8 @@ export type ConnectorMetadataResolvers<ContextType = any, ParentType extends Res
 }>;
 
 export type ConnectorQueueDetailsResolvers<ContextType = any, ParentType extends ResolversParentTypes['ConnectorQueueDetails'] = ResolversParentTypes['ConnectorQueueDetails']> = ResolversObject<{
-  messages_number?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
-  messages_size?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  messages_number?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  messages_size?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -33598,6 +33617,7 @@ export type IngestionCsvResolvers<ContextType = any, ParentType extends Resolver
   entity_type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   ingestion_running?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  markings?: Resolver<Maybe<Array<ResolversTypes['String']>>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   parent_types?: Resolver<Array<Maybe<ResolversTypes['String']>>, ParentType, ContextType>;
   standard_id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -34297,12 +34317,15 @@ export type ManagerConfigurationResolvers<ContextType = any, ParentType extends 
 }>;
 
 export type MappedEntityResolvers<ContextType = any, ParentType extends ResolversParentTypes['MappedEntity'] = ResolversParentTypes['MappedEntity']> = ResolversObject<{
+  isEntityInContainer?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   matchedEntity?: Resolver<ResolversTypes['StixCoreObject'], ParentType, ContextType>;
   matchedString?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type MappingAnalysisResolvers<ContextType = any, ParentType extends ResolversParentTypes['MappingAnalysis'] = ResolversParentTypes['MappingAnalysis']> = ResolversObject<{
+  analysisDate?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
+  analysisStatus?: Resolver<Maybe<ResolversTypes['State']>, ParentType, ContextType>;
   analysisType?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   mappedEntities?: Resolver<Maybe<Array<ResolversTypes['MappedEntity']>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -34405,6 +34428,7 @@ export type MeUserResolvers<ContextType = any, ParentType extends ResolversParen
   language?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   lastname?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   max_shareable_marking?: Resolver<Maybe<Array<ResolversTypes['MarkingDefinition']>>, ParentType, ContextType>;
+  monochrome_labels?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   objectOrganization?: Resolver<Maybe<ResolversTypes['MeOrganizationConnection']>, ParentType, ContextType>;
   otp_activated?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
@@ -34738,7 +34762,6 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   otpActivation?: Resolver<Maybe<ResolversTypes['MeUser']>, ParentType, ContextType, Partial<MutationOtpActivationArgs>>;
   otpDeactivation?: Resolver<Maybe<ResolversTypes['MeUser']>, ParentType, ContextType>;
   otpLogin?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType, Partial<MutationOtpLoginArgs>>;
-  otpSetActivation?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, Partial<MutationOtpSetActivationArgs>>;
   otpUserDeactivation?: Resolver<Maybe<ResolversTypes['MeUser']>, ParentType, ContextType, RequireFields<MutationOtpUserDeactivationArgs, 'id'>>;
   pingConnector?: Resolver<Maybe<ResolversTypes['Connector']>, ParentType, ContextType, RequireFields<MutationPingConnectorArgs, 'id'>>;
   playbookAdd?: Resolver<Maybe<ResolversTypes['Playbook']>, ParentType, ContextType, RequireFields<MutationPlaybookAddArgs, 'input'>>;
@@ -34772,7 +34795,6 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   roleEdit?: Resolver<Maybe<ResolversTypes['RoleEditMutations']>, ParentType, ContextType, RequireFields<MutationRoleEditArgs, 'id'>>;
   ruleManagerClean?: Resolver<ResolversTypes['RuleManager'], ParentType, ContextType, Partial<MutationRuleManagerCleanArgs>>;
   ruleSetActivation?: Resolver<ResolversTypes['Rule'], ParentType, ContextType, RequireFields<MutationRuleSetActivationArgs, 'enable' | 'id'>>;
-  runtimeAttributeEdit?: Resolver<ResolversTypes['ID'], ParentType, ContextType, RequireFields<MutationRuntimeAttributeEditArgs, 'current' | 'id' | 'previous'>>;
   sectorAdd?: Resolver<Maybe<ResolversTypes['Sector']>, ParentType, ContextType, RequireFields<MutationSectorAddArgs, 'input'>>;
   sectorEdit?: Resolver<Maybe<ResolversTypes['SectorEditMutations']>, ParentType, ContextType, RequireFields<MutationSectorEditArgs, 'id'>>;
   sessionKill?: Resolver<Maybe<ResolversTypes['ID']>, ParentType, ContextType, RequireFields<MutationSessionKillArgs, 'id'>>;
@@ -37087,6 +37109,7 @@ export type StixCyberObservableEditMutationsResolvers<ContextType = any, ParentT
   fieldPatch?: Resolver<Maybe<ResolversTypes['StixCyberObservable']>, ParentType, ContextType, RequireFields<StixCyberObservableEditMutationsFieldPatchArgs, 'input'>>;
   importPush?: Resolver<Maybe<ResolversTypes['File']>, ParentType, ContextType, RequireFields<StixCyberObservableEditMutationsImportPushArgs, 'file'>>;
   promote?: Resolver<Maybe<ResolversTypes['StixCyberObservable']>, ParentType, ContextType>;
+  promoteToIndicator?: Resolver<Maybe<ResolversTypes['Indicator']>, ParentType, ContextType>;
   relationAdd?: Resolver<Maybe<ResolversTypes['StixRefRelationship']>, ParentType, ContextType, RequireFields<StixCyberObservableEditMutationsRelationAddArgs, 'input'>>;
   relationDelete?: Resolver<Maybe<ResolversTypes['StixCyberObservable']>, ParentType, ContextType, RequireFields<StixCyberObservableEditMutationsRelationDeleteArgs, 'relationship_type' | 'toId'>>;
   relationsAdd?: Resolver<Maybe<ResolversTypes['StixCyberObservable']>, ParentType, ContextType, RequireFields<StixCyberObservableEditMutationsRelationsAddArgs, 'input'>>;
@@ -38422,6 +38445,7 @@ export type UserResolvers<ContextType = any, ParentType extends ResolversParentT
   individual_id?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   language?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   lastname?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  monochrome_labels?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   objectOrganization?: Resolver<Maybe<ResolversTypes['OrganizationConnection']>, ParentType, ContextType, Partial<UserObjectOrganizationArgs>>;
   otp_activated?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;

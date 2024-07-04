@@ -114,17 +114,16 @@ class ContainerAddStixCoreObjectsLinesComponent extends Component {
     );
   }
 
-  sendStixCoreObjectModification(stixCoreObject, commitMessage, references, setSubmitting, resetForm) {
+  sendStixCoreObjectModification(stixCoreObject, commitMessage = '', references = [], setSubmitting = null, resetForm = null) {
     const {
       containerId,
       paginationOptions,
       knowledgeGraph,
       onAdd,
       onDelete,
-      mapping,
     } = this.props;
     const { addedStixCoreObjects } = this.state;
-    const alreadyAdded = stixCoreObject.id in addedStixCoreObjects;
+    const alreadyAdded = stixCoreObject.id in addedStixCoreObjects || stixCoreObject.standard_id in addedStixCoreObjects;
     if (alreadyAdded) {
       if (knowledgeGraph) {
         commitMutation({
@@ -146,8 +145,8 @@ class ContainerAddStixCoreObjectsLinesComponent extends Component {
             if (typeof onDelete === 'function') {
               onDelete(stixCoreObject);
             }
-            setSubmitting(false);
-            resetForm(true);
+            if (setSubmitting) setSubmitting(false);
+            if (resetForm) resetForm(true);
           },
           setSubmitting,
         });
@@ -162,7 +161,14 @@ class ContainerAddStixCoreObjectsLinesComponent extends Component {
             references,
           },
           updater: (store) => {
-          // ID is not valid pagination options, will be handled better when hooked
+            const id = stixCoreObject.id in addedStixCoreObjects ? stixCoreObject.id : stixCoreObject.standard_id;
+            this.setState({
+              addedStixCoreObjects: R.dissoc(
+                id,
+                this.state.addedStixCoreObjects,
+              ),
+            });
+            // ID is not valid pagination options, will be handled better when hooked
             const options = { ...paginationOptions };
             delete options.id;
             delete options.count;
@@ -180,8 +186,8 @@ class ContainerAddStixCoreObjectsLinesComponent extends Component {
                 this.state.addedStixCoreObjects,
               ),
             });
-            setSubmitting(false);
-            resetForm(true);
+            if (setSubmitting) setSubmitting(false);
+            if (resetForm) resetForm(true);
           },
           setSubmitting,
         });
@@ -210,8 +216,8 @@ class ContainerAddStixCoreObjectsLinesComponent extends Component {
             if (typeof onAdd === 'function') {
               onAdd(stixCoreObject);
             }
-            setSubmitting(false);
-            resetForm(true);
+            if (setSubmitting) setSubmitting(false);
+            if (resetForm) resetForm(true);
           },
           setSubmitting,
         });
@@ -224,8 +230,16 @@ class ContainerAddStixCoreObjectsLinesComponent extends Component {
             commitMessage,
             references,
           },
+          optimisticUpdater: () => {
+            this.setState({
+              addedStixCoreObjects: {
+                ...this.state.addedStixCoreObjects,
+                [stixCoreObject.id]: stixCoreObject,
+              },
+            });
+          },
           updater: (store) => {
-          // ID is not valid pagination options, will be handled better when hooked
+            // ID is not valid pagination options, will be handled better when hooked
             const options = { ...paginationOptions };
             delete options.id;
             delete options.count;
@@ -241,19 +255,11 @@ class ContainerAddStixCoreObjectsLinesComponent extends Component {
             );
           },
           onCompleted: () => {
-            if (!mapping) {
-              this.setState({
-                addedStixCoreObjects: {
-                  ...this.state.addedStixCoreObjects,
-                  [stixCoreObject.id]: stixCoreObject,
-                },
-              });
-            }
             if (typeof onAdd === 'function') {
               onAdd(stixCoreObject);
             }
-            setSubmitting(false);
-            resetForm(true);
+            if (setSubmitting) setSubmitting(false);
+            if (resetForm) resetForm(true);
           },
           setSubmitting,
         });
@@ -267,11 +273,11 @@ class ContainerAddStixCoreObjectsLinesComponent extends Component {
       this.setState({ referenceDialogOpened: true });
       this.setState({ currentlyToggledCoreObject: stixCoreObject });
     } else {
-      this.sendStixCoreObjectModification(stixCoreObject, '', [], () => {}, () => {});
+      this.sendStixCoreObjectModification(stixCoreObject);
     }
   }
 
-  closePopup() {
+  closeReferencesPopup() {
     this.setState({ referenceDialogOpened: false });
     this.setState({ currentlyToggledCoreObject: null });
   }
@@ -285,6 +291,20 @@ class ContainerAddStixCoreObjectsLinesComponent extends Component {
   render() {
     const { initialLoading, dataColumns, relay, containerRef, enableReferences, containerId } = this.props;
     const { addedStixCoreObjects, referenceDialogOpened } = this.state;
+    const dataList = R.pathOr([], ['stixCoreObjects', 'edges'], this.props.data);
+    const computedAddedStixCoreObjects = {};
+    // The mapping view gives standard_id, we need to convert
+    Object.keys(addedStixCoreObjects).forEach((addedId) => {
+      let object = dataList.find(({ node: { id } }) => addedId === id);
+      if (object) {
+        computedAddedStixCoreObjects[addedId] = object;
+      } else {
+        object = dataList.find(({ node: { standard_id } }) => addedId === standard_id);
+        if (object) {
+          computedAddedStixCoreObjects[object.node.id] = object;
+        }
+      }
+    });
     return (
       <>
         <ListLinesContent
@@ -292,7 +312,7 @@ class ContainerAddStixCoreObjectsLinesComponent extends Component {
           loadMore={relay.loadMore.bind(this)}
           hasMore={relay.hasMore.bind(this)}
           isLoading={relay.isLoading.bind(this)}
-          dataList={R.pathOr([], ['stixCoreObjects', 'edges'], this.props.data)}
+          dataList={dataList}
           globalCount={R.pathOr(
             nbOfRowsToLoad,
             ['stixCoreObjects', 'pageInfo', 'globalCount'],
@@ -302,7 +322,7 @@ class ContainerAddStixCoreObjectsLinesComponent extends Component {
           DummyLineComponent={<ContainerAddStixCoreObjecstLineDummy />}
           dataColumns={dataColumns}
           nbOfRowsToLoad={nbOfRowsToLoad}
-          addedElements={addedStixCoreObjects}
+          addedElements={computedAddedStixCoreObjects}
           onToggleEntity={this.stixCoreObjectToggled.bind(this)}
           disableExport={true}
           containerRef={containerRef}
@@ -320,7 +340,7 @@ class ContainerAddStixCoreObjectsLinesComponent extends Component {
             }) => (
               <Form>
                 <CommitMessage
-                  handleClose={this.closePopup.bind(this)}
+                  handleClose={this.closeReferencesPopup.bind(this)}
                   open={referenceDialogOpened}
                   submitForm={submitForm}
                   disabled={isSubmitting}
@@ -366,15 +386,15 @@ export const containerAddStixCoreObjectsLinesQuery = graphql`
     $filters: FilterGroup
   ) {
     ...ContainerAddStixCoreObjectsLines_data
-      @arguments(
-        types: $types
-        search: $search
-        count: $count
-        cursor: $cursor
-        orderBy: $orderBy
-        orderMode: $orderMode
-        filters: $filters
-      )
+    @arguments(
+      types: $types
+      search: $search
+      count: $count
+      cursor: $cursor
+      orderBy: $orderBy
+      orderMode: $orderMode
+      filters: $filters
+    )
   }
 `;
 

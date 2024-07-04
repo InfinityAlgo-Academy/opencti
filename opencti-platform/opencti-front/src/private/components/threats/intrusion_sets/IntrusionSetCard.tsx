@@ -3,14 +3,17 @@ import { graphql, useFragment } from 'react-relay';
 import { GenericAttack, GenericAttackCard } from '../../common/cards/GenericAttackCard';
 import { IntrusionSetCard_node$key } from './__generated__/IntrusionSetCard_node.graphql';
 
-const IntrusionSetCardFragment = graphql`
+export const IntrusionSetCardFragment = graphql`
   fragment IntrusionSetCard_node on IntrusionSet {
     id
     name
     aliases
+    entity_type
     description
     created
     modified
+    primary_motivation
+    secondary_motivations
     objectMarking {
       id
       definition_type

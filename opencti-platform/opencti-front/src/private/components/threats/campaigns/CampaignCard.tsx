@@ -3,14 +3,21 @@ import { graphql, useFragment } from 'react-relay';
 import { GenericAttack, GenericAttackCard } from '../../common/cards/GenericAttackCard';
 import { CampaignCard_node$key } from './__generated__/CampaignCard_node.graphql';
 
-const CampaignCardFragment = graphql`
+export const CampaignCardFragment = graphql`
   fragment CampaignCard_node on Campaign {
     id
     name
     aliases
+    entity_type
     description
     created
     modified
+    createdBy {
+      name
+    }
+    creators {
+      name
+    }
     objectMarking {
       id
       definition_type

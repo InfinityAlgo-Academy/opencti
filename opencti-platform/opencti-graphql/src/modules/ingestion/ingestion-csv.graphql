@@ -23,6 +23,7 @@ type IngestionCsv implements InternalObject & BasicObject {
     ingestion_running: Boolean
     current_state_hash: String
     current_state_date: DateTime
+    markings: [String!]
 }
 
 enum IngestionCsvOrdering {
@@ -69,10 +70,11 @@ input IngestionCsvAddInput {
     csv_mapper_id: String!
     ingestion_running: Boolean
     user_id: String!
+    markings: [String!]
 }
 
 type Mutation {
-    ingestionCsvTester(input: IngestionCsvAddInput!): CsvMapperTestResult @auth(for: [CSVMAPPERS])
+    ingestionCsvTester(input: IngestionCsvAddInput!): CsvMapperTestResult @auth(for: [CSVMAPPERS, INGESTION_SETINGESTIONS])
     ingestionCsvAdd(input: IngestionCsvAddInput!): IngestionCsv @auth(for: [CSVMAPPERS])
     ingestionCsvDelete(id: ID!): ID @auth(for: [CSVMAPPERS])
     ingestionCsvFieldPatch(id: ID!, input: [EditInput!]!): IngestionCsv @auth(for: [CSVMAPPERS])

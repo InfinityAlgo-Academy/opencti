@@ -13,6 +13,9 @@ steps:
       - chmod 777 scripts/*
       - ./scripts/clone-dependencies.sh ${DRONE_SOURCE_BRANCH} $(pwd) ${DRONE_PULL_REQUEST}
       - ls -lart
+      - cd "$DRONE_WORKSPACE/client-python"
+      - echo "[INFO] using client-python on branch $(git branch --show-current)"
+      - pip3 install --upgrade --force .
 
   - name: api-tests
     image: nikolaik/python-nodejs:python3.11-nodejs20-alpine
@@ -50,9 +53,6 @@ steps:
       - yarn build
       - yarn check-ts
       - yarn lint
-      - cd "$DRONE_WORKSPACE/client-python"
-      - echo "[INFO] using client-python on branch $(git branch --show-current)"
-      - pip3 install --upgrade --force .
       - cd "$DRONE_WORKSPACE/opencti-platform/opencti-graphql"
       - NODE_OPTIONS=--max_old_space_size=8192 yarn test
     depends_on:
@@ -91,8 +91,6 @@ steps:
     volumes:
     - name: cache-node-frontend-e2e
       path: /drone/src/opencti-platform/opencti-front/node_modules
-    - name: cache-python-frontend-e2e
-      path: /usr/lib/python3.11
     environment:
       BACK_END_URL: http://opencti-e2e-start:4500
       E2E_TEST: true
@@ -166,7 +164,7 @@ services:
   - name: redis
     image: redis:7.2.5
   - name: elastic
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
     environment:
       discovery.type: single-node
       xpack.security.enabled: false
@@ -197,6 +195,7 @@ services:
       MINIO__ENDPOINT: minio
       MINIO__BUCKET_NAME: raw-start-bucket
       RABBITMQ__HOSTNAME: rabbitmq
+      RABBITMQ__QUEUE_PREFIX: raw-start
       EXPIRATION_SCHEDULER__ENABLED: false
       SUBSCRIPTION_SCHEDULER__ENABLED: false
     commands:
@@ -207,9 +206,6 @@ services:
       - cd /tmp/raw-start-platform/opencti-graphql
       - yarn install
       - yarn install:python
-      - cd "$DRONE_WORKSPACE/client-python"
-      - pip3 install --upgrade --force .
-      - cd /tmp/raw-start-platform/opencti-graphql
       - NODE_OPTIONS=--max_old_space_size=8192 yarn start
   - name: opencti-live-start
     image: nikolaik/python-nodejs:python3.11-nodejs20-alpine
@@ -229,6 +225,7 @@ services:
       MINIO__ENDPOINT: minio
       MINIO__BUCKET_NAME: live-start-bucket
       RABBITMQ__HOSTNAME: rabbitmq
+      RABBITMQ__QUEUE_PREFIX: live-start
       EXPIRATION_SCHEDULER__ENABLED: false
       SUBSCRIPTION_SCHEDULER__ENABLED: false
     commands:
@@ -238,9 +235,6 @@ services:
       - cd /tmp/live-start-platform/opencti-graphql
       - yarn install
       - yarn install:python
-      - cd "$DRONE_WORKSPACE/client-python"
-      - pip3 install --upgrade --force .
-      - cd /tmp/live-start-platform/opencti-graphql
       - NODE_OPTIONS=--max_old_space_size=8192 yarn start
   - name: opencti-direct-start
     image: nikolaik/python-nodejs:python3.11-nodejs20-alpine
@@ -260,6 +254,7 @@ services:
       MINIO__ENDPOINT: minio
       MINIO__BUCKET_NAME: direct-start-bucket
       RABBITMQ__HOSTNAME: rabbitmq
+      RABBITMQ__QUEUE_PREFIX: direct-start
       EXPIRATION_SCHEDULER__ENABLED: false
       SUBSCRIPTION_SCHEDULER__ENABLED: false
     commands:
@@ -269,9 +264,6 @@ services:
       - cd /tmp/direct-start-platform/opencti-graphql
       - yarn install
       - yarn install:python
-      - cd "$DRONE_WORKSPACE/client-python"
-      - pip3 install --upgrade --force .
-      - cd /tmp/direct-start-platform/opencti-graphql
       - NODE_OPTIONS=--max_old_space_size=8192 yarn start
   - name: opencti-direct-worker
     image: nikolaik/python-nodejs:python3.11-nodejs20-alpine
@@ -289,9 +281,6 @@ services:
       - while ! nc -z opencti-direct-start 4300 ; do sleep 1 ; done
       - cd /tmp/direct-start-worker
       - pip3 install -r src/requirements.txt
-      - cd "$DRONE_WORKSPACE/client-python"
-      - pip3 install --upgrade --force .
-      - cd /tmp/direct-start-worker
       - python3 src/worker.py
   - name: opencti-restore-start
     image: nikolaik/python-nodejs:python3.11-nodejs20-alpine
@@ -311,6 +300,7 @@ services:
       MINIO__ENDPOINT: minio
       MINIO__BUCKET_NAME: restore-start-bucket
       RABBITMQ__HOSTNAME: rabbitmq
+      RABBITMQ__QUEUE_PREFIX: restore-start
       EXPIRATION_SCHEDULER__ENABLED: false
       SUBSCRIPTION_SCHEDULER__ENABLED: false
     commands:
@@ -320,9 +310,6 @@ services:
       - cd /tmp/restore-start-platform/opencti-graphql
       - yarn install
       - yarn install:python
-      - cd "$DRONE_WORKSPACE/client-python"
-      - pip3 install --upgrade --force .
-      - cd /tmp/restore-start-platform/opencti-graphql
       - NODE_OPTIONS=--max_old_space_size=8192 yarn start
   - name: opencti-e2e-start
     image: nikolaik/python-nodejs:python3.11-nodejs20-alpine
@@ -333,7 +320,7 @@ services:
       path: /usr/lib/python3.11
     environment:
       APP__PORT: 4500
-      APP__DISABLED_DEV_FEATURES: '[]'
+      APP__DISABLED_DEV_FEATURES: '["4352_BULK_RELATIONS"]'
       APP__ADMIN__PASSWORD: admin
       APP__ADMIN__TOKEN: bfa014e0-e02e-4aa6-a42b-603b19dcf159
       REDIS__HOSTNAME: redis
@@ -343,8 +330,10 @@ services:
       MINIO__ENDPOINT: minio
       MINIO__BUCKET_NAME: e2e-start-bucket
       RABBITMQ__HOSTNAME: rabbitmq
+      RABBITMQ__QUEUE_PREFIX: e2e-start
       EXPIRATION_SCHEDULER__ENABLED: false
       SUBSCRIPTION_SCHEDULER__ENABLED: false
+      PUBLISHER_MANAGER__ENABLED: false
     commands:
       - cp -a opencti-platform/* /tmp/e2e-start-platform/
       - apk add build-base git libffi-dev cargo
@@ -352,9 +341,6 @@ services:
       - yarn install
       - yarn install:python
       - BRANCH=$(echo $DRONE_COMMIT_BRANCH | cut -d "/" -f 2)
-      - cd "$DRONE_WORKSPACE/client-python"
-      - pip3 install --upgrade --force .
-      - cd /tmp/e2e-start-platform/opencti-graphql
       - yarn build:dev
       - yarn wait-api && node build/script-insert-dataset.js --datasets=DATA-TEST-STIX2_v2,data-test-stix-e2e,poisonivy &
       - NODE_OPTIONS=--max_old_space_size=8192 yarn start

@@ -59,6 +59,7 @@ const IncidentKnowledge = ({
           element={ (
             <StixDomainObjectThreatKnowledge
               stixDomainObjectId={incident.id}
+              stixDomainObjectName={incident.name}
               stixDomainObjectType="Incident"
               displayObservablesStats={true}
             />
@@ -111,7 +112,6 @@ const IncidentKnowledge = ({
           element={ (
             <StixDomainObjectAttackPatterns
               stixDomainObjectId={incident.id}
-              entityLink={link}
               defaultStartTime={incident.first_seen}
               defaultStopTime={incident.last_seen}
               disableExport={undefined}

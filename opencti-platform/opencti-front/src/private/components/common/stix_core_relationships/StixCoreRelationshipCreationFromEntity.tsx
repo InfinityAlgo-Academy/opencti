@@ -188,7 +188,7 @@ const stixCoreRelationshipCreationFromEntityQuery = graphql`
   }
 `;
 
-const stixCoreRelationshipCreationFromEntityFromMutation = graphql`
+export const stixCoreRelationshipCreationFromEntityFromMutation = graphql`
   mutation StixCoreRelationshipCreationFromEntityFromMutation(
     $input: StixCoreRelationshipAddInput!
   ) {
@@ -234,7 +234,7 @@ interface StixCoreRelationshipCreationFromEntityForm {
   objectMarking: Option[];
   externalReferences: Option[];
 }
-interface TargetEntity {
+export interface TargetEntity {
   id: string;
   entity_type: string;
 }

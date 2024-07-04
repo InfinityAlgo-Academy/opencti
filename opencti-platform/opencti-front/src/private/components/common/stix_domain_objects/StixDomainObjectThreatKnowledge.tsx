@@ -27,9 +27,9 @@ import {
   StixDomainObjectThreatKnowledgeQueryStixRelationshipsQuery$data,
   StixDomainObjectThreatKnowledgeQueryStixRelationshipsQuery$variables,
 } from '@components/common/stix_domain_objects/__generated__/StixDomainObjectThreatKnowledgeQueryStixRelationshipsQuery.graphql';
+import StixDomainObjectDiamond from '@components/common/stix_domain_objects/StixDomainObjectDiamond';
 import { stixDomainObjectThreatDiamondQuery } from '@components/common/stix_domain_objects/StixDomainObjectThreatDiamondQuery';
 import { StixDomainObjectThreatDiamondQuery$data } from '@components/common/stix_domain_objects/__generated__/StixDomainObjectThreatDiamondQuery.graphql';
-import StixDomainObjectDiamond from '@components/common/stix_domain_objects/StixDomainObjectDiamond';
 import { QueryRenderer } from '../../../../relay/environment';
 import { monthsAgo } from '../../../../utils/Time';
 import { useFormatter } from '../../../../components/i18n';
@@ -140,12 +140,19 @@ const stixDomainObjectThreatKnowledgeStixCoreRelationshipsNumberQuery = graphql`
 interface StixDomainObjectThreatKnowledgeProps {
   stixDomainObjectId: string;
   stixDomainObjectType: string;
-  displayObservablesStats: boolean;
+  displayObservablesStats?: boolean;
+  stixDomainObjectName?: string;
 }
 
 const StixDomainObjectThreatKnowledge: FunctionComponent<
 StixDomainObjectThreatKnowledgeProps
-> = ({ stixDomainObjectId, stixDomainObjectType, displayObservablesStats }) => {
+/*
+  TODO
+  we should reword the component to be able to manipulate data easier
+  in fact, page update is complicated, if not impossible
+  it could be interesting to use the relay provider and rework the uses of graphql queries
+*/
+> = ({ stixDomainObjectId, stixDomainObjectName, stixDomainObjectType, displayObservablesStats }) => {
   const classes = useStyles();
   const { n, t_i18n } = useFormatter();
   const [viewType, setViewType] = useState('diamond');
@@ -258,6 +265,13 @@ StixDomainObjectThreatKnowledgeProps
     filters: contextFilters,
   };
 
+  let exportName = `${stixDomainObjectName ? `${stixDomainObjectName} - ${t_i18n('Diamond')}` : t_i18n('Diamond')}`;
+  if (viewType === 'timeline') {
+    exportName = `${stixDomainObjectName ? `${stixDomainObjectName} - ${t_i18n('Timeline')}` : t_i18n('Timeline')}`;
+  }
+  if (viewType === 'killchain') {
+    exportName = `${stixDomainObjectName ? `${stixDomainObjectName} - ${t_i18n('Global kill chain')}` : t_i18n('Global kill chain')}`;
+  }
   return (
     <>
       <Grid container={true} spacing={3}>
@@ -488,12 +502,7 @@ StixDomainObjectThreatKnowledgeProps
         </div>
       )}
       <div className={classes.export}>
-        <ExportButtons
-          domElementId="container"
-          name={
-            viewType === 'killchain' ? t_i18n('Global kill chain') : t_i18n('Timeline')
-          }
-        />
+        <ExportButtons domElementId="container" name={exportName} />
       </div>
       <div className="clearfix" />
       {viewType !== 'diamond' && (

@@ -56,13 +56,17 @@ const KNOWLEDGE_CAPABILITIES = {
 };
 export const SETTINGS_CAPABILITIES = {
   name: 'SETTINGS',
-  description: 'Access administration',
+  description: 'Access to admin functionalities',
   attribute_order: 3000,
   dependencies: [
+    { name: 'SETPARAMETERS', description: 'Manage parameters', attribute_order: 3100 },
     { name: 'SETACCESSES', description: 'Manage credentials', attribute_order: 3200 },
     { name: 'SETMARKINGS', description: 'Manage marking definitions', attribute_order: 3300 },
-    { name: 'SETLABELS', description: 'Manage labels & Attributes', attribute_order: 3400 },
-    { name: 'SECURITYACTIVITY', description: 'Access Security Activity', attribute_order: 3500 },
+    { name: 'SETCUSTOMIZATION', description: 'Manage customization', attribute_order: 3350 },
+    { name: 'SETLABELS', description: 'Manage taxonomies', attribute_order: 3400 },
+    { name: 'SECURITYACTIVITY', description: 'Access security activity', attribute_order: 3500 },
+    { name: 'FILEINDEXING', description: 'Access to file indexing', attribute_order: 3600 },
+    { name: 'SUPPORT', description: 'Access to support data', attribute_order: 3700 },
   ],
 };
 export const CAPABILITIES = [
@@ -70,16 +74,31 @@ export const CAPABILITIES = [
   KNOWLEDGE_CAPABILITIES,
   {
     name: 'EXPLORE',
-    description: 'Access dashboards and investigations',
+    description: 'Access dashboards',
     attribute_order: 1000,
     dependencies: [
       {
         name: 'EXUPDATE',
-        description: 'Create / Update dashboards and investigations',
+        description: 'Create / Update dashboards',
         attribute_order: 1100,
         dependencies: [
-          { name: 'EXDELETE', description: 'Delete dashboards and investigations', attribute_order: 1200 },
+          { name: 'EXDELETE', description: 'Delete dashboards', attribute_order: 1200 },
           { name: 'PUBLISH', description: 'Manage public dashboards', attribute_order: 1300 },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'INVESTIGATION',
+    description: 'Access investigations',
+    attribute_order: 1400,
+    dependencies: [
+      {
+        name: 'INUPDATE',
+        description: 'Create / Update investigations',
+        attribute_order: 1410,
+        dependencies: [
+          { name: 'INDELETE', description: 'Delete investigations', attribute_order: 1420 },
         ],
       },
     ],
@@ -94,7 +113,7 @@ export const CAPABILITIES = [
   SETTINGS_CAPABILITIES,
   {
     name: 'CONNECTORAPI',
-    attribute_order: 4000,
+    attribute_order: 2300,
     description: 'Connectors API usage: register, ping, export push ...',
   },
   {

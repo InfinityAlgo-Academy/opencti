@@ -53,13 +53,20 @@ enum Capabilities {
   EXPLORE_EXUPDATE
   EXPLORE_EXUPDATE_EXDELETE
   EXPLORE_EXUPDATE_PUBLISH
+  INVESTIGATION
+  INVESTIGATION_INUPDATE
+  INVESTIGATION_INUPDATE_INDELETE
   MODULES
   MODULES_MODMANAGE
   SETTINGS
+  SETTINGS_SETPARAMETERS
   SETTINGS_SETACCESSES
   SETTINGS_SETMARKINGS
   SETTINGS_SETLABELS
+  SETTINGS_SETCUSTOMIZATION
   SETTINGS_SECURITYACTIVITY
+  SETTINGS_FILEINDEXING
+  SETTINGS_SUPPORT
   TAXIIAPI
   TAXIIAPI_SETCOLLECTIONS
   INGESTION
@@ -238,15 +245,15 @@ type AppInfo {
   """
   The OpenCTI api current memory usage
   """
-  memory: AppMemory @auth(for: [SETTINGS])
+  memory: AppMemory @auth(for: [SETTINGS_SETPARAMETERS])
   """
   The list of OpenCTI software dependencies
   """
-  dependencies: [DependencyVersion!]! @auth(for: [SETTINGS])
+  dependencies: [DependencyVersion!]! @auth(for: [SETTINGS_SETPARAMETERS])
   """
   The objects statistics
   """
-  debugStats: AppDebugStatistics @auth(for: [SETTINGS])
+  debugStats: AppDebugStatistics @auth(for: [SETTINGS_SETPARAMETERS])
 }
 
 ### STATS
@@ -458,7 +465,7 @@ type Log {
   timestamp: DateTime!
   user_id: String!
   user: Creator
-  raw_data: String @auth(for: [SETTINGS])
+  raw_data: String @auth(for: [SETTINGS_SECURITYACTIVITY])
   context_uri: String
   context_data: ContextData
 }
@@ -903,6 +910,8 @@ enum BackgroundTaskActionType {
   RULE_ELEMENT_RESCAN
   SHARE
   UNSHARE
+  SHARE_MULTIPLE
+  UNSHARE_MULTIPLE
 }
 enum BackgroundTaskContextType {
   ATTRIBUTE
@@ -1016,6 +1025,7 @@ input BackgroundTaskContextInput {
   options: BackgroundTaskContextOptionsInput
 }
 input BackgroundTaskActionInput {
+  containerId: String
   type: BackgroundTaskActionType!
   context: BackgroundTaskContextInput
 }
@@ -1109,7 +1119,7 @@ type SettingsMessage {
   dismissible: Boolean!
   updated_at: DateTime!
   color: String
-  recipients: [Member!] @auth(for: [SETTINGS])
+  recipients: [Member!] @auth(for: [SETTINGS_SETPARAMETERS])
 }
 
 enum PlatformCriticalAlertType {
@@ -1184,7 +1194,7 @@ type Settings implements InternalObject & BasicObject {
   created_at: DateTime! @auth
   updated_at: DateTime! @auth
   enterprise_edition: DateTime
-  activity_listeners: [Member!] @auth(for: [SETTINGS])
+  activity_listeners: [Member!] @auth(for: [SETTINGS_SECURITYACTIVITY])
   otp_mandatory: Boolean @auth
   password_policy_min_length: Int @auth
   password_policy_max_length: Int @auth
@@ -1194,10 +1204,10 @@ type Settings implements InternalObject & BasicObject {
   password_policy_min_lowercase: Int @auth
   password_policy_min_uppercase: Int @auth
   platform_messages: [SettingsMessage!] @auth
-  messages_administration: [SettingsMessage!] @auth(for: [SETTINGS])
+  messages_administration: [SettingsMessage!] @auth(for: [SETTINGS_SETPARAMETERS])
   analytics_google_analytics_v4: String @auth
   # Technical
-  editContext: [EditUserContext!] @auth(for: [SETTINGS])
+  editContext: [EditUserContext!] @auth(for: [SETTINGS_SETPARAMETERS])
 }
 
 ############## Groups
@@ -1438,6 +1448,7 @@ type User implements BasicObject & InternalObject {
   unit_system: UnitSystem
   submenu_show_icons: Boolean
   submenu_auto_collapse: Boolean
+  monochrome_labels: Boolean
   # Technical
   editContext: [EditUserContext!]
 }
@@ -1482,6 +1493,7 @@ type MeUser implements BasicObject & InternalObject {
   unit_system: UnitSystem
   submenu_show_icons: Boolean
   submenu_auto_collapse: Boolean
+  monochrome_labels: Boolean
 }
 type SessionDetail {
   id: ID!
@@ -1508,6 +1520,7 @@ input UserAddInput {
   unit_system: String
   submenu_show_icons: Boolean
   submenu_auto_collapse: Boolean
+  monochrome_labels: Boolean
   groups: [ID!]
   user_confidence_level: ConfidenceLevelInput
 }
@@ -1696,8 +1709,8 @@ type ConnectorConfiguration {
 }
 
 type ConnectorQueueDetails {
-  messages_number: Int!
-  messages_size: Int!
+  messages_number: Float!
+  messages_size: Float!
 }
 
 type Connector implements BasicObject & InternalObject {
@@ -2574,6 +2587,7 @@ enum CampaignsOrdering {
   modified
   created_at
   updated_at
+  objectMarking
   x_opencti_workflow_id
   confidence
   _score
@@ -4619,6 +4633,8 @@ enum IntrusionSetsOrdering {
   created_at
   updated_at
   x_opencti_workflow_id
+  resource_level
+  primary_motivation
   confidence
   _score
 }
@@ -5590,6 +5606,7 @@ enum MalwaresOrdering {
   objectMarking
   objectLabel
   x_opencti_workflow_id
+  is_family
   confidence
   _score
 }
@@ -5762,7 +5779,10 @@ enum ThreatActorsOrdering {
   updated_at
   x_opencti_workflow_id
   confidence
+  sophistication
+  resource_level
   _score
+  threat_actor_types
 }
 type ThreatActorGroupConnection {
   pageInfo: PageInfo!
@@ -11023,6 +11043,7 @@ input StixSightingRelationshipAddInput {
   externalReferences: [String]
   clientMutationId: String
   update: Boolean
+  x_opencti_workflow_id: String
 }
 
 ############## StixRefRelationships
@@ -11142,7 +11163,7 @@ type Query {
     orderMode: OrderingMode
     filters: FilterGroup
     search: String
-  ): LogConnection @auth(for: [KNOWLEDGE])
+  ): LogConnection @auth(for: [KNOWLEDGE, SETTINGS_SETACCESSES])
   audits(
     first: Int
     after: ID
@@ -11151,7 +11172,7 @@ type Query {
     orderMode: OrderingMode
     filters: FilterGroup
     search: String
-  ): LogConnection @auth(for: [SETTINGS_SECURITYACTIVITY])
+  ): LogConnection @auth(for: [SETTINGS_SETACCESSES, SETTINGS_SECURITYACTIVITY, VIRTUAL_ORGANIZATION_ADMIN])
   auditsNumber(
     dateAttribute: String
     types: [String]
@@ -11160,7 +11181,7 @@ type Query {
     onlyInferred: Boolean
     filters: FilterGroup
     search: String
-  ): Number @auth(for: [KNOWLEDGE, EXPLORE])
+  ): Number @auth(for: [SETTINGS_SETACCESSES, SETTINGS_SECURITYACTIVITY, VIRTUAL_ORGANIZATION_ADMIN])
   auditsTimeSeries(
     field: String!
     operation: StatsOperation!
@@ -11170,7 +11191,7 @@ type Query {
     types: [String]
     filters: FilterGroup
     search: String
-  ): [TimeSeries] @auth(for: [SETTINGS, VIRTUAL_ORGANIZATION_ADMIN])
+  ): [TimeSeries] @auth(for: [SETTINGS_SETACCESSES, SETTINGS_SECURITYACTIVITY, VIRTUAL_ORGANIZATION_ADMIN])
   auditsDistribution(
     field: String!
     startDate: DateTime
@@ -11182,7 +11203,7 @@ type Query {
     types: [String]
     filters: FilterGroup
     search: String
-  ): [Distribution] @auth(for: [SETTINGS])
+  ): [Distribution] @auth(for: [SETTINGS_SETACCESSES, SETTINGS_SECURITYACTIVITY, VIRTUAL_ORGANIZATION_ADMIN])
   auditsMultiTimeSeries(
     operation: StatsOperation!
     startDate: DateTime!
@@ -11190,8 +11211,8 @@ type Query {
     interval: String!
     onlyInferred: Boolean
     timeSeriesParameters: [AuditsTimeSeriesParameters]
-  ): [MultiTimeSeries] @auth(for: [KNOWLEDGE, EXPLORE])
-  subType(id: String!): SubType @auth(for: [KNOWLEDGE])
+  ): [MultiTimeSeries] @auth(for: [SETTINGS_SETACCESSES, SETTINGS_SECURITYACTIVITY, VIRTUAL_ORGANIZATION_ADMIN])
+  subType(id: String!): SubType @auth(for: [KNOWLEDGE, SETTINGS_SETCUSTOMIZATION])
   subTypes(
     first: Int
     after: ID
@@ -11204,12 +11225,12 @@ type Query {
   file(id: String!): File @auth(for: [KNOWLEDGE_KNASKIMPORT])
   importFiles(first: Int): FileConnection @auth(for: [KNOWLEDGE_KNASKIMPORT])
   pendingFiles(first: Int): FileConnection @auth(for: [KNOWLEDGE_KNASKIMPORT])
-  filesMetrics: FilesMetrics @auth(for: [SETTINGS])
+  filesMetrics: FilesMetrics @auth(for: [SETTINGS_FILEINDEXING])
 
   ######## INDEXED FILES
   indexedFiles(first: Int, after: ID, search: String): IndexedFileConnection @auth(for: [KNOWLEDGE])
   indexedFilesCount(search: String): Int @auth(for: [KNOWLEDGE])
-  indexedFilesMetrics: FilesMetrics @auth(for: [SETTINGS])
+  indexedFilesMetrics: FilesMetrics @auth(for: [SETTINGS_FILEINDEXING])
 
   ###### ENTITIES
 
@@ -11218,7 +11239,7 @@ type Query {
   settings: Settings! @public # Some inner information are public
   group(id: String!): Group @auth(for: [SETTINGS_SETACCESSES, VIRTUAL_ORGANIZATION_ADMIN])
   groups(first: Int, after: ID, orderBy: GroupsOrdering, orderMode: OrderingMode, search: String, filters: FilterGroup): GroupConnection
-  @auth(for: [SETTINGS_SETACCESSES, VIRTUAL_ORGANIZATION_ADMIN])
+  @auth(for: [SETTINGS_SETACCESSES, SETTINGS_SECURITYACTIVITY, VIRTUAL_ORGANIZATION_ADMIN])
   roles(first: Int, after: ID, orderBy: RolesOrdering, orderMode: OrderingMode, search: String): RoleConnection
   @auth(for: [SETTINGS_SETACCESSES])
   me: MeUser! @auth
@@ -11233,7 +11254,7 @@ type Query {
     filters: FilterGroup,
     filterMode: FilterMode,
     entityTypes: [MemberType!]
-  ): MemberConnection @auth(for: [KNOWLEDGE_KNUPDATE, EXPLORE_EXUPDATE CONNECTORAPI, SETTINGS])
+  ): MemberConnection @auth(for: [KNOWLEDGE_KNUPDATE, EXPLORE_EXUPDATE, CONNECTORAPI, SETTINGS_SETACCESSES, SETTINGS_SECURITYACTIVITY, SETTINGS_SETCUSTOMIZATION, INGESTION_SETINGESTIONS])
   users(
     first: Int
     after: ID
@@ -11252,7 +11273,7 @@ type Query {
   connectorsForExport: [Connector] @auth(for: [KNOWLEDGE])
   connectorsForImport: [Connector] @auth(for: [KNOWLEDGE])
   connectorsForAnalysis: [Connector] @auth(for: [KNOWLEDGE])
-  connectorsForNotification: [Connector] @auth(for: [SETTINGS_SETACCESSES])
+  connectorsForNotification: [Connector] @auth(for: [SETTINGS_SETACCESSES, SETTINGS_SETCUSTOMIZATION])
   work(id: ID!): Work @auth(for: [MODULES])
   works(
     first: Int
@@ -11269,8 +11290,8 @@ type Query {
     attributeName: String!
   ): AttributeConnection @auth(for: [KNOWLEDGE])
   schemaAttributeNames(elementType: [String]!) : AttributeConnection @auth(for: [KNOWLEDGE, TAXIIAPI_SETCOLLECTIONS])
-  retentionRule(id: String!): RetentionRule @auth(for: [SETTINGS])
-  retentionRules(first: Int, after: ID, search: String): RetentionRuleConnection @auth(for: [SETTINGS])
+  retentionRule(id: String!): RetentionRule @auth(for: [SETTINGS_SETCUSTOMIZATION])
+  retentionRules(first: Int, after: ID, search: String): RetentionRuleConnection @auth(for: [SETTINGS_SETCUSTOMIZATION])
   taxiiCollection(id: String!): TaxiiCollection @auth(for: [TAXIIAPI_SETCOLLECTIONS])
   taxiiCollections(
     first: Int
@@ -11324,19 +11345,19 @@ type Query {
     includeAuthorities: Boolean
     filters: FilterGroup
     search: String
-  ): BackgroundTaskConnection @auth(for: [KNOWLEDGE])
+  ): BackgroundTaskConnection @auth(for: [KNOWLEDGE, SETTINGS_SETCUSTOMIZATION])
   rule(id: String!): Rule @auth(for: [KNOWLEDGE])
-  rules: [Rule] @auth(for: [KNOWLEDGE])
-  ruleManagerInfo: RuleManager @auth(for: [SETTINGS])
-  synchronizer(id: String!): Synchronizer @auth(for: [SETTINGS])
+  rules: [Rule] @auth(for: [KNOWLEDGE, SETTINGS_SETCUSTOMIZATION])
+  ruleManagerInfo: RuleManager @auth(for: [SETTINGS_SETCUSTOMIZATION])
+  synchronizer(id: String!): Synchronizer @auth(for: [INGESTION])
   synchronizers(
     first: Int
     after: ID
     orderBy: SynchronizersOrdering
     orderMode: OrderingMode
     search: String
-  ): SynchronizerConnection @auth(for: [SETTINGS, INGESTION, INGESTION_SETINGESTIONS])
-  synchronizerFetch(input: SynchronizerFetchInput): [RemoteStreamCollection] @auth(for: [SETTINGS])
+  ): SynchronizerConnection @auth(for: [INGESTION])
+  synchronizerFetch(input: SynchronizerFetchInput): [RemoteStreamCollection] @auth(for: [INGESTION])
   ######## STIX OBJECT ENTITIES
 
   ######## STIX META OBJECT ENTITIES
@@ -11350,7 +11371,7 @@ type Query {
     filters: FilterGroup
     search: String
   ): StixMetaObjectConnection @auth(for: [KNOWLEDGE])
-  markingDefinition(id: String!): MarkingDefinition @auth(for: [KNOWLEDGE])
+  markingDefinition(id: String!): MarkingDefinition @auth(for: [KNOWLEDGE, SETTINGS_SETMARKINGS])
   markingDefinitions(
     first: Int
     after: ID
@@ -11359,8 +11380,8 @@ type Query {
     filters: FilterGroup
     search: String
     toStix: Boolean
-  ): MarkingDefinitionConnection @auth(for: [KNOWLEDGE])
-  label(id: String!): Label @auth(for: [KNOWLEDGE])
+  ): MarkingDefinitionConnection @auth(for: [KNOWLEDGE, SETTINGS_SETACCESSES, SETTINGS_SETMARKINGS])
+  label(id: String!): Label @auth(for: [KNOWLEDGE, SETTINGS_SETLABELS])
   labels(
     first: Int
     after: ID
@@ -11368,7 +11389,7 @@ type Query {
     orderMode: OrderingMode
     filters: FilterGroup
     search: String
-  ): LabelConnection @auth(for: [KNOWLEDGE])
+  ): LabelConnection @auth(for: [KNOWLEDGE, SETTINGS_SETLABELS])
   externalReference(id: String!): ExternalReference @auth(for: [KNOWLEDGE])
   externalReferences(
     first: Int
@@ -11378,7 +11399,7 @@ type Query {
     filters: FilterGroup
     search: String
   ): ExternalReferenceConnection @auth(for: [KNOWLEDGE])
-  killChainPhase(id: String!): KillChainPhase @auth(for: [KNOWLEDGE])
+  killChainPhase(id: String!): KillChainPhase @auth(for: [KNOWLEDGE, SETTINGS_SETLABELS])
   killChainPhases(
     first: Int
     after: ID
@@ -11386,7 +11407,7 @@ type Query {
     orderMode: OrderingMode
     filters: FilterGroup
     search: String
-  ): KillChainPhaseConnection @auth(for: [KNOWLEDGE])
+  ): KillChainPhaseConnection @auth(for: [KNOWLEDGE, SETTINGS_SETLABELS])
 
   ######## STIX CORE OBJECT ENTITIES
 
@@ -11484,7 +11505,7 @@ type Query {
     order: String
     distributionParameters: StixCoreObjectsDistributionParameters
   ): [MultiDistribution] @auth(for: [KNOWLEDGE, EXPLORE])
-  filtersRepresentatives(filters: FilterGroup!): [RepresentativeWithId!]! @auth(for: [KNOWLEDGE, SETTINGS_SECURITYACTIVITY])
+  filtersRepresentatives(filters: FilterGroup!): [RepresentativeWithId!]! @auth(for: [KNOWLEDGE, SETTINGS_SECURITYACTIVITY, INGESTION_SETINGESTIONS, SETTINGS_SETACCESSES, SETTINGS_SETCUSTOMIZATION])
 
   ######## STIX DOMAIN OBJECT ENTITIES
 
@@ -11511,14 +11532,14 @@ type Query {
     onlyInferred: Boolean
     filters: FilterGroup
     search: String
-  ): [TimeSeries] @auth(for: [KNOWLEDGE, EXPLORE])
+  ): [TimeSeries] @auth(for: [KNOWLEDGE, EXPLORE, SETTINGS_SETCUSTOMIZATION])
   stixDomainObjectsNumber(
     dateAttribute: String
     types: [String]
     endDate: DateTime
     onlyInferred: Boolean
     filters: FilterGroup
-    search: String): Number @auth(for: [KNOWLEDGE, EXPLORE])
+    search: String): Number @auth(for: [KNOWLEDGE, EXPLORE, SETTINGS_SETCUSTOMIZATION])
   stixDomainObjectsDistribution(
     objectId: [String]
     relationship_type: [String]
@@ -11737,7 +11758,7 @@ type Query {
     search: String
     filters: FilterGroup
     toStix: Boolean
-  ): IdentityConnection @auth(for: [KNOWLEDGE])
+  ): IdentityConnection @auth(for: [KNOWLEDGE, INGESTION_SETINGESTIONS])
   individual(id: String!): Individual @auth(for: [KNOWLEDGE])
   individuals(
     first: Int
@@ -12000,7 +12021,7 @@ type Query {
     filters: FilterGroup
     dynamicFrom: FilterGroup
     dynamicTo: FilterGroup
-  ): [TimeSeries] @auth(for: [KNOWLEDGE, EXPLORE])
+  ): [TimeSeries] @auth(for: [KNOWLEDGE, EXPLORE, SETTINGS_SETCUSTOMIZATION])
   stixRelationshipsMultiTimeSeries(
     operation: StatsOperation!
     startDate: DateTime!
@@ -12054,7 +12075,7 @@ type Query {
     filters: FilterGroup
     dynamicFrom: FilterGroup
     dynamicTo: FilterGroup
-  ): Number @auth(for: [KNOWLEDGE, EXPLORE])
+  ): Number @auth(for: [KNOWLEDGE, EXPLORE, SETTINGS_SETCUSTOMIZATION])
   schemaRelationsTypesMapping: [StixRelationshipSchema!]! @auth
   schemaRelationsRefTypesMapping: [StixRelationshipRefSchema!]! @auth
   filterKeysSchema: [FilterKeysSchema!]! @auth
@@ -12306,14 +12327,14 @@ type Query {
 ### SUBSCRIPTIONS
 
 type Subscription {
-  settings(id: ID!): Settings @auth(for: [SETTINGS])
+  settings(id: ID!): Settings @auth(for: [SETTINGS_SETPARAMETERS])
   settingsMessages(id: ID!): Settings @auth
   group(id: ID!): Group @auth(for: [SETTINGS_SETACCESSES])
   user(id: ID!): User @auth(for: [SETTINGS_SETACCESSES])
-  label(id: ID!): Label @auth(for: [SETTINGS])
-  statusTemplate(id: ID!): StatusTemplate @auth(for: [SETTINGS])
-  markingDefinition(id: ID!): MarkingDefinition @auth(for: [SETTINGS])
-  killChainPhase(id: ID!): KillChainPhase @auth(for: [SETTINGS])
+  label(id: ID!): Label @auth(for: [SETTINGS_SETLABELS])
+  statusTemplate(id: ID!): StatusTemplate @auth(for: [SETTINGS_SETLABELS])
+  markingDefinition(id: ID!): MarkingDefinition @auth(for: [SETTINGS_SETMARKINGS])
+  killChainPhase(id: ID!): KillChainPhase @auth(for: [SETTINGS_SETLABELS])
   stixCoreObject(id: ID!): StixCoreObject @auth(for: [KNOWLEDGE])
   internalObject(id: ID!): InternalObject @auth(for: [SETTINGS])
   stixDomainObject(id: ID!): StixDomainObject @auth(for: [KNOWLEDGE])
@@ -12340,11 +12361,11 @@ type WorkEditMutations {
 ######## INTERNAL OBJECT ENTITIES
 
 type SettingsEditMutations {
-  fieldPatch(input: [EditInput]!): Settings
-  contextPatch(input: EditContext): Settings
-  contextClean: Settings
-  editMessage(input: SettingsMessageInput!): Settings
-  deleteMessage(input: String!): Settings
+  fieldPatch(input: [EditInput]!): Settings @auth(for: [SETTINGS_SETPARAMETERS, SETTINGS_SETACCESSES, SETTINGS_SECURITYACTIVITY])
+  contextPatch(input: EditContext): Settings @auth(for: [SETTINGS_SETPARAMETERS])
+  contextClean: Settings @auth(for: [SETTINGS_SETPARAMETERS])
+  editMessage(input: SettingsMessageInput!): Settings @auth(for: [SETTINGS_SETPARAMETERS])
+  deleteMessage(input: String!): Settings @auth(for: [SETTINGS_SETPARAMETERS])
 }
 type SubTypeEditMutations {
   statusAdd(input: StatusAddInput!): SubType
@@ -12449,11 +12470,6 @@ enum AnalysisContentType {
   file
 }
 
-enum AnalysisContentType {
-  fields
-  file
-}
-
 union Analysis = MappingAnalysis
 
 input MappingAnalysisInput {
@@ -12462,6 +12478,8 @@ input MappingAnalysisInput {
 
 type MappingAnalysis {
   analysisType: String!
+  analysisStatus: State
+  analysisDate: DateTime
   mappedEntities: [MappedEntity!]
 }
 
@@ -12473,6 +12491,7 @@ input MappedEntityInput {
 type MappedEntity {
   matchedString: String!
   matchedEntity: StixCoreObject!
+  isEntityInContainer: Boolean!
 }
 
 type StixCoreObjectEditMutations {
@@ -12724,7 +12743,7 @@ type StixCyberObservableEditMutations {
   relationAdd(input: StixRefRelationshipAddInput!): StixRefRelationship @auth(for: [KNOWLEDGE_KNUPDATE])
   relationsAdd(input: StixRefRelationshipsAddInput!): StixCyberObservable @auth(for: [KNOWLEDGE_KNUPDATE])
   relationDelete(toId: StixRef!, relationship_type: String!): StixCyberObservable @auth(for: [KNOWLEDGE_KNUPDATE])
-  promote: StixCyberObservable @auth(for: [KNOWLEDGE_KNUPDATE])
+  promoteToIndicator: Indicator  @auth(for: [KNOWLEDGE_KNUPDATE])
   importPush(file: Upload!, version: DateTime, noTriggerImport: Boolean): File @auth(for: [KNOWLEDGE_KNUPLOAD])
   exportAsk(format: String!, exportType: String!, maxMarkingDefinition: String): [File!] @auth(for: [KNOWLEDGE_KNGETEXPORT_KNASKEXPORT])
   exportPush(file: Upload!): Boolean @auth(for: [CONNECTORAPI])
@@ -12781,14 +12800,14 @@ type Mutation {
   uploadPending(file: Upload!, entityId: String, labels: [String], errorOnExisting: Boolean): File @auth(for: [KNOWLEDGE_KNASKIMPORT])
   askJobImport(fileName: ID!, connectorId: String, configuration: String, bypassEntityId: String, bypassValidation: Boolean): File
   @auth(for: [KNOWLEDGE_KNASKIMPORT])
-  resetFileIndexing: Boolean @auth(for: [SETTINGS])
+  resetFileIndexing: Boolean @auth(for: [SETTINGS_FILEINDEXING])
 
   ### SYNC
   synchronizerAdd(input: SynchronizerAddInput!): Synchronizer @auth(for: [CONNECTORAPI])
   synchronizerEdit(id: ID!): SynchronizerEditMutations @auth(for: [CONNECTORAPI])
   synchronizerStart(id: ID!): Synchronizer @auth(for: [CONNECTORAPI])
   synchronizerStop(id: ID!): Synchronizer @auth(for: [CONNECTORAPI])
-  synchronizerTest(input: SynchronizerAddInput): String @auth(for: [CONNECTORAPI])
+  synchronizerTest(input: SynchronizerAddInput): String @auth(for: [CONNECTORAPI, INGESTION_SETINGESTIONS])
 
   ### WORK
   workAdd(connectorId: String!, friendlyName: String): Work! @auth(for: [CONNECTORAPI, MODULES_MODMANAGE, KNOWLEDGE_KNASKIMPORT, KNOWLEDGE_KNGETEXPORT_KNASKEXPORT])
@@ -12801,13 +12820,13 @@ type Mutation {
   queryTaskAdd(input: QueryTaskAddInput!): BackgroundTask! @auth
 
   ### RETENTION RULE
-  retentionRuleAdd(input: RetentionRuleAddInput!): RetentionRule! @auth(for: [SETTINGS])
-  retentionRuleCheck(input: RetentionRuleAddInput): Int! @auth(for: [SETTINGS])
-  retentionRuleEdit(id: ID!): RetentionRuleEditMutations @auth(for: [SETTINGS])
+  retentionRuleAdd(input: RetentionRuleAddInput!): RetentionRule! @auth(for: [SETTINGS_SETCUSTOMIZATION])
+  retentionRuleCheck(input: RetentionRuleAddInput): Int! @auth(for: [SETTINGS_SETCUSTOMIZATION])
+  retentionRuleEdit(id: ID!): RetentionRuleEditMutations @auth(for: [SETTINGS_SETCUSTOMIZATION])
 
   ### RULE
-  ruleSetActivation(id: ID!, enable: Boolean!): Rule! @auth(for: [SETTINGS])
-  ruleManagerClean(eventId: ID): RuleManager! @auth(for: [SETTINGS])
+  ruleSetActivation(id: ID!, enable: Boolean!): Rule! @auth(for: [SETTINGS_SETCUSTOMIZATION])
+  ruleManagerClean(eventId: ID): RuleManager! @auth(for: [SETTINGS_SETCUSTOMIZATION])
 
   ######## INTERNAL OBJECT ENTITIES
   frontendErrorLog(message: String!, codeStack: String, componentStack: String): Boolean @auth
@@ -12816,14 +12835,13 @@ type Mutation {
   otpDeactivation: MeUser @auth
   otpUserDeactivation(id: ID!): MeUser @auth(for: [SETTINGS_SETACCESSES])
   otpLogin(input: UserOTPLoginInput): Boolean @auth
-  settingsEdit(id: ID!): SettingsEditMutations @auth(for: [SETTINGS])
-  otpSetActivation(input: UserOTPActivationInput): User @auth(for: [SETTINGS])
-  subTypeEdit(id: ID!): SubTypeEditMutations @auth(for: [SETTINGS])
-  statusTemplateAdd(input: StatusTemplateAddInput!): StatusTemplate! @auth(for: [SETTINGS])
-  statusTemplateDelete(id: ID!): ID! @auth(for: [SETTINGS])
-  statusTemplateFieldPatch(id: ID!, input: [EditInput!]!): StatusTemplate! @auth(for: [SETTINGS])
-  statusTemplateContextPatch(id: ID!, input: EditContext!): StatusTemplate! @auth(for: [SETTINGS])
-  statusTemplateContextClean(id: ID!): StatusTemplate! @auth(for: [SETTINGS])
+  settingsEdit(id: ID!): SettingsEditMutations @auth
+  subTypeEdit(id: ID!): SubTypeEditMutations @auth(for: [SETTINGS_SETCUSTOMIZATION])
+  statusTemplateAdd(input: StatusTemplateAddInput!): StatusTemplate! @auth(for: [SETTINGS_SETLABELS])
+  statusTemplateDelete(id: ID!): ID! @auth(for: [SETTINGS_SETLABELS])
+  statusTemplateFieldPatch(id: ID!, input: [EditInput!]!): StatusTemplate! @auth(for: [SETTINGS_SETLABELS])
+  statusTemplateContextPatch(id: ID!, input: EditContext!): StatusTemplate! @auth(for: [SETTINGS_SETLABELS])
+  statusTemplateContextClean(id: ID!): StatusTemplate! @auth(for: [SETTINGS_SETLABELS])
   groupAdd(input: GroupAddInput!): Group @auth(for: [SETTINGS_SETACCESSES])
   groupEdit(id: ID!): GroupEditMutations @auth(for: [SETTINGS_SETACCESSES])
   userAdd(input: UserAddInput!): User @auth(for: [SETTINGS_SETACCESSES, VIRTUAL_ORGANIZATION_ADMIN])
@@ -12842,7 +12860,6 @@ type Mutation {
   resetStateConnector(id: ID!): Connector @auth(for: [MODULES_MODMANAGE])
   deleteConnector(id: ID!): ID! @auth(for: [MODULES_MODMANAGE])
   updateConnectorTrigger(id: ID!, input: [EditInput]!): Connector @auth(for: [MODULES_MODMANAGE])
-  runtimeAttributeEdit(id: String!, previous: String!, current: String!): ID! @auth(for: [SETTINGS])
   feedAdd(input: FeedAddInput!): Feed @auth(for: [TAXIIAPI_SETCOLLECTIONS])
   feedDelete(id: ID!): ID! @auth(for: [TAXIIAPI_SETCOLLECTIONS])
   feedEdit(id: ID!, input: FeedAddInput!): Feed! @auth(for: [TAXIIAPI_SETCOLLECTIONS])

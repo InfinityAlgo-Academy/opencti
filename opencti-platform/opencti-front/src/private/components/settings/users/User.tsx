@@ -44,7 +44,7 @@ import useEnterpriseEdition from '../../../../utils/hooks/useEnterpriseEdition';
 import ItemIcon from '../../../../components/ItemIcon';
 import HiddenTypesChipList from '../hidden_types/HiddenTypesChipList';
 import ItemAccountStatus from '../../../../components/ItemAccountStatus';
-import { BYPASS, SETTINGS } from '../../../../utils/hooks/useGranted';
+import useGranted, { BYPASS, KNOWLEDGE, SETTINGS_SECURITYACTIVITY, SETTINGS_SETACCESSES } from '../../../../utils/hooks/useGranted';
 import Security from '../../../../utils/Security';
 import useAuth from '../../../../utils/hooks/useAuth';
 import type { Theme } from '../../../../components/Theme';
@@ -225,6 +225,8 @@ const User: FunctionComponent<UserProps> = ({ data }) => {
   const [sessionToKill, setSessionToKill] = useState<string | null>(null);
   const user = useFragment(UserFragment, data);
   const isEnterpriseEdition = useEnterpriseEdition();
+  const isGrantedToAudit = useGranted([SETTINGS_SECURITYACTIVITY]);
+  const isGrantedToKnowledge = useGranted([KNOWLEDGE]);
   const [commitUserSessionKill] = useApiMutation<UserSessionKillMutation>(
     userSessionKillMutation,
   );
@@ -233,7 +235,7 @@ const User: FunctionComponent<UserProps> = ({ data }) => {
     userOtpDeactivationMutation,
   );
   const userCapabilities = (me.capabilities ?? []).map((c) => c.name);
-  const userHasSettingsCapability = userCapabilities.includes(SETTINGS) || userCapabilities.includes(BYPASS);
+  const userHasSettingsCapability = userCapabilities.includes(SETTINGS_SETACCESSES) || userCapabilities.includes(BYPASS);
   const handleOpenKillSession = (sessionId: string) => {
     setDisplayKillSession(true);
     setSessionToKill(sessionId);
@@ -302,6 +304,12 @@ const User: FunctionComponent<UserProps> = ({ data }) => {
       (a: Session, b: Session) => timestamp(a?.created) - timestamp(b?.created),
     );
   const accountExpireDate = fldt(user.account_lock_after_date);
+  let historyTypes = ['History'];
+  if (isGrantedToAudit && !isGrantedToKnowledge) {
+    historyTypes = ['Activity'];
+  } else if (isGrantedToAudit && isGrantedToKnowledge) {
+    historyTypes = ['History', 'Activity'];
+  }
   return (
     <>
       <Grid
@@ -503,7 +511,7 @@ const User: FunctionComponent<UserProps> = ({ data }) => {
                 >
                   {t_i18n('Sessions')}
                 </Typography>
-                <Security needs={[SETTINGS]}>
+                <Security needs={[SETTINGS_SETACCESSES]}>
                   <IconButton
                     color="primary"
                     aria-label="Delete all"
@@ -604,7 +612,7 @@ const User: FunctionComponent<UserProps> = ({ data }) => {
               <QueryRenderer
                 query={UserAuditsTimeSeriesQuery}
                 variables={{
-                  types: ['History'],
+                  types: historyTypes,
                   field: 'timestamp',
                   operation: 'count',
                   startDate,
@@ -613,12 +621,7 @@ const User: FunctionComponent<UserProps> = ({ data }) => {
                   filters: {
                     mode: 'and',
                     filters: [
-                      {
-                        key: 'members_user',
-                        values: [user.id],
-                        operator: 'eq',
-                        mode: 'or',
-                      },
+                      { key: ['user_id'], values: [user.id], operator: 'wildcard', mode: 'or' },
                     ],
                     filterGroups: [],
                   },
@@ -663,7 +666,32 @@ const User: FunctionComponent<UserProps> = ({ data }) => {
           </Paper>
         </Grid>
         <Grid item={true} xs={6} style={{ marginTop: 35 }}>
-          <UserHistory userId={user.id} />
+          {isGrantedToAudit ? (
+            <UserHistory userId={user.id} />
+          ) : (
+            <>
+              <Typography variant="h4" gutterBottom={true} style={{ float: 'left' }}>
+                {t_i18n('History')}
+              </Typography>
+              <div style={{ display: 'table', height: '100%', width: '100%' }}>
+                <Paper
+                  classes={{ root: classes.paper }}
+                  variant="outlined"
+                >
+                  <span
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      height: '100%',
+                    }}
+                  >
+                    {t_i18n('You are not authorized to see this data.')}
+                  </span>
+                </Paper>
+              </div>
+            </>
+          )}
         </Grid>
       </Grid>
       <QueryRenderer

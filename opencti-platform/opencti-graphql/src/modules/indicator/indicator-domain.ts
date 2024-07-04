@@ -5,7 +5,7 @@ import { type EntityOptions, listAllEntities, listEntitiesPaginated, listEntitie
 import { BUS_TOPICS, extendedErrors, logApp } from '../../config/conf';
 import { notify } from '../../database/redis';
 import { checkIndicatorSyntax } from '../../python/pythonBridge';
-import { DatabaseError, FunctionalError } from '../../config/errors';
+import { DatabaseError, FunctionalError, ValidationError } from '../../config/errors';
 import { isStixCyberObservable } from '../../schema/stixCyberObservable';
 import { RELATION_BASED_ON, RELATION_INDICATES } from '../../schema/stixCoreRelationship';
 import {
@@ -30,6 +30,7 @@ import {
   type QueryIndicatorsArgs,
   type QueryIndicatorsNumberArgs,
   type EditInput,
+  type StixCyberObservable,
   FilterMode,
   FilterOperator,
   OrderingMode
@@ -177,8 +178,8 @@ export const createObservablesFromIndicator = async (
       update: true,
     };
     try {
-      const createdObservable = await createEntity(context, user, observableInput, observable.type);
-      observablesToLink.push(createdObservable.id);
+      const createdObservable: StixCyberObservable = await createEntity(context, user, observableInput, observable.type);
+      observablesToLink.push(createdObservable);
     } catch (err) {
       logApp.error('[API] Create observable from indicator fail', { index, cause: err, ...extendedErrors({ input: observableInput }) });
     }
@@ -187,7 +188,7 @@ export const createObservablesFromIndicator = async (
     observablesToLink.map((observableToLink) => {
       const relationInput = {
         fromId: indicator.id,
-        toId: observableToLink,
+        toId: observableToLink.id,
         relationship_type: RELATION_BASED_ON,
         objectMarking: input.objectMarking,
         objectOrganization: input.objectOrganization,
@@ -195,9 +196,10 @@ export const createObservablesFromIndicator = async (
       return createRelation(context, user, relationInput);
     })
   );
+  return observablesToLink;
 };
 
-export const promoteIndicatorToObservable = async (context: AuthContext, user: AuthUser, indicatorId: string) => {
+export const promoteIndicatorToObservables = async (context: AuthContext, user: AuthUser, indicatorId: string) => {
   const indicator: StoreEntityIndicator = await storeLoadByIdWithRefs(context, user, indicatorId) as StoreEntityIndicator;
   const objectLabel = (indicator[INPUT_LABELS] ?? []).map((n) => n.internal_id);
   const objectMarking = (indicator[INPUT_MARKINGS] ?? []).map((n) => n.internal_id);
@@ -299,12 +301,21 @@ export const addIndicator = async (context: AuthContext, user: AuthUser, indicat
 
 export const indicatorEditField = async (context: AuthContext, user: AuthUser, id: string, input: EditInput[], opts = {}) => {
   const finalInput = [...input];
+  const indicator = await findById(context, user, id);
+  if (!indicator) {
+    throw FunctionalError('Cannot edit the field, Indicator cannot be found.');
+  }
+  // validation check because according to STIX 2.1 specification the valid_until must be greater than the valid_from
+  let { valid_from, valid_until } = indicator;
+  input.forEach((e) => {
+    if (e.key === 'valid_from') [valid_from] = e.value;
+    if (e.key === 'valid_until') [valid_until] = e.value;
+  });
+  if (new Date(valid_until) <= new Date(valid_from)) {
+    throw ValidationError('valid_from', { message: 'The valid until date must be greater than the valid from date' });
+  }
   const scoreEditInput = input.find((e) => e.key === 'x_opencti_score');
   if (scoreEditInput) {
-    const indicator = await findById(context, user, id);
-    if (!indicator) {
-      throw FunctionalError('Cannot edit the field, Indicator cannot be found.');
-    }
     if (indicator.decay_applied_rule && !scoreEditInput.value.includes(indicator.decay_base_score)) {
       const newScore = scoreEditInput.value[0];
       const updateDate = utcDate();

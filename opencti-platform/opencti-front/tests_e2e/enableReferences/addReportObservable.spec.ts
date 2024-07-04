@@ -3,7 +3,6 @@ import ReportPage from '../model/report.pageModel';
 import ContainerObservablesPage from '../model/containerObservables.pageModel';
 import ReportDetailsPage from '../model/reportDetails.pageModel';
 import ReportFormPage from '../model/form/reportForm.pageModel';
-import LoginPage from '../model/login.pageModel';
 import DashboardPage from '../model/dashboard.pageModel';
 import CommitMessagePage from '../model/commitMessage.pageModel';
 import ContainerAddObservablesPage from '../model/containerAddObservables.pageModel';
@@ -17,6 +16,7 @@ import UsersSettingsPage from '../model/usersSettings.pageModel';
 import UserPage from '../model/user.pageModel';
 import UserFormPage from '../model/form/userForm.pageModel';
 import LeftBarPage from '../model/menu/leftBar.pageModel';
+import LoginFormPageModel from '../model/form/loginForm.pageModel';
 
 const noBypassUserAuthFile = 'tests_e2e/.setup/.auth/no-bypass-ref-user.json';
 const noBypassUserLogin = 'noBypassReferences@user.test';
@@ -44,8 +44,8 @@ test.describe('Create user with no references bypass capabilities', () => {
     await expect(roleFormPage.getAccessKnowledgeCheckbox()).toBeChecked();
     await roleFormPage.getCreateUpdateKnowledgeCheckbox().click();
     await expect(roleFormPage.getCreateUpdateKnowledgeCheckbox()).toBeChecked();
-    await roleFormPage.getAccessAdministrationCheckbox().click();
-    await expect(roleFormPage.getAccessAdministrationCheckbox()).toBeChecked();
+    await roleFormPage.getManageCustomizationCheckbox().click();
+    await expect(roleFormPage.getManageCustomizationCheckbox()).toBeChecked();
   });
 
   test('Create basic user group', async ({ page }) => {
@@ -94,12 +94,11 @@ test.describe('Authenticate no bypass user', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
   test('Authenticate basic user', async ({ page }) => {
     const dashboardPage = new DashboardPage(page);
-    const loginPage = new LoginPage(page);
+    const loginPage = new LoginFormPageModel(page);
+
     await page.goto('/');
     await expect(loginPage.getPage()).toBeVisible();
-    await loginPage.fillLoginInput(noBypassUserLogin);
-    await loginPage.fillPasswordInput(noBypassUserPassword);
-    await loginPage.getSignInButton().click();
+    await loginPage.login(noBypassUserLogin, noBypassUserPassword);
     await expect(dashboardPage.getPage()).toBeVisible();
     await page.context().storageState({ path: noBypassUserAuthFile });
   });
@@ -115,7 +114,7 @@ test('Add and remove observable from Observables tab of a Report as Admin user',
 
   // Create a report and check that adding an observable is possible
   await page.goto('/dashboard/analyses/reports');
-  await page.getByTestId('ChevronRightIcon').click();
+
   await reportPage.openNewReportForm();
   await reportForm.nameField.fill('Test add observable e2e');
   await reportPage.getCreateReportButton().click();
