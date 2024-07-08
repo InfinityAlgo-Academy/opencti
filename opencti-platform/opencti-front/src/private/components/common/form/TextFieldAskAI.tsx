@@ -30,10 +30,10 @@ import useApiMutation from '../../../../utils/hooks/useApiMutation';
 
 // region types
 interface TextFieldAskAiProps {
-  currentValue: string;
+  currentValue?: string;
   setFieldValue: (value: string) => void;
   format: 'text' | 'html' | 'markdown';
-  variant: 'markdown' | 'html' | 'text' | null;
+  variant?: 'markdown' | 'html' | 'text';
   disabled?: boolean;
   style?: object;
 }
@@ -75,7 +75,7 @@ const textFieldAskAIExplainMutation = graphql`
 `;
 
 const TextFieldAskAI: FunctionComponent<TextFieldAskAiProps> = ({
-  currentValue,
+  currentValue = '',
   setFieldValue,
   variant,
   format = 'text',

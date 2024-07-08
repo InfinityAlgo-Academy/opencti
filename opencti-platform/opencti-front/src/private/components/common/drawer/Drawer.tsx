@@ -43,6 +43,7 @@ const useStyles = makeStyles<Theme, { bannerHeightNumber: number }>((theme) => c
   },
   container: {
     padding: '10px 20px 20px 20px',
+    overflow: 'auto',
   },
   mainButton: ({ bannerHeightNumber }) => ({
     position: 'fixed',

@@ -9,6 +9,7 @@ import { Biohazard, ShieldSearch } from 'mdi-material-ui';
 import { assoc, head, last, map, pluck } from 'ramda';
 import React, { Suspense } from 'react';
 import { graphql, useFragment, usePreloadedQuery } from 'react-relay';
+import CreateSDO from '@components/common/form/formCreateSCO/CreateSDO';
 import DashboardSettings, { PLATFORM_DASHBOARD } from './DashboardSettings';
 import StixRelationshipsDistributionList from './common/stix_relationships/StixRelationshipsDistributionList';
 import StixRelationshipsPolarArea from './common/stix_relationships/StixRelationshipsPolarArea';
@@ -180,6 +181,8 @@ const DefaultDashboard = ({ timeField }) => {
         'You do not have any access to the knowledge of this OpenCTI instance.',
       )}
     >
+      <CreateSDO />
+
       <Grid container={true} spacing={3}>
         <Grid item={true} xs={3}>
           <Card
