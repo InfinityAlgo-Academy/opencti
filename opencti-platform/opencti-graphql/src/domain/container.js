@@ -2,7 +2,7 @@ import * as R from 'ramda';
 import { v4 as uuidv4 } from 'uuid';
 import { RELATION_CREATED_BY, RELATION_OBJECT } from '../schema/stixRefRelationship';
 import { listAllThings, timeSeriesEntities } from '../database/middleware';
-import { internalFindByIds, internalLoadById, listEntities, storeLoadById } from '../database/middleware-loader';
+import { internalFindByIds, internalLoadById, listAllRelations, listEntities, storeLoadById } from '../database/middleware-loader';
 import { ABSTRACT_BASIC_RELATIONSHIP, ABSTRACT_STIX_REF_RELATIONSHIP, ABSTRACT_STIX_RELATIONSHIP, buildRefRelationKey, ENTITY_TYPE_CONTAINER } from '../schema/general';
 import { isStixDomainObjectContainer } from '../schema/stixDomainObject';
 import { buildPagination, READ_ENTITIES_INDICES, READ_INDEX_STIX_DOMAIN_OBJECTS, READ_RELATIONSHIPS_INDICES } from '../database/utils';
@@ -141,35 +141,42 @@ export const containersObjectsOfObject = async (context, user, { id, types, filt
   const element = await internalLoadById(context, user, id);
   const queryFilters = addFilter(filters, buildRefRelationKey(RELATION_OBJECT), element.internal_id);
   const containers = await listAllThings(context, user, [ENTITY_TYPE_CONTAINER], { filters: queryFilters, maxSize: MAX_RELATED_CONTAINER_RESOLUTION, search });
-  const objectIds = R.uniq(containers.map((n) => n[buildRefRelationKey(RELATION_OBJECT)]).flat());
+  const containersMap = new Map(containers.map((obj) => [obj.internal_id, obj]));
+  const relations = await listAllRelations(context, user, RELATION_OBJECT, { fromId: containers.map((c) => c.internal_id), toTypes: types });
+  const objectIds = R.uniq(relations.map((rel) => [rel.toId]).flat());
+  // const objectIds = R.uniq(containers.map((n) => n[buildRefRelationKey(RELATION_OBJECT)]).flat());
   const resolvedObjectsMap = await internalFindByIds(context, user, objectIds, { type: types, toMap: true });
   const resolvedObjects = Object.values(resolvedObjectsMap);
   resolvedObjects.push(
     ...containers,
-    ...(containers.map((c) => c[buildRefRelationKey(RELATION_OBJECT)].filter((toId) => resolvedObjectsMap[toId]).map((toId) => (
-      {
-        id: uuidv4(),
-        created_at: now(),
-        updated_at: now(),
-        parent_types: [ABSTRACT_BASIC_RELATIONSHIP, ABSTRACT_STIX_RELATIONSHIP, ABSTRACT_STIX_REF_RELATIONSHIP],
-        entity_type: RELATION_OBJECT,
-        relationship_type: RELATION_OBJECT,
-        from: {
-          id: c.id,
-          standard_id: c.standard_id,
-          entity_type: c.entity_type,
-          parent_types: c.parent_types,
-          relationship_type: c.parent_types.includes(ABSTRACT_BASIC_RELATIONSHIP) ? c.entity_type : null
-        },
-        to: {
-          id: toId,
-          standard_id: resolvedObjectsMap[toId].standard_id,
-          entity_type: resolvedObjectsMap[toId].entity_type,
-          parent_types: resolvedObjectsMap[toId].parent_types,
-          relationship_type: resolvedObjectsMap[toId].parent_types.includes(ABSTRACT_BASIC_RELATIONSHIP) ? resolvedObjectsMap[toId].entity_type : null
+    ...relations.map((re) => {
+      const from = containersMap.get(re.fromId);
+      const to = resolvedObjectsMap[re.toId];
+      return (
+        {
+          id: uuidv4(),
+          created_at: now(),
+          updated_at: now(),
+          parent_types: [ABSTRACT_BASIC_RELATIONSHIP, ABSTRACT_STIX_RELATIONSHIP, ABSTRACT_STIX_REF_RELATIONSHIP],
+          entity_type: RELATION_OBJECT,
+          relationship_type: RELATION_OBJECT,
+          from: {
+            id: from.internal_id,
+            standard_id: from.standard_id,
+            entity_type: from.entity_type,
+            parent_types: from.parent_types,
+            relationship_type: from.parent_types.includes(ABSTRACT_BASIC_RELATIONSHIP) ? from.entity_type : null
+          },
+          to: {
+            id: to.internal_id,
+            standard_id: to.standard_id,
+            entity_type: to.entity_type,
+            parent_types: to.parent_types,
+            relationship_type: to.parent_types.includes(ABSTRACT_BASIC_RELATIONSHIP) ? to.entity_type : null
+          }
         }
-      }
-    ))).flat())
+      );
+    }).flat()
   );
   return buildPagination(0, null, resolvedObjects.map((r) => ({ node: r })), resolvedObjects.length);
 };
