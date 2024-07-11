@@ -11,6 +11,7 @@ import { elCount, elFindByIds, elList, elPaginate, MAX_RELATED_CONTAINER_RESOLUT
 import { findById as findInvestigationById } from '../modules/workspace/workspace-domain';
 import { stixCoreObjectAddRelations } from './stixCoreObject';
 import { addFilter } from '../utils/filtering/filtering-utils';
+import { INSTANCE_REGARDING_OF } from '../utils/filtering/filtering-constants';
 
 export const findById = async (context, user, containerId) => {
   return storeLoadById(context, user, containerId, ENTITY_TYPE_CONTAINER);
@@ -43,7 +44,10 @@ export const numberOfContainersForObject = (context, user, args) => {
 
 export const objects = async (context, user, containerId, args) => {
   const types = args.types ? args.types : ['Stix-Core-Object', 'stix-relationship'];
-  const filters = addFilter(args.filters, buildRefRelationKey(RELATION_OBJECT, '*'), containerId);
+  const filters = addFilter(args.filters, INSTANCE_REGARDING_OF, [
+    { key: 'id', values: [containerId] },
+    { key: 'role', values: ['to'] }
+  ]);
   const baseOpts = { ...args, types, filters, indices: [...READ_ENTITIES_INDICES, ...READ_RELATIONSHIPS_INDICES] };
   if (args.all) {
     // TODO Should be handled by the frontend to split the load
