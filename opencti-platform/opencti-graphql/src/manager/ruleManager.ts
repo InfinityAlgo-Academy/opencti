@@ -27,6 +27,7 @@ import { getActivatedRules } from '../domain/rules';
 import { executionContext, RULE_MANAGER_USER } from '../utils/access';
 import { isModuleActivated } from '../domain/settings';
 import { elList } from '../database/engine';
+import type { BasicStoreSettings } from '../types/settings';
 
 const MIN_LIVE_STREAM_EVENT_VERSION = 4;
 
@@ -321,7 +322,7 @@ const initRuleManager = () => {
         await ruleHandler();
       }, SCHEDULE_TIME);
     },
-    status: () => {
+    status: (_: BasicStoreSettings) => {
       return {
         id: 'RULE_ENGINE',
         enable: booleanConf('rule_engine:enabled', false),

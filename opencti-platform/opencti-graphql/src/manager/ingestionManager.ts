@@ -31,6 +31,7 @@ import { createWork, updateExpectationsNumber } from '../domain/work';
 import { IMPORT_CSV_CONNECTOR } from '../connector/importCsv/importCsv';
 import { parseCsvMapper } from '../modules/internal/csvMapper/csvMapper-utils';
 import { findById as findUserById } from '../domain/user';
+import type { BasicStoreSettings } from '../types/settings';
 
 // Ingestion manager responsible to cleanup old data
 // Each API will start is ingestion manager.
@@ -388,7 +389,7 @@ const initIngestionManager = () => {
         await ingestionHandler();
       }, SCHEDULE_TIME);
     },
-    status: () => {
+    status: (_: BasicStoreSettings) => {
       return {
         id: 'INGESTION_MANAGER',
         enable: booleanConf('ingestion_manager:enabled', false),

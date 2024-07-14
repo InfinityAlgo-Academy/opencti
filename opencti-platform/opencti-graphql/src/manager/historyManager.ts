@@ -23,6 +23,7 @@ import type { AuthContext } from '../types/user';
 import { FilterMode, FilterOperator, OrderingMode } from '../generated/graphql';
 import { extractStixRepresentative } from '../database/stix-representative';
 import { ENTITY_TYPE_IDENTITY_ORGANIZATION } from '../modules/organization/organization-types';
+import type { BasicStoreSettings } from '../types/settings';
 
 const HISTORY_ENGINE_KEY = conf.get('history_manager:lock_key');
 const HISTORY_WITH_INFERENCES = booleanConf('history_manager:include_inferences', false);
@@ -218,7 +219,7 @@ const initHistoryManager = () => {
         await historyHandler(lastEventId);
       }, SCHEDULE_TIME);
     },
-    status: () => {
+    status: (_: BasicStoreSettings) => {
       return {
         id: 'HISTORY_MANAGER',
         enable: booleanConf('history_manager:enabled', false),

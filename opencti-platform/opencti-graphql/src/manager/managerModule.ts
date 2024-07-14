@@ -4,9 +4,11 @@ import { createStreamProcessor, lockResource, type StreamProcessor } from '../da
 import type { BasicStoreSettings } from '../types/settings';
 import { logApp } from '../config/conf';
 import { TYPE_LOCK_ERROR } from '../config/errors';
-import { SYSTEM_USER } from '../utils/access';
+import { executionContext, SYSTEM_USER } from '../utils/access';
 import { utcDate } from '../utils/format';
 import { wait } from '../database/utils';
+import { getEntityFromCache } from '../database/cache';
+import { ENTITY_TYPE_SETTINGS } from '../schema/internalObject';
 
 export interface HandlerInput {
   shutdown?: () => Promise<void>
@@ -34,15 +36,13 @@ export interface ManagerDefinition {
   executionContext: string;
   cronSchedulerHandler?: ManagerCronScheduler;
   streamSchedulerHandler?: ManagerStreamScheduler;
-  enabledByConfig: boolean;
   enabled: (settings?: BasicStoreSettings) => boolean; // enabled from configuration and settings
-  enabledToStart: () => boolean; // if manager can be started (some managers need to start even when disabled)
-  enterpriseEditionOnly?: boolean;
   warning?: () => boolean; // condition to display a warning on manager module (ex: missing configuration, manager can't start)
 }
 
 const initManager = (manager: ManagerDefinition) => {
   const WAIT_TIME_ACTION = 2000;
+  const enableManagersCache: { [k: string]: boolean } = {};
   let scheduler: SetIntervalAsyncTimer<[]>;
   let streamScheduler: SetIntervalAsyncTimer<[]>;
   let streamProcessor: StreamProcessor;
@@ -133,9 +133,13 @@ const initManager = (manager: ManagerDefinition) => {
       }
     },
     status: (settings?: BasicStoreSettings) => {
+      const cacheManagerIsEnableValue = enableManagersCache[manager.id];
+      if (cacheManagerIsEnableValue === undefined) {
+        enableManagersCache[manager.id] = manager.enabled(settings);
+      }
       return {
         id: manager.id,
-        enable: manager.enabled(settings),
+        enable: enableManagersCache[manager.id],
         running,
         warning: manager.warning?.() || false,
       };
@@ -171,9 +175,12 @@ export const registerManager = (manager: ManagerDefinition) => {
 };
 
 export const startAllManagers = async () => {
+  const context = executionContext('managers');
+  const settings = await getEntityFromCache<BasicStoreSettings>(context, SYSTEM_USER, ENTITY_TYPE_SETTINGS);
   for (let i = 0; i < managersModule.managers.length; i += 1) {
     const managerModule = managersModule.managers[i];
-    if (managerModule.manager.enabledToStart()) {
+    const isManagerEnabled = managerModule.manager.enabled(settings);
+    if (isManagerEnabled) {
       await managerModule.start();
     } else {
       logApp.info(`[OPENCTI-MODULE] ${managerModule.manager.label} not started (disabled by configuration)`);
@@ -182,9 +189,12 @@ export const startAllManagers = async () => {
 };
 
 export const shutdownAllManagers = async () => {
+  const context = executionContext('managers');
+  const settings = await getEntityFromCache<BasicStoreSettings>(context, SYSTEM_USER, ENTITY_TYPE_SETTINGS);
   for (let i = 0; i < managersModule.managers.length; i += 1) {
     const managerModule = managersModule.managers[i];
-    if (managerModule.manager.enabledToStart()) {
+    const isManagerEnabled = managerModule.manager.enabled(settings);
+    if (isManagerEnabled) {
       await managerModule.shutdown();
     }
   }

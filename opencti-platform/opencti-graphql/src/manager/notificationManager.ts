@@ -34,6 +34,7 @@ import { isStixMatchFilterGroup } from '../utils/filtering/filtering-stix/stix-f
 import { replaceFilterKey } from '../utils/filtering/filtering-utils';
 import { CONNECTED_TO_INSTANCE_FILTER, CONNECTED_TO_INSTANCE_SIDE_EVENTS_FILTER } from '../utils/filtering/filtering-constants';
 import type { FilterGroup } from '../generated/graphql';
+import type { BasicStoreSettings } from '../types/settings';
 
 const NOTIFICATION_LIVE_KEY = conf.get('notification_manager:lock_live_key');
 const NOTIFICATION_DIGEST_KEY = conf.get('notification_manager:lock_digest_key');
@@ -679,7 +680,7 @@ const initNotificationManager = () => {
         await notificationDigestHandler();
       }, CRON_SCHEDULE_TIME);
     },
-    status: () => {
+    status: (_: BasicStoreSettings) => {
       return {
         id: 'NOTIFICATION_MANAGER',
         enable: booleanConf('notification_manager:enabled', false),

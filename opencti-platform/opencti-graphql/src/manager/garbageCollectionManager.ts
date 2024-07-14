@@ -43,12 +43,8 @@ const GARBAGE_COLLECTION_MANAGER_DEFINITION: ManagerDefinition = {
     interval: SCHEDULE_TIME,
     lockKey: GARBAGE_COLLECTION_MANAGER_KEY,
   },
-  enabledByConfig: GARBAGE_COLLECTION_MANAGER_ENABLED,
-  enabledToStart(): boolean {
-    return this.enabledByConfig;
-  },
   enabled(): boolean {
-    return this.enabledByConfig;
+    return GARBAGE_COLLECTION_MANAGER_ENABLED;
   }
 };
 

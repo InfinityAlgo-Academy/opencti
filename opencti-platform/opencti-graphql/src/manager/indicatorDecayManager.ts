@@ -45,12 +45,8 @@ const INDICATOR_DECAY_MANAGER_DEFINITION: ManagerDefinition = {
     interval: SCHEDULE_TIME,
     lockKey: INDICATOR_DECAY_MANAGER_KEY,
   },
-  enabledByConfig: INDICATOR_DECAY_MANAGER_ENABLED,
-  enabledToStart(): boolean {
-    return this.enabledByConfig;
-  },
   enabled(): boolean {
-    return this.enabledByConfig;
+    return INDICATOR_DECAY_MANAGER_ENABLED;
   }
 };
 

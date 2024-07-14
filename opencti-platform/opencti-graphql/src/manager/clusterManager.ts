@@ -37,19 +37,19 @@ const initClusterManager = () => {
     const settings = await getEntityFromCache<BasicStoreSettings>(context, SYSTEM_USER, ENTITY_TYPE_SETTINGS);
     // TODO migrate managers modules
     const managers = [
-      ruleEngine.status(),
-      historyManager.status(),
-      taskManager.status(),
-      expiredManager.status(),
-      syncManager.status(),
-      retentionManager.status(),
-      publisherManager.status(),
-      notificationManager.status(),
-      ingestionManager.status(),
+      ruleEngine.status(settings),
+      historyManager.status(settings),
+      taskManager.status(settings),
+      expiredManager.status(settings),
+      syncManager.status(settings),
+      retentionManager.status(settings),
+      publisherManager.status(settings),
+      notificationManager.status(settings),
+      ingestionManager.status(settings),
       activityManager.status(settings),
       playbookManager.status(settings),
       fileIndexManager.status(settings),
-      ...getAllManagersStatuses(),
+      ...getAllManagersStatuses(settings),
     ];
     const configData: ClusterConfig = { platform_id: platformId, managers };
     await registerClusterInstance(platformId, configData);

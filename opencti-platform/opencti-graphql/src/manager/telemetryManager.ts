@@ -4,7 +4,7 @@ import { SEMRESATTRS_SERVICE_INSTANCE_ID } from '@opentelemetry/semantic-convent
 import { ConsoleMetricExporter, InstrumentType, MeterProvider } from '@opentelemetry/sdk-metrics';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { AggregationTemporality } from '@opentelemetry/sdk-metrics/build/src/export/AggregationTemporality';
-import conf, { DEV_MODE, logApp, PLATFORM_VERSION } from '../config/conf';
+import conf, { DEV_MODE, isFeatureEnabled, logApp, PLATFORM_VERSION } from '../config/conf';
 import { executionContext, TELEMETRY_MANAGER_USER } from '../utils/access';
 import { isNotEmptyField } from '../database/utils';
 import type { Settings } from '../generated/graphql';
@@ -142,12 +142,9 @@ const TELEMETRY_MANAGER_DEFINITION: ManagerDefinition = {
     interval: SCHEDULE_TIME,
     lockKey: TELEMETRY_MANAGER_KEY,
   },
-  enabledByConfig: true,
-  enabledToStart(): boolean {
-    return this.enabledByConfig;
-  },
-  enabled(): boolean {
-    return this.enabledByConfig;
+  enabled(settings): boolean {
+    if (isFeatureEnabled('FILIGRAN_6292')) return true;
+    return !isNotEmptyField(settings?.enterprise_edition);
   }
 };
 

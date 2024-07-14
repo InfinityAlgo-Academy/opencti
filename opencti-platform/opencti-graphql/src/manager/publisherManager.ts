@@ -257,7 +257,7 @@ const initPublisherManager = () => {
         await notificationHandler();
       }, STREAM_SCHEDULE_TIME);
     },
-    status: () => {
+    status: (_: BasicStoreSettings) => {
       return {
         id: 'PUBLISHER_MANAGER',
         enable: booleanConf('publisher_manager:enabled', false),
