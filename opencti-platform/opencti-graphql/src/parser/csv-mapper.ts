@@ -217,7 +217,7 @@ const handleBasedOnAttribute = (
       } else if (definition) {
         const refs = definition.multiple ? entities : entities[0];
         if (isNotEmptyField(refs)) {
-          input[attribute.key] = refs;
+          input[attribute.key] = [...(input[attribute.key] ?? []), refs];
         }
       }
     }
@@ -324,7 +324,7 @@ const mapRecord = async (
   let input: Record<string, InputType> = {};
   handleType(representation, input);
   input = handleInnerType(input, entity_type);
-  console.log('INPUT', input);
+
   handleAttributes(record, representation, input, otherEntities, refEntities);
 
   const entitySetting = await getEntitySettingFromCache(context, entity_type);
@@ -382,9 +382,9 @@ export const mappingProcess = async (
 
   const representationEntities = representations
     .filter((r) => r.type === CsvMapperRepresentationType.Entity)
-    .sort((r1, r2) => r1.attributes.filter((attr) => attr.based_on).length - r2.attributes.filter((attr) => attr.based_on).length);
+    .sort((r1, r2) => r1.attributes.filter((attr) => attr.based_on).length - r2.attributes.filter((attr) => attr.based_on).length); // representation with attribute based on another representation are ordered last
   const representationRelationships = representations.filter((r) => r.type === CsvMapperRepresentationType.Relationship);
-  const results = new Map<string, Record<string, InputType>>();
+  const results = new Map<string, Record<string, InputType>>(); // what is it for ? it becomes otherEntities but why ?
 
   // 1. entities sort by no based on at first
   for (let i = 0; i < representationEntities.length; i += 1) {

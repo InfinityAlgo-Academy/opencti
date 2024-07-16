@@ -72,7 +72,7 @@ export const indicatorsWithLabelsExpectedBundle: StixBundle = {
     }
   ] as unknown as StixDomainObject[]
 };
-export const indicatorsWithMultipleLabelsExpectedBundle = {
+export const indicatorWithMultipleLabelsExpectedBundle = {
   id: 'bundle--c8593959-d4b1-4ccf-95d5-bee644cf2c9b',
   spec_version: '2.1',
   type: 'bundle',
@@ -85,10 +85,10 @@ export const indicatorsWithMultipleLabelsExpectedBundle = {
         'extension-definition--ea279b3e-5c71-4632-ac08-831c66a786ba': {
           extension_type: 'new-sdo',
           type: 'Label',
-          converter_csv: '12.135.55.34,one-label,green'
+          converter_csv: '198.168.8.5,one-label,green'
         }
       },
-      value: 'oneLabel',
+      value: 'one-label',
       color: 'green'
     },
     {
@@ -102,16 +102,19 @@ export const indicatorsWithMultipleLabelsExpectedBundle = {
           labels_ids: [
             null
           ],
-          converter_csv: '12.135.55.34,one-label,green'
+          converter_csv: '198.168.8.5,one-label,green'
         },
         'extension-definition--f93e2c80-4231-4f9a-af8b-95c9bd566a82': {
           extension_type: 'property-extension',
           labels: [
-            'filigran', 'oneLabel', 'twoLabel'
+            undefined
           ]
         }
       },
-      value: '12.135.55.34'
+      labels: [
+        'one-label', 'two-label', 'three-label'
+      ],
+      value: '198.168.8.5'
     },
     {
       id: 'label--e317f87f-691e-51fe-8a14-066182e5793f',
@@ -121,11 +124,25 @@ export const indicatorsWithMultipleLabelsExpectedBundle = {
         'extension-definition--ea279b3e-5c71-4632-ac08-831c66a786ba': {
           extension_type: 'new-sdo',
           type: 'Label',
-          converter_csv: '12.135.55.34,two-label,blue'
+          converter_csv: '198.168.8.5,two-label,blue'
         }
       },
-      value: 'twoLabel',
+      value: 'two-label',
       color: 'blue'
+    },
+    {
+      color: 'red',
+      extensions: {
+        'extension-definition--ea279b3e-5c71-4632-ac08-831c66a786ba': {
+          converter_csv: '198.168.8.5,three-label,red',
+          extension_type: 'new-sdo',
+          type: 'Label',
+        },
+      },
+      id: 'label--4dd8f5bb-b7a9-5c7b-bd9a-0ee6161dcbee',
+      spec_version: '2.1',
+      type: 'label',
+      value: 'three-label',
     },
   ]
 };
@@ -236,42 +253,14 @@ export const indicatorsWithLabelsCsvMapper: Partial<CsvMapperParsed> = {
   ]
 };
 export const indicatorsWithMultipleLabelsCsvMapper = {
-  id: '79f4b121-463e-48d7-9e29-b25a86edbffd',
-  name: 'missing labels test',
+  id: 'ddad6e05-c095-4dc5-a850-1ad5593d10ec',
+  name: 'Multiple labels on ipV4',
   has_header: false,
   separator: ',',
   skipLineChar: '',
   representations: [
     {
-      id: 'e2c2e90e-b1c2-412f-9cb5-984a9a220fde',
-      type: 'entity',
-      target: {
-        entity_type: 'IPv4-Addr'
-      },
-      attributes: [
-        {
-          key: 'value',
-          column: {
-            column_name: 'A',
-            configuration: null
-          },
-          default_values: null,
-          based_on: null
-        },
-        {
-          key: 'objectLabel',
-          column: null,
-          default_values: null,
-          based_on: {
-            representations: [
-              '947c1f4a-571b-4318-8bd8-4a98e664860b'
-            ]
-          }
-        }
-      ]
-    },
-    {
-      id: '947c1f4a-571b-4318-8bd8-4a98e664860b',
+      id: '040b894d-6a42-455d-a624-090f3e0485de',
       type: 'entity',
       target: {
         entity_type: 'Label'
@@ -296,6 +285,34 @@ export const indicatorsWithMultipleLabelsCsvMapper = {
           based_on: null
         }
       ]
+    },
+    {
+      id: '5eaa579b-7312-4546-93c0-f2c7caa8fa78',
+      type: 'entity',
+      target: {
+        entity_type: 'IPv4-Addr'
+      },
+      attributes: [
+        {
+          key: 'value',
+          column: {
+            column_name: 'A',
+            configuration: null
+          },
+          default_values: null,
+          based_on: null
+        },
+        {
+          key: 'objectLabel',
+          column: null,
+          default_values: null,
+          based_on: {
+            representations: [
+              '040b894d-6a42-455d-a624-090f3e0485de'
+            ]
+          }
+        }
+      ]
     }
   ] as unknown as CsvMapperRepresentation[]
 };
@@ -303,6 +320,6 @@ export const indicatorsWithLabelsCsvContent = `pattern,main_obs_type,label,color
 [ipv4-addr:value = '198.168.8.5'],IPv4-Addr,filigran,0b41f3
 [ipv4-addr:value = '198.168.8.6'],IPv4-Addr,filigran,0b41f3`;
 
-export const indicatorWithMultipleLabelsCsvContent = `198.168.8.5,filigran,0b41f3
-198.168.8.5,oneLabel,0b41f3
-198.168.8.5,twoLabel,0b41f3`;
+export const indicatorWithMultipleLabelsCsvContent = `198.168.8.5,one-label,green
+198.168.8.5,two-label,blue
+198.168.8.5,three-label,red`;

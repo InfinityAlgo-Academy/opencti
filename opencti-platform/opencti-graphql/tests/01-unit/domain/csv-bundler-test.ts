@@ -12,7 +12,7 @@ import {
   indicatorsWithLabelsCsvMapper,
   indicatorsWithLabelsExpectedBundle,
   indicatorsWithMultipleLabelsCsvMapper,
-  indicatorsWithMultipleLabelsExpectedBundle,
+  indicatorWithMultipleLabelsExpectedBundle,
   indicatorWithMultipleLabelsCsvContent
 } from '../../data/csv-bundler/labels-constants';
 import {
@@ -57,16 +57,16 @@ describe('CSV bundler', () => {
         indicatorsWithLabelsExpectedBundleWithoutId
       );
     });
-    it('Should add label', async () => {
-      const x = await bundleProcess(
+    it('Should list multiple labels', async () => {
+      const indicatorWithMultipleLabelsActualBundle = await bundleProcess(
         testContext,
         ADMIN_USER,
         Buffer.from(indicatorWithMultipleLabelsCsvContent),
         indicatorsWithMultipleLabelsCsvMapper as CsvMapperParsed
       );
-      const { id: _expectedId, ...expectedRest } = indicatorsWithMultipleLabelsExpectedBundle;
+      const { id: _expectedId, ...expectedRest } = indicatorWithMultipleLabelsExpectedBundle;
       const indicatorsWithMultipleLabelsExpectedBundleWithoutId = { ...expectedRest };
-      const { id: _actualId, ...actualRest } = x;
+      const { id: _actualId, ...actualRest } = indicatorWithMultipleLabelsActualBundle;
       const indicatorsWithMultipleLabelsActualBundleWithoutId = { ...actualRest };
       expect(indicatorsWithMultipleLabelsActualBundleWithoutId).toStrictEqual(
         indicatorsWithMultipleLabelsExpectedBundleWithoutId
