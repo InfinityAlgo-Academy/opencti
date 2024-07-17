@@ -42,7 +42,7 @@ import {
   waitInSec,
   WRITE_PLATFORM_INDICES
 } from './utils';
-import conf, { booleanConf, extendedErrors, loadCert, logApp } from '../config/conf';
+import conf, { booleanConf, extendedErrors, isFeatureEnabled, loadCert, logApp } from '../config/conf';
 import { ComplexSearchError, ConfigurationError, DatabaseError, EngineShardsError, FunctionalError, UnsupportedError } from '../config/errors';
 import {
   isStixRefRelationship,
@@ -89,7 +89,7 @@ import {
 import { isBasicObject, isStixCoreObject, isStixObject } from '../schema/stixCoreObject';
 import { isBasicRelationship, isStixRelationship } from '../schema/stixRelationship';
 import { isStixCoreRelationship, RELATION_INDICATES, RELATION_PUBLISHES, STIX_CORE_RELATIONSHIPS } from '../schema/stixCoreRelationship';
-import { INTERNAL_FROM_FIELD, INTERNAL_TO_FIELD } from '../schema/identifier';
+import { generateInternalId, INTERNAL_FROM_FIELD, INTERNAL_TO_FIELD } from '../schema/identifier';
 import {
   BYPASS,
   computeUserMemberAccessIds,
@@ -120,6 +120,7 @@ import {
 import { convertTypeToStixType } from './stix-converter';
 import { extractEntityRepresentativeName, extractRepresentative } from './entity-representative';
 import { ENTITY_TYPE_IDENTITY_ORGANIZATION } from '../modules/organization/organization-types';
+// eslint-disable-next-line import/no-cycle
 import { checkAndConvertFilters, isFilterGroupNotEmpty } from '../utils/filtering/filtering-utils';
 import {
   ALIAS_FILTER,
@@ -148,6 +149,7 @@ import {
   dateMapping,
   iAliasedIds,
   internalId,
+  liveId,
   longStringFormats,
   numericMapping,
   shortMapping,
@@ -551,8 +553,8 @@ export const elIndexExists = async (indexName) => {
   const existIndex = await engine.indices.exists({ index: indexName });
   return oebp(existIndex) === true;
 };
-export const elPlatformIndices = async () => {
-  const listIndices = await engine.cat.indices({ index: `${ES_INDEX_PREFIX}*`, format: 'JSON' });
+export const elPlatformIndices = async (indexName = ES_INDEX_PREFIX) => {
+  const listIndices = await engine.cat.indices({ index: `${indexName}*`, format: 'JSON' });
   return oebp(listIndices);
 };
 export const elPlatformMapping = async (index) => {
@@ -1322,20 +1324,25 @@ export const elFindByIds = async (context, user, ids, opts = {}) => {
   const { indices, baseData = false, baseFields = BASE_FIELDS } = opts;
   const { withoutRels = false, toMap = false, mapWithAllIds = false, type = null } = opts;
   const { orderBy = 'created_at', orderMode = 'asc' } = opts;
+  const { getByLiveId = false } = opts;
   const idsArray = Array.isArray(ids) ? ids : [ids];
   const types = (Array.isArray(type) || !type) ? type : [type];
   const processIds = R.filter((id) => isNotEmptyField(id), idsArray);
   if (processIds.length === 0) {
     return toMap ? {} : [];
   }
-  const computedIndices = computeQueryIndices(indices, types);
+  const draftContext = inDraftContext(context, user);
+  const draftIndex = getDraftIndex(draftContext);
+  let computedIndices = computeQueryIndices(indices, types);
+  if (draftContext) computedIndices = [...computedIndices, `${draftIndex}*`];
   const hits = [];
   const groupIds = R.splitEvery(MAX_TERMS_SPLIT, idsArray);
   for (let index = 0; index < groupIds.length; index += 1) {
     const mustTerms = [];
     const workingIds = groupIds[index];
     const idsTermsPerType = [];
-    const elementTypes = [internalId.name, standardId.name, xOpenctiStixIds.name, iAliasedIds.name];
+    let elementTypes = [internalId.name, standardId.name, xOpenctiStixIds.name, iAliasedIds.name];
+    if (getByLiveId) elementTypes = [liveId.name];
     for (let indexType = 0; indexType < elementTypes.length; indexType += 1) {
       const elementType = elementTypes[indexType];
       const terms = { [`${elementType}.keyword`]: workingIds };
@@ -1391,7 +1398,7 @@ export const elFindByIds = async (context, user, ids, opts = {}) => {
         throw DatabaseError('Find direct ids fail', { cause: err, query });
       });
       const elements = data.hits.hits;
-      if (elements.length > workingIds.length) logApp.warn('Search query returned more elements than expected', workingIds);
+      if (elements.length > workingIds.length && !draftContext) logApp.warn('Search query returned more elements than expected', workingIds);
       if (elements.length > 0) {
         const convertedHits = await elConvertHits(elements, { withoutRels });
         hits.push(...convertedHits);
@@ -1407,6 +1414,7 @@ export const elFindByIds = async (context, user, ids, opts = {}) => {
       }
     }
   }
+
   if (toMap) {
     return elConvertHitsToMap(hits, { mapWithAllIds });
   }
@@ -1416,7 +1424,14 @@ export const elLoadById = async (context, user, id, opts = {}) => {
   const hits = await elFindByIds(context, user, id, opts);
   //* v8 ignore if */
   if (hits.length > 1) {
-    throw DatabaseError('Id loading expect only one response', { id, hits: hits.length });
+    const draftContext = inDraftContext(context, user);
+    const draftIndex = getDraftIndex(draftContext);
+
+    if (!draftContext) throw DatabaseError('Id loading expect only one response', { id, hits: hits.length });
+
+    const liveFiltered = hits.filter((h) => h._index.includes(draftIndex));
+    if (liveFiltered.length > 1) throw DatabaseError('Id loading expect only one response', { id, hits: hits.length });
+    else { return liveFiltered[0]; }
   }
   return R.head(hits);
 };
@@ -2237,16 +2252,25 @@ const adaptFilterToSourceReliabilityFilterKey = async (context, user, filter) =>
 
 // fromOrToId and elementWithTargetTypes filters
 // are composed of a condition on fromId/fromType and a condition on toId/toType of a relationship
-const adaptFilterToFromOrToFilterKeys = (filter) => {
+const adaptFilterToFromOrToFilterKeys = async (context, user, filter) => {
   const { key, operator = 'eq', mode = 'or', values } = filter;
   const arrayKeys = Array.isArray(key) ? key : [key];
   if (arrayKeys.length > 1) {
     throw UnsupportedError('A filter with these multiple keys is not supported', { keys: arrayKeys });
   }
+
   let nestedKey;
+  let valuesToUse = values;
   if (arrayKeys[0] === INSTANCE_RELATION_TYPES_FILTER) {
     nestedKey = 'types';
   } else if (arrayKeys[0] === INSTANCE_RELATION_FILTER) {
+    const draftContext = inDraftContext(context, user);
+    const isDraftNewID = isFeatureEnabled('DRAFT_NEW_ID');
+    if (draftContext && isDraftNewID) {
+      const idMap = await getLiveIdsFromIds(context, user, values);
+      const valuesMapped = values.map((v) => idMap[v]).filter((d) => d);
+      valuesToUse = [...values, ...valuesMapped];
+    }
     nestedKey = 'internal_id';
   } else {
     throw UnsupportedError('A related relations filter with this key is not supported', { key: arrayKeys[0] });
@@ -2268,7 +2292,7 @@ const adaptFilterToFromOrToFilterKeys = (filter) => {
   }
   // define the filter group
   if (operator === 'eq' || operator === 'not_eq') {
-    const filterGroupsForValues = values.map((val) => {
+    const filterGroupsForValues = valuesToUse.map((val) => {
       const nestedFrom = [
         { key: nestedKey, operator, values: [val] },
         { key: 'role', operator: 'wildcard', values: ['*_from'] }
@@ -2445,6 +2469,16 @@ const adaptFilterToWorkflowFilterKey = async (context, user, filter) => {
   return { newFilter, newFilterGroup };
 };
 
+// Creates a mapping draftId => liveId when id is linked to a draft element
+export const getLiveIdsFromIds = async (context, user, ids) => {
+  const draftContext = inDraftContext(context, user);
+  if (!draftContext) return {};
+  const loadedElements = await elFindByIds(context, user, ids);
+
+  const draftElementsWithLiveId = loadedElements.filter((e) => e.live_id);
+  return Object.fromEntries(draftElementsWithLiveId.map((d) => [d.id, d.live_id]));
+};
+
 /**
  * Complete the filter if needed for several special filter keys
  * Some keys need this preprocessing before building the query:
@@ -2457,6 +2491,7 @@ const adaptFilterToWorkflowFilterKey = async (context, user, filter) => {
  */
 const completeSpecialFilterKeys = async (context, user, inputFilters) => {
   const { filters = [], filterGroups = [] } = inputFilters;
+
   const finalFilters = [];
   const finalFilterGroups = [];
   for (let index = 0; index < filterGroups.length; index += 1) {
@@ -2492,7 +2527,15 @@ const completeSpecialFilterKeys = async (context, user, inputFilters) => {
             regardingFilters.push({ key: [relKey], operator, values: ['EXISTS'] });
           });
         } else {
-          regardingFilters.push({ key: keys, operator, values: ids });
+          const draftContext = inDraftContext(context, user);
+          const isDraftNewID = isFeatureEnabled('DRAFT_NEW_ID');
+          let idsToUse = ids;
+          if (draftContext && isDraftNewID) {
+            const idMap = await getLiveIdsFromIds(context, user, ids);
+            const idsMapped = ids.map((v) => idMap[v]).filter((d) => d);
+            idsToUse = [...ids, ...idsMapped];
+          }
+          regardingFilters.push({ key: keys, operator, values: idsToUse });
         }
         finalFilterGroups.push({
           mode: filter.mode,
@@ -2554,15 +2597,23 @@ const completeSpecialFilterKeys = async (context, user, inputFilters) => {
         }
       }
       if (filterKey === INSTANCE_RELATION_FILTER) {
-        const { newFilterGroup } = adaptFilterToFromOrToFilterKeys(filter);
+        const { newFilterGroup } = await adaptFilterToFromOrToFilterKeys(context, user, filter);
         if (newFilterGroup) {
           finalFilterGroups.push(newFilterGroup);
         }
       }
       if (filterKey === RELATION_FROM_FILTER || filterKey === RELATION_TO_FILTER || filterKey === RELATION_TO_SIGHTING_FILTER) {
         const side = filterKey === RELATION_FROM_FILTER ? 'from' : 'to';
+        const draftContext = inDraftContext(context, user);
+        const isDraftNewID = isFeatureEnabled('DRAFT_NEW_ID');
+        let valuesToUse = filter.values;
+        if (draftContext && isDraftNewID) {
+          const idMap = await getLiveIdsFromIds(context, user, filter.values);
+          const valuesMapped = filter.values.map((v) => idMap[v]).filter((d) => d);
+          valuesToUse = [...filter.values, ...valuesMapped];
+        }
         const nested = [
-          { key: 'internal_id', operator: filter.operator, values: filter.values },
+          { key: 'internal_id', operator: filter.operator, values: valuesToUse },
           { key: 'role', operator: 'wildcard', values: [`*_${side}`] }
         ];
         finalFilters.push({ key: 'connections', nested, mode: filter.mode });
@@ -2576,7 +2627,7 @@ const completeSpecialFilterKeys = async (context, user, inputFilters) => {
         finalFilters.push({ key: 'connections', nested, mode: filter.mode });
       }
       if (filterKey === INSTANCE_RELATION_TYPES_FILTER) {
-        const { newFilterGroup } = adaptFilterToFromOrToFilterKeys(filter);
+        const { newFilterGroup } = await adaptFilterToFromOrToFilterKeys(context, user, filter);
         if (newFilterGroup) {
           finalFilterGroups.push(newFilterGroup);
         }
@@ -2637,7 +2688,7 @@ const elQueryBodyBuilder = async (context, user, options) => {
   const { ids = [], after, orderBy = null, orderMode = 'asc', noSize = false, noSort = false, intervalInclude = false } = options;
   const first = options.first ?? ES_DEFAULT_PAGINATION;
   const { types = null, search = null } = options;
-  const filters = checkAndConvertFilters(options.filters, { noFiltersChecking: options.noFiltersChecking });
+  const filters = await checkAndConvertFilters(context, user, options.filters, { noFiltersChecking: options.noFiltersChecking });
   const { startDate = null, endDate = null, dateAttribute = null } = options;
   const searchAfter = after ? cursorToOffset(after) : undefined;
   let ordering = [];
@@ -2661,6 +2712,12 @@ const elQueryBodyBuilder = async (context, user, options) => {
     }
     if (types !== null && types.length > 0) {
       specialFiltersContent.push({ key: TYPE_FILTER, values: R.flatten(types) });
+    }
+
+    const draftContext = inDraftContext(context, user);
+    const isDraftCopyID = isFeatureEnabled('DRAFT_COPY_ID');
+    if (isDraftCopyID && draftContext) {
+      specialFiltersContent.push({ key: 'draft_ids', values: [draftContext], operator: 'not_eq' });
     }
   }
   const completeFilters = specialFiltersContent.length > 0 ? {
@@ -3034,14 +3091,18 @@ export const elPaginate = async (context, user, indexName, options = {}) => {
   // eslint-disable-next-line no-use-before-define
   const { baseData = false, baseFields = BASE_FIELDS, bypassSizeLimit = false } = options;
   const first = options.first ?? ES_DEFAULT_PAGINATION;
-  const { types = null, connectionFormat = true } = options;
+  const { types = null, connectionFormat = true, draftID = null } = options;
+  const draftContext = inDraftContext(context, user);
+  const draftIndex = getDraftIndex(draftContext);
+  let indexNameToUse = indexName + (!draftContext ? '' : (`,${draftIndex}`));
+  if (draftID) indexNameToUse = `${draftID}*`;
   const body = await elQueryBodyBuilder(context, user, options);
   if (body.size > ES_MAX_PAGINATION && !bypassSizeLimit) {
     logApp.warn('[SEARCH] Pagination limited to max result config', { size: body.size, max: ES_MAX_PAGINATION });
     body.size = ES_MAX_PAGINATION;
   }
   const query = {
-    index: indexName,
+    index: indexNameToUse,
     track_total_hits: true,
     _source: baseData ? baseFields : true,
     body,
@@ -3193,6 +3254,7 @@ export const elIndex = async (indexName, documentBody, opts = {}) => {
 /* v8 ignore next */
 export const elUpdate = (indexName, documentId, documentBody, retry = ES_RETRY_ON_CONFLICT) => {
   const entityType = documentBody.entity_type ? documentBody.entity_type : '';
+
   return engine.update({
     id: documentId,
     index: indexName,
@@ -3233,7 +3295,7 @@ export const elDelete = (indexName, documentId) => {
   });
 };
 
-const getRelatedRelations = async (context, user, targetIds, elements, level, cache) => {
+const getRelatedRelations = async (context, user, targetIds, elements, level, cache, draftID = '') => {
   const fromOrToIds = Array.isArray(targetIds) ? targetIds : [targetIds];
   const filtersContent = [{
     key: 'connections',
@@ -3256,7 +3318,7 @@ const getRelatedRelations = async (context, user, targetIds, elements, level, ca
     });
     elements.unshift(...preparedElements);
   };
-  const opts = { filters, connectionFormat: false, callback, types: [ABSTRACT_BASIC_RELATIONSHIP] };
+  const opts = { filters, connectionFormat: false, callback, types: [ABSTRACT_BASIC_RELATIONSHIP], draftID };
   await elList(context, user, READ_RELATIONSHIPS_INDICES, opts);
   // If relations find, need to recurs to find relations to relations
   if (foundRelations.length > 0) {
@@ -3265,11 +3327,11 @@ const getRelatedRelations = async (context, user, targetIds, elements, level, ca
     await BluePromise.map(groups, concurrentFetch, { concurrency: ES_MAX_CONCURRENCY });
   }
 };
-export const getRelationsToRemove = async (context, user, elements) => {
+export const getRelationsToRemove = async (context, user, elements, draftID = '') => {
   const relationsToRemoveMap = new Map();
   const relationsToRemove = [];
   const ids = elements.map((e) => e.internal_id);
-  await getRelatedRelations(context, user, ids, relationsToRemove, 0, relationsToRemoveMap);
+  await getRelatedRelations(context, user, ids, relationsToRemove, 0, relationsToRemoveMap, draftID);
   return { relations: R.flatten(relationsToRemove), relationsToRemoveMap };
 };
 export const elDeleteInstances = async (instances) => {
@@ -3371,7 +3433,7 @@ const computeDeleteElementsImpacts = async (cleanupRelations, toBeRemovedIds, re
   return elementsImpact;
 };
 
-export const elReindexElements = async (context, user, ids, sourceIndex, destIndex) => {
+export const elReindexElements = async (context, user, ids, sourceIndex, destIndex, customScript = '') => {
   const reindexParams = {
     body: {
       source: {
@@ -3386,7 +3448,7 @@ export const elReindexElements = async (context, user, ids, sourceIndex, destInd
         index: destIndex
       },
       script: { // remove old fields that are not mapped anymore but can be present in DB
-        source: "ctx._source.remove('fromType'); ctx._source.remove('toType'); ctx._source.remove('spec_version'); ctx._source.remove('representative'); ctx._source.remove('rel_has-reference');"
+        source: `ctx._source.remove('fromType'); ctx._source.remove('toType'); ctx._source.remove('spec_version'); ctx._source.remove('representative'); ctx._source.remove('rel_has-reference'); ${customScript}`
       },
     }
   };
@@ -3398,24 +3460,33 @@ export const elReindexElements = async (context, user, ids, sourceIndex, destInd
 export const elDeleteElements = async (context, user, elements, opts = {}) => {
   if (elements.length === 0) return;
   const { forceDelete = true } = opts;
-  const { relations, relationsToRemoveMap } = await getRelationsToRemove(context, SYSTEM_USER, elements);
+  const draftContext = inDraftContext(context, user);
+  let elementsToDelete = elements;
+  if (draftContext) {
+    const elementsInLive = elements.filter((e) => !e._index.includes(draftContext));
+    elementsInLive.map(async (e) => {
+      await copyLiveElementToDraft(context, user, e, 'delete');
+    });
+    elementsToDelete = elements.filter((e) => e._index.includes(draftContext));
+  }
+  const { relations, relationsToRemoveMap } = await getRelationsToRemove(context, SYSTEM_USER, elementsToDelete, draftContext);
   // User must have access to all relations to remove to be able to delete
   const filteredRelations = await userFilterStoreElements(context, user, relations);
   if (relations.length !== filteredRelations.length) throw FunctionalError('Cannot delete element: cannot access all related relations');
   relations.forEach((instance) => controlUserConfidenceAgainstElement(user, instance));
   relations.forEach((instance) => controlUserRestrictDeleteAgainstElement(user, instance));
   // Compute the id that needs to be removed from rel
-  const basicCleanup = elements.filter((f) => isBasicRelationship(f.entity_type));
+  const basicCleanup = elementsToDelete.filter((f) => isBasicRelationship(f.entity_type));
   // Update all rel connections that will remain
   const cleanupRelations = relations.concat(basicCleanup);
-  const toBeRemovedIds = elements.map((e) => e.internal_id);
+  const toBeRemovedIds = elementsToDelete.map((e) => e.internal_id);
   const elementsImpact = await computeDeleteElementsImpacts(cleanupRelations, toBeRemovedIds, relationsToRemoveMap);
-  const entitiesToDelete = [...elements, ...relations];
+  const entitiesToDelete = [...elementsToDelete, ...relations];
   // Store deleted objects
   // CURRENT LIMITATION: we only handle forceDelete when elDeleteElements is called with 1 element. This is because getRelationsToRemove returns all related relations without
   // linking the relations to a specific element, which we would need for the deleted_elements of deleteOperations. The difficulty in changing getRelationsToRemove is handling the
   // case where a relationship is linked to two elements given in elDeleteElements: how do we decide which element to link the relationship to?
-  if (!forceDelete && elements.length === 1) {
+  if (!forceDelete && !draftContext && elementsToDelete.length === 1) {
     // map of index => ids to save
     const idsByIndex = new Map();
     entitiesToDelete.forEach((element) => {
@@ -3431,7 +3502,7 @@ export const elDeleteElements = async (context, user, elements, opts = {}) => {
     });
 
     await Promise.all(reindexPromises);
-    await createDeleteOperationElement(context, user, elements[0], entitiesToDelete);
+    await createDeleteOperationElement(context, user, elementsToDelete[0], entitiesToDelete);
   }
   // 01. Start by clearing connections rel
   await elRemoveRelationConnection(context, user, elementsImpact);
@@ -3439,8 +3510,8 @@ export const elDeleteElements = async (context, user, elements, opts = {}) => {
   logApp.debug('[SEARCH] Deleting related relations', { size: relations.length });
   await elDeleteInstances(relations);
   // 03/ Remove all elements
-  logApp.debug('[SEARCH] Deleting elements', { size: elements.length });
-  await elDeleteInstances(elements);
+  logApp.debug('[SEARCH] Deleting elements', { size: elementsToDelete.length });
+  await elDeleteInstances(elementsToDelete);
 };
 
 const createDeleteOperationElement = async (context, user, mainElement, deletedElements) => {
@@ -3497,7 +3568,7 @@ export const prepareElementForIndexing = (element) => {
   });
   return thing;
 };
-const prepareRelation = (thing) => {
+const prepareRelation = async (context, user, thing) => {
   if (thing.fromRole === undefined || thing.toRole === undefined) {
     throw DatabaseError('Cant index relation connections without from or to', {
       id: thing.internal_id,
@@ -3545,32 +3616,126 @@ const prepareRelation = (thing) => {
 const prepareEntity = (thing) => {
   return R.pipe(R.dissoc(INTERNAL_TO_FIELD), R.dissoc(INTERNAL_FROM_FIELD))(thing);
 };
-const prepareIndexingElement = async (thing) => {
+const prepareIndexingElement = async (context, user, thing) => {
   if (thing.base_type === BASE_TYPE_RELATION) {
-    const relation = prepareRelation(thing);
+    const relation = await prepareRelation(context, user, thing);
     return prepareElementForIndexing(relation);
   }
   const entity = prepareEntity(thing);
   return prepareElementForIndexing(entity);
 };
-const prepareIndexing = async (elements) => {
+const prepareIndexing = async (context, user, elements) => {
   const preparedElements = [];
   for (let i = 0; i < elements.length; i += 1) {
     const element = elements[i];
-    const prepared = await prepareIndexingElement(element);
+    const prepared = await prepareIndexingElement(context, user, element);
     preparedElements.push(prepared);
   }
   return preparedElements;
 };
+
+export const inDraftContext = (context, user) => {
+  return user.workspace_context;
+};
+
+const getDraftIndex = (draftID) => {
+  return `${ES_INDEX_PREFIX}_draft_workspace_${draftID}`;
+};
+
+const copyLiveElementToDraft = async (context, user, element, draftOperation = 'update') => {
+  const draftContext = inDraftContext(context, user);
+  if (!draftContext || element._index.includes('_draft_workspace_')) return element;
+
+  const elementID = element.internal_id;
+  const newInternalID = generateInternalId();
+  const draftIndex = getDraftIndex(draftContext);
+
+  const isDraftNewID = isFeatureEnabled('DRAFT_NEW_ID');
+  const isDraftCopyID = isFeatureEnabled('DRAFT_COPY_ID');
+
+  const updatedElement = element;
+  if (isDraftNewID) {
+    const updateIDScript = `ctx._id = "${newInternalID}"; ctx._source.id = "${newInternalID}"; ctx._source.internal_id = "${newInternalID}"; ctx._source.live_id = "${elementID}";`;
+    await elReindexElements(context, user, [elementID], element._index, draftIndex, updateIDScript);
+
+    updatedElement.live_id = elementID;
+    updatedElement.id = newInternalID;
+    updatedElement.internal_id = newInternalID;
+  } else if (isDraftCopyID) {
+    const setDraftChange = `ctx._source.draft_change = [:];ctx._source.draft_change.draft_operation = "${draftOperation}"`;
+    await elReindexElements(context, user, [elementID], element._index, draftIndex, setDraftChange);
+    const addDraftIdScript = {
+      script: {
+        source: `ctx._source['draft_ids'] = '${draftContext}';`
+      }
+    };
+    await elUpdate(element._index, elementID, addDraftIdScript);
+  }
+  updatedElement._index = draftIndex;
+
+  return updatedElement;
+};
+
+const getElementDraftVersion = async (context, user, element) => {
+  const draftContext = inDraftContext(context, user);
+  const draftIndex = getDraftIndex(draftContext);
+
+  if (element._index.includes(draftIndex)) return element;
+
+  const isDraftNewID = isFeatureEnabled('DRAFT_NEW_ID');
+  const isDraftCopyID = isFeatureEnabled('DRAFT_COPY_ID');
+
+  if (isDraftNewID) {
+    const loadedElement = await elLoadById(context, user, element.internal_id, { getByLiveId: true });
+    if (loadedElement && loadedElement._index.includes(draftIndex)) return loadedElement;
+  }
+  if (isDraftCopyID) {
+    const loadedElement = await elLoadById(context, user, element.internal_id);
+    if (loadedElement && loadedElement._index.includes(draftIndex)) return loadedElement;
+  }
+
+  return await copyLiveElementToDraft(context, user, element);
+};
+
 export const elIndexElements = async (context, user, message, elements) => {
+  const draftContext = inDraftContext(context, user);
+  const draftIndex = getDraftIndex(draftContext);
+
+  // If we are in a draft, relations from and to need to be elements that are also in draft.
+  if (draftContext) {
+    for (let i = 0; i < elements.length; i += 1) {
+      const element = elements[i];
+      if (element.base_type === BASE_TYPE_RELATION) {
+        const { from, to } = element;
+        const draftFrom = await getElementDraftVersion(context, user, from);
+        element.from = draftFrom;
+        element.fromId = draftFrom.id;
+        const draftTo = await getElementDraftVersion(context, user, to);
+        element.to = draftTo;
+        element.toId = draftTo.id;
+      }
+    }
+  }
+
   const elIndexElementsFn = async () => {
     // 00. Relations must be transformed before indexing.
-    const transformedElements = await prepareIndexing(elements);
+    const transformedElements = await prepareIndexing(context, user, elements);
     // 01. Bulk the indexing of row elements
-    const body = transformedElements.flatMap((doc) => [
-      { index: { _index: doc._index, _id: doc.internal_id, retry_on_conflict: ES_RETRY_ON_CONFLICT } },
-      R.pipe(R.dissoc('_index'))(doc),
-    ]);
+    const body = transformedElements.flatMap((elementDoc) => {
+      const doc = elementDoc;
+      if (draftContext) {
+        doc._index = draftIndex;
+        doc.draft_changes = { draft_operation: 'create' };
+      }
+      return [
+        { index: { _index: draftContext && !isInternalObject(doc.entity_type) && !isInternalRelationship(doc.entity_type)
+          ? draftIndex
+          : doc._index,
+        _id: doc.internal_id,
+        retry_on_conflict: ES_RETRY_ON_CONFLICT } },
+        R.pipe(R.dissoc('_index'))(doc),
+      ];
+    });
     if (body.length > 0) {
       await elBulk({ refresh: true, timeout: BULK_TIMEOUT, body });
     }
@@ -3727,15 +3892,21 @@ const elUpdateConnectionsOfElement = async (documentId, documentBody) => {
     throw DatabaseError('Error updating connections', { cause: err, documentId, body: documentBody });
   });
 };
-export const elUpdateElement = async (instance) => {
-  const esData = prepareElementForIndexing(instance);
+export const elUpdateElement = async (context, user, instance, inputs = []) => {
+  const draftContext = inDraftContext(context, user);
+  let instanceToUse = instance;
+  if (draftContext && !isInternalObject(instance.entity_type) && !isInternalRelationship(instance.entity_type)) instanceToUse = await getElementDraftVersion(context, user, instance);
+
+  if (instanceToUse !== instance) throw DatabaseError('Cannot update live entity with a draft copy');
+
+  const esData = prepareElementForIndexing(instanceToUse);
   validateDataBeforeIndexing(esData);
   const dataToReplace = R.dissoc('representative', esData);
-  const replacePromise = elReplace(instance._index, instance.internal_id, { doc: dataToReplace });
+  const replacePromise = elReplace(instanceToUse._index, instanceToUse.internal_id, { doc: dataToReplace });
   // If entity with a name, must update connections
   let connectionPromise = Promise.resolve();
-  if (esData.name && isStixObject(instance.entity_type)) {
-    connectionPromise = elUpdateConnectionsOfElement(instance.internal_id, { name: extractEntityRepresentativeName(esData) });
+  if (esData.name && isStixObject(instanceToUse.entity_type)) {
+    connectionPromise = elUpdateConnectionsOfElement(instanceToUse.internal_id, { name: extractEntityRepresentativeName(esData) });
   }
   return Promise.all([replacePromise, connectionPromise]);
 };

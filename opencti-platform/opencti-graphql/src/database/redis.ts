@@ -451,8 +451,14 @@ const mapJSToStream = (event: any) => {
   });
   return cmdArgs;
 };
+
+const inDraftContext = (context: AuthContext, user: AuthUser) => {
+  return user.workspace_context;
+};
+
 const pushToStream = async (context: AuthContext, user: AuthUser, client: Cluster | Redis, event: BaseEvent, opts: EventOpts = {}) => {
-  if (isStreamPublishable(opts)) {
+  const draftContext = inDraftContext(context, user);
+  if (!draftContext && isStreamPublishable(opts)) {
     const pushToStreamFn = async () => {
       if (streamTrimming) {
         await client.call('XADD', REDIS_STREAM_NAME, 'MAXLEN', '~', streamTrimming, '*', ...mapJSToStream(event));
@@ -535,6 +541,7 @@ const buildUpdateEvent = (user: AuthUser, previous: StoreObject, instance: Store
   const previousStix = convertStoreToStix(previous) as StixCoreObject;
   return buildStixUpdateEvent(user, previousStix, stix, message, opts);
 };
+
 export const storeUpdateEvent = async (context: AuthContext, user: AuthUser, previous: StoreObject, instance: StoreObject, message: string, opts: UpdateEventOpts = {}) => {
   try {
     if (isStixExportableData(instance)) {

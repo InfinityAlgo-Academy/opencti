@@ -353,7 +353,7 @@ export const stixCoreObjectsExportAsk = async (context, user, args) => {
   const { search, orderBy, orderMode, filters } = args;
   const argsFilters = { search, orderBy, orderMode, filters };
   const ordersOpts = stixCoreObjectOptions.StixCoreObjectsOrdering;
-  const listParams = exportTransformFilters(argsFilters, ordersOpts);
+  const listParams = await exportTransformFilters(context, user, argsFilters, ordersOpts);
   const works = await askListExport(context, user, exportContext, format, selectedIds, listParams, exportType, contentMaxMarkings, fileMarkings);
   return works.map((w) => workToExportFile(w));
 };
@@ -637,7 +637,7 @@ export const stixCoreObjectImportPush = async (context, user, id, file, args = {
     // Patch the updated_at to force live stream evolution
     const eventFile = storeFileConverter(user, up);
     const files = [...(previous.x_opencti_files ?? []).filter((f) => f.id !== up.id), eventFile];
-    await elUpdateElement({
+    await elUpdateElement(context, user, {
       _index: previous._index,
       internal_id: internalId,
       entity_type: previous.entity_type, // required for schema validation
@@ -707,7 +707,7 @@ export const stixCoreObjectImportDelete = async (context, user, fileId) => {
     await deleteFile(context, user, fileId);
     // Patch the updated_at to force live stream evolution
     const files = (previous.x_opencti_files ?? []).filter((f) => f.id !== fileId);
-    await elUpdateElement({
+    await elUpdateElement(context, user, {
       _index: previous._index,
       internal_id: entityId,
       updated_at: now(),
