@@ -159,7 +159,8 @@ import {
   RULE_MANAGER_USER,
   SYSTEM_USER,
   userFilterStoreElements,
-  validateUserAccessOperation
+  validateUserAccessOperation,
+  KNOWLEDGE_KNUPDATE_KNBYPASSMERGE
 } from '../utils/access';
 import { isRuleUser, RULES_ATTRIBUTES_BEHAVIOR } from '../rules/rules-utils';
 import { instanceMetaRefsExtractor, isSingleRelationsRef, } from '../schema/stixEmbeddedRelationship';
@@ -1330,16 +1331,25 @@ const mergeEntitiesRaw = async (context, user, targetEntity, sourceEntities, tar
   }
 };
 
+const checkMergeEntityAccess = async (context, user, entities) => {
+  const filteredEntity = await userFilterStoreElements(context, user, entities);
+  if (filteredEntity.length !== entities.length) throw FunctionalError('Cannot access all entities dependencies for merging');
+  entities.forEach((instance) => controlUserConfidenceAgainstElement(user, instance));
+};
+
 const loadMergeEntitiesDependencies = async (context, user, entityIds) => {
+  const bypassMergeDependenciesCheck = isUserHasCapability(user, KNOWLEDGE_KNUPDATE_KNBYPASSMERGE);
   const data = { [INTERNAL_FROM_FIELD]: [], [INTERNAL_TO_FIELD]: [] };
   for (let entityIndex = 0; entityIndex < entityIds.length; entityIndex += 1) {
     const entityId = entityIds[entityIndex];
     // Internal From
     const listFromCallback = async (elements) => {
-      const findArgs = { toMap: true, baseData: true };
+      const findArgs = { toMap: true, baseData: bypassMergeDependenciesCheck };
       const relTargets = await internalFindByIds(context, user, elements.map((rel) => rel.toId), findArgs);
+      if (!bypassMergeDependenciesCheck) await checkMergeEntityAccess(context, user, relTargets);
       for (let index = 0; index < elements.length; index += 1) {
         const rel = elements[index];
+        if (!bypassMergeDependenciesCheck) await checkMergeEntityAccess(context, user, [rel]);
         if (relTargets[rel.toId]) {
           data[INTERNAL_FROM_FIELD].push({
             _index: relTargets[rel.toId]._index,
@@ -1351,14 +1361,16 @@ const loadMergeEntitiesDependencies = async (context, user, entityIds) => {
         }
       }
     };
-    const fromArgs = { baseData: true, fromId: entityId, callback: listFromCallback };
+    const fromArgs = { baseData: bypassMergeDependenciesCheck, fromId: entityId, callback: listFromCallback };
     await listAllRelations(context, user, ABSTRACT_STIX_RELATIONSHIP, fromArgs);
     // Internal to
     const listToCallback = async (elements) => {
-      const findArgs = { toMap: true, baseData: true };
+      const findArgs = { toMap: true, baseData: bypassMergeDependenciesCheck };
       const relSources = await internalFindByIds(context, user, elements.map((rel) => rel.fromId), findArgs);
+      if (!bypassMergeDependenciesCheck) checkMergeEntityAccess(context, user, [relSources]);
       for (let index = 0; index < elements.length; index += 1) {
         const rel = elements[index];
+        if (!bypassMergeDependenciesCheck) checkMergeEntityAccess(context, user, [rel]);
         if (relSources[rel.fromId]) {
           data[INTERNAL_TO_FIELD].push({
             _index: relSources[rel.fromId]._index,
@@ -1370,7 +1382,7 @@ const loadMergeEntitiesDependencies = async (context, user, entityIds) => {
         }
       }
     };
-    const toArgs = { baseData: true, toId: entityId, callback: listToCallback };
+    const toArgs = { baseData: bypassMergeDependenciesCheck, toId: entityId, callback: listToCallback };
     await listAllRelations(context, user, ABSTRACT_STIX_RELATIONSHIP, toArgs);
   }
   return data;
