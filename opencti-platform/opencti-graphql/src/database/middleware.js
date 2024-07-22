@@ -1345,8 +1345,8 @@ const loadMergeEntitiesDependencies = async (context, user, entityIds) => {
     // Internal From
     const listFromCallback = async (elements) => {
       const findArgs = { toMap: true, baseData: bypassMergeDependenciesCheck };
-      const relTargets = await internalFindByIds(context, user, elements.map((rel) => rel.toId), findArgs);
-      if (!bypassMergeDependenciesCheck) await checkMergeEntityAccess(context, user, relTargets);
+      const relTargets = await internalFindByIds(context, SYSTEM_USER, elements.map((rel) => rel.toId), findArgs);
+      if (!bypassMergeDependenciesCheck) await checkMergeEntityAccess(context, user, Object.values(relTargets));
       for (let index = 0; index < elements.length; index += 1) {
         const rel = elements[index];
         if (!bypassMergeDependenciesCheck) await checkMergeEntityAccess(context, user, [rel]);
@@ -1362,15 +1362,15 @@ const loadMergeEntitiesDependencies = async (context, user, entityIds) => {
       }
     };
     const fromArgs = { baseData: bypassMergeDependenciesCheck, fromId: entityId, callback: listFromCallback };
-    await listAllRelations(context, user, ABSTRACT_STIX_RELATIONSHIP, fromArgs);
+    await listAllRelations(context, SYSTEM_USER, ABSTRACT_STIX_RELATIONSHIP, fromArgs);
     // Internal to
     const listToCallback = async (elements) => {
       const findArgs = { toMap: true, baseData: bypassMergeDependenciesCheck };
-      const relSources = await internalFindByIds(context, user, elements.map((rel) => rel.fromId), findArgs);
-      if (!bypassMergeDependenciesCheck) checkMergeEntityAccess(context, user, [relSources]);
+      const relSources = await internalFindByIds(context, SYSTEM_USER, elements.map((rel) => rel.fromId), findArgs);
+      if (!bypassMergeDependenciesCheck) await checkMergeEntityAccess(context, user, Object.values(relSources));
       for (let index = 0; index < elements.length; index += 1) {
         const rel = elements[index];
-        if (!bypassMergeDependenciesCheck) checkMergeEntityAccess(context, user, [rel]);
+        if (!bypassMergeDependenciesCheck) await checkMergeEntityAccess(context, user, [rel]);
         if (relSources[rel.fromId]) {
           data[INTERNAL_TO_FIELD].push({
             _index: relSources[rel.fromId]._index,
@@ -1383,7 +1383,7 @@ const loadMergeEntitiesDependencies = async (context, user, entityIds) => {
       }
     };
     const toArgs = { baseData: bypassMergeDependenciesCheck, toId: entityId, callback: listToCallback };
-    await listAllRelations(context, user, ABSTRACT_STIX_RELATIONSHIP, toArgs);
+    await listAllRelations(context, SYSTEM_USER, ABSTRACT_STIX_RELATIONSHIP, toArgs);
   }
   return data;
 };
@@ -1418,8 +1418,9 @@ export const mergeEntities = async (context, user, targetEntityId, sourceEntityI
     const initialInstance = await storeLoadByIdWithRefs(context, user, targetEntityId);
     const target = { ...initialInstance };
     const sources = await storeLoadByIdsWithRefs(context, SYSTEM_USER, sourceEntityIds);
-    const sourcesDependencies = await loadMergeEntitiesDependencies(context, SYSTEM_USER, sources.map((s) => s.internal_id));
-    const targetDependencies = await loadMergeEntitiesDependencies(context, SYSTEM_USER, [initialInstance.internal_id]);
+
+    const sourcesDependencies = await loadMergeEntitiesDependencies(context, user, sources.map((s) => s.internal_id));
+    const targetDependencies = await loadMergeEntitiesDependencies(context, user, [initialInstance.internal_id]);
     // - TRANSACTION PART
     lock.signal.throwIfAborted();
     await mergeEntitiesRaw(context, user, target, sources, targetDependencies, sourcesDependencies, opts);
