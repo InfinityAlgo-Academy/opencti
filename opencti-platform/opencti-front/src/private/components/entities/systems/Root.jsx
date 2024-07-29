@@ -28,6 +28,8 @@ import { getCurrentTab, getPaddingRight } from '../../../../utils/utils';
 import Security from '../../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../../utils/hooks/useGranted';
 import SystemEdition from './SystemEdition';
+import CreateRelationshipContextProvider from '../../common/menus/CreateRelationshipContextProvider';
+import CreateRelationshipButtonComponent from '../../common/menus/CreateRelationshipButtonComponent';
 
 const subscription = graphql`
   subscription RootSystemsSubscription($id: ID!) {
@@ -125,7 +127,7 @@ class RootSystem extends Component {
     const link = `/dashboard/entities/systems/${systemId}/knowledge`;
 
     return (
-      <>
+      <CreateRelationshipContextProvider>
         <QueryRenderer
           query={systemQuery}
           variables={{ id: systemId }}
@@ -178,6 +180,7 @@ class RootSystem extends Component {
                             <SystemEdition systemId={system.id} />
                           </Security>
                         )}
+                        RelateComponent={CreateRelationshipButtonComponent}
                         onViewAs={this.handleChangeViewAs.bind(this)}
                         viewAs={viewAs}
                       />
@@ -320,7 +323,7 @@ class RootSystem extends Component {
             return <Loader />;
           }}
         />
-      </>
+      </CreateRelationshipContextProvider>
     );
   }
 }

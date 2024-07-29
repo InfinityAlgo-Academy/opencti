@@ -28,6 +28,8 @@ import { getCurrentTab, getPaddingRight } from '../../../../utils/utils';
 import IndividualEdition from './IndividualEdition';
 import Security from '../../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../../utils/hooks/useGranted';
+import CreateRelationshipContextProvider from '../../common/menus/CreateRelationshipContextProvider';
+import CreateRelationshipButtonComponent from '../../common/menus/CreateRelationshipButtonComponent';
 
 const subscription = graphql`
   subscription RootIndividualsSubscription($id: ID!) {
@@ -128,7 +130,7 @@ class RootIndividual extends Component {
     const link = `/dashboard/entities/individuals/${individualId}/knowledge`;
 
     return (
-      <>
+      <CreateRelationshipContextProvider>
         <QueryRenderer
           query={individualQuery}
           variables={{ id: individualId }}
@@ -184,6 +186,7 @@ class RootIndividual extends Component {
                             <IndividualEdition individualId={individual.id} />
                           </Security>
                         )}
+                        RelateComponent={CreateRelationshipButtonComponent}
                         onViewAs={this.handleChangeViewAs.bind(this)}
                         viewAs={viewAs}
                       />
@@ -326,7 +329,7 @@ class RootIndividual extends Component {
             return <Loader />;
           }}
         />
-      </>
+      </CreateRelationshipContextProvider>
     );
   }
 }

@@ -28,6 +28,8 @@ import { getCurrentTab, getPaddingRight } from '../../../../utils/utils';
 import Security from '../../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../../utils/hooks/useGranted';
 import OrganizationEdition from './OrganizationEdition';
+import CreateRelationshipContextProvider from '../../common/menus/CreateRelationshipContextProvider';
+import CreateRelationshipButtonComponent from '../../common/menus/CreateRelationshipButtonComponent';
 
 const subscription = graphql`
   subscription RootOrganizationSubscription($id: ID!) {
@@ -126,7 +128,7 @@ class RootOrganization extends Component {
     const link = `/dashboard/entities/organizations/${organizationId}/knowledge`;
 
     return (
-      <>
+      <CreateRelationshipContextProvider>
         <QueryRenderer
           query={organizationQuery}
           variables={{ id: organizationId }}
@@ -184,6 +186,7 @@ class RootOrganization extends Component {
                             <OrganizationEdition organizationId={organization.id} />
                           </Security>
                         )}
+                        RelateComponent={CreateRelationshipButtonComponent}
                         onViewAs={this.handleChangeViewAs.bind(this)}
                         viewAs={viewAs}
                       />
@@ -327,7 +330,7 @@ class RootOrganization extends Component {
             return <Loader />;
           }}
         />
-      </>
+      </CreateRelationshipContextProvider>
     );
   }
 }

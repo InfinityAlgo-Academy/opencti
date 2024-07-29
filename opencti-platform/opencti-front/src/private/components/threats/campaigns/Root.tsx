@@ -27,6 +27,8 @@ import useHelper from '../../../../utils/hooks/useHelper';
 import Security from '../../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../../utils/hooks/useGranted';
 import CampaignEdition from './CampaignEdition';
+import CreateRelationshipContextProvider from '../../common/menus/CreateRelationshipContextProvider';
+import CreateRelationshipButtonComponent from '../../common/menus/CreateRelationshipButtonComponent';
 
 const subscription = graphql`
   subscription RootCampaignSubscription($id: ID!) {
@@ -100,7 +102,7 @@ const RootCampaign = ({ campaignId, queryRef }: RootCampaignProps) => {
   const isOverview = location.pathname === `/dashboard/threats/campaigns/${campaignId}`;
   const paddingRight = getPaddingRight(location.pathname, campaignId, '/dashboard/threats/campaigns');
   return (
-    <>
+    <CreateRelationshipContextProvider>
       {campaign ? (
         <>
           <Routes>
@@ -146,6 +148,7 @@ const RootCampaign = ({ campaignId, queryRef }: RootCampaignProps) => {
                   <CampaignEdition campaignId={campaign.id} />
                 </Security>
               )}
+              RelateComponent={CreateRelationshipButtonComponent}
               enableQuickSubscription={true}
             />
             <Box
@@ -256,7 +259,7 @@ const RootCampaign = ({ campaignId, queryRef }: RootCampaignProps) => {
       ) : (
         <ErrorNotFound />
       )}
-    </>
+    </CreateRelationshipContextProvider>
   );
 };
 
