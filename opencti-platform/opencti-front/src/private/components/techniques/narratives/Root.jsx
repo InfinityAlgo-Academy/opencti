@@ -25,6 +25,8 @@ import { getCurrentTab, getPaddingRight } from '../../../../utils/utils';
 import Security from '../../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../../utils/hooks/useGranted';
 import NarrativeEdition from './NarrativeEdition';
+import CreateRelationshipContextProvider from '../../common/menus/CreateRelationshipContextProvider';
+import CreateRelationshipButtonComponent from '../../common/menus/CreateRelationshipButtonComponent';
 
 const subscription = graphql`
   subscription RootNarrativeSubscription($id: ID!) {
@@ -96,7 +98,7 @@ class RootNarrative extends Component {
 
     const link = `/dashboard/techniques/narratives/${narrativeId}/knowledge`;
     return (
-      <>
+      <CreateRelationshipContextProvider>
         <QueryRenderer
           query={narrativeQuery}
           variables={{ id: narrativeId }}
@@ -143,6 +145,7 @@ class RootNarrative extends Component {
                             <NarrativeEdition narrativeId={narrative.id} />
                           </Security>
                         )}
+                        RelateComponent={CreateRelationshipButtonComponent}
                       />
                       <Box
                         sx={{
@@ -252,7 +255,7 @@ class RootNarrative extends Component {
             return <Loader />;
           }}
         />
-      </>
+      </CreateRelationshipContextProvider>
     );
   }
 }
