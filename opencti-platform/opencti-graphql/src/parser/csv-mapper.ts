@@ -324,7 +324,7 @@ const mapRecord = async (
   let input: Record<string, InputType> = {};
   handleType(representation, input);
   input = handleInnerType(input, entity_type);
-
+  console.log('INPUT', input);
   handleAttributes(record, representation, input, otherEntities, refEntities);
 
   const entitySetting = await getEntitySettingFromCache(context, entity_type);

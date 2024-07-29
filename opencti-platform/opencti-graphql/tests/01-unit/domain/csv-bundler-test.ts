@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { bundleProcess } from '../../../src/parser/csv-bundler';
 import { ADMIN_USER, testContext } from '../../utils/testQuery';
 import {
@@ -7,7 +7,14 @@ import {
   indicatorsWithExternalReferencesExpectedBundle
 } from '../../data/csv-bundler/external-references-constants';
 import type { CsvMapperParsed } from '../../../src/modules/internal/csvMapper/csvMapper-types';
-import { indicatorsWithLabelsCsvContent, indicatorsWithLabelsCsvMapper, indicatorsWithLabelsExpectedBundle } from '../../data/csv-bundler/labels-constants';
+import {
+  indicatorsWithLabelsCsvContent,
+  indicatorsWithLabelsCsvMapper,
+  indicatorsWithLabelsExpectedBundle,
+  indicatorsWithMultipleLabelsCsvMapper,
+  indicatorsWithMultipleLabelsExpectedBundle,
+  indicatorWithMultipleLabelsCsvContent
+} from '../../data/csv-bundler/labels-constants';
 import {
   indicatorsWithKillChainPhasesCsvContent,
   indicatorsWithKillChainPhasesCsvMapper,
@@ -48,6 +55,21 @@ describe('CSV bundler', () => {
         indicatorsWithLabelsActualBundleWithoutId
       ).toStrictEqual(
         indicatorsWithLabelsExpectedBundleWithoutId
+      );
+    });
+    it('Should add label', async () => {
+      const x = await bundleProcess(
+        testContext,
+        ADMIN_USER,
+        Buffer.from(indicatorWithMultipleLabelsCsvContent),
+        indicatorsWithMultipleLabelsCsvMapper as CsvMapperParsed
+      );
+      const { id: _expectedId, ...expectedRest } = indicatorsWithMultipleLabelsExpectedBundle;
+      const indicatorsWithMultipleLabelsExpectedBundleWithoutId = { ...expectedRest };
+      const { id: _actualId, ...actualRest } = x;
+      const indicatorsWithMultipleLabelsActualBundleWithoutId = { ...actualRest };
+      expect(indicatorsWithMultipleLabelsActualBundleWithoutId).toStrictEqual(
+        indicatorsWithMultipleLabelsExpectedBundleWithoutId
       );
     });
     it('Should list kill chain phases', async () => {
