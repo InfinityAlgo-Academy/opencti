@@ -121,7 +121,7 @@ const DraftCreation = ({ paginationOptions }: { paginationOptions: DraftsLinesPa
   const isDraftFeatureEnable = isFeatureEnable('DRAFT_COPY_ID');
   const updater = (store: RecordSourceSelectorProxy) => insertNode(
     store,
-    'Pagination_draftWorkspace',
+    'Pagination_draftWorkspaces',
     paginationOptions,
     'draftWorkspaceAdd',
   );
@@ -134,7 +134,13 @@ const DraftCreation = ({ paginationOptions }: { paginationOptions: DraftsLinesPa
       variant={isDraftFeatureEnable ? undefined : DrawerVariant.create}
       controlledDial={isDraftFeatureEnable ? CreateDraftControlledDial : undefined}
     >
-      <DraftCreationForm updater={updater}/>
+      {({ onClose }) => (
+        <DraftCreationForm
+          updater={updater}
+          onCompleted={onClose}
+          onReset={onClose}
+        />
+      )}
     </Drawer>
   );
 };

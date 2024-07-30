@@ -12,7 +12,7 @@ import ListLines from '../../../components/list_lines/ListLines';
 import Breadcrumbs from '../../../components/Breadcrumbs';
 import ExportContextProvider from '../../../utils/ExportContextProvider';
 
-const LOCAL_STORAGE_KEY = 'draftWorkspace';
+const LOCAL_STORAGE_KEY = 'draftWorkspaces';
 
 const Drafts: React.FC = () => {
   const { t_i18n } = useFormatter();

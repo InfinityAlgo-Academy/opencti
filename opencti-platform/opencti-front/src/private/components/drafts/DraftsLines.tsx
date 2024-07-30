@@ -22,7 +22,7 @@ export const draftsLinesQuery = graphql`
         $search: String
         $count: Int!
         $cursor: ID
-        $orderBy: DraftWorkspaceOrdering
+        $orderBy: DraftWorkspacesOrdering
         $orderMode: OrderingMode
         $filters: FilterGroup
     ) {
@@ -44,7 +44,7 @@ export const draftsLinesFragment = graphql`
         search: { type: "String" }
         count: { type: "Int", defaultValue: 25 }
         cursor: { type: "ID" }
-        orderBy: { type: "DraftWorkspaceOrdering", defaultValue: name }
+        orderBy: { type: "DraftWorkspacesOrdering", defaultValue: name }
         orderMode: { type: "OrderingMode", defaultValue: asc }
         filters: { type: "FilterGroup" }
     )
@@ -56,7 +56,7 @@ export const draftsLinesFragment = graphql`
             orderBy: $orderBy
             orderMode: $orderMode
             filters: $filters
-        ) @connection(key: "Pagination_draftWorkspace") {
+        ) @connection(key: "Pagination_draftWorkspaces") {
             edges {
                 node {
                     id

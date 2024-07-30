@@ -9,7 +9,7 @@ type DraftWorkspace implements InternalObject & BasicObject {
 }
 
 # Ordering
-enum DraftWorkspaceOrdering {
+enum DraftWorkspacesOrdering {
     name
 }
 
@@ -30,7 +30,7 @@ type Query {
     draftWorkspaces(
         first: Int
         after: ID
-        orderBy: DraftWorkspaceOrdering
+        orderBy: DraftWorkspacesOrdering
         orderMode: OrderingMode
         filters: FilterGroup
         search: String

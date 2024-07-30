@@ -7873,7 +7873,7 @@ type Query {
   supportPackage(id: String!): SupportPackage
   supportPackages(first: Int, after: ID, orderBy: SupportPackageOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String): SupportPackageConnection
   draftWorkspace(id: String!): DraftWorkspace
-  draftWorkspaces(first: Int, after: ID, orderBy: DraftWorkspaceOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String): DraftWorkspaceConnection
+  draftWorkspaces(first: Int, after: ID, orderBy: DraftWorkspacesOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String): DraftWorkspaceConnection
 }
 
 type Subscription {
@@ -11973,7 +11973,7 @@ type DraftWorkspace implements InternalObject & BasicObject {
   name: String!
 }
 
-enum DraftWorkspaceOrdering {
+enum DraftWorkspacesOrdering {
   name
 }
 

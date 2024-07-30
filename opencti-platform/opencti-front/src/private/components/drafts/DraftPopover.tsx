@@ -21,6 +21,7 @@ import { useFormatter } from '../../../components/i18n';
 import { MESSAGING$ } from '../../../relay/environment';
 import { deleteNode } from '../../../utils/store';
 import { RelayError } from '../../../relay/relayTypes';
+import useDeletion from '../../../utils/hooks/useDeletion';
 
 const draftPopoverDeleteMutation = graphql`
   mutation DraftPopoverDeleteMutation($id: ID!) {
@@ -39,16 +40,21 @@ const DraftPopover: React.FC<DraftPopoverProps> = ({
 }) => {
   const { t_i18n } = useFormatter();
   const [anchorEl, setAnchorEl] = useState<PopoverProps['anchorEl']>();
-  const [deleting, setDeleting] = useState<boolean>(false);
-  const [displayDelete, setDisplayDelete] = useState<boolean>(false);
   const [commitDeletion] = useApiMutation<DraftPopoverDeleteMutation>(draftPopoverDeleteMutation);
-  const handleOpenDelete = (event: React.SyntheticEvent) => {
+  const handleOpen = (event: React.SyntheticEvent) => {
     setAnchorEl(event.currentTarget);
   };
 
   const handleClose = () => {
     setAnchorEl(undefined);
   };
+  const {
+    deleting,
+    handleOpenDelete,
+    displayDelete,
+    handleCloseDelete,
+    setDeleting,
+  } = useDeletion({ handleClose });
 
   const submitDelete = () => {
     setDeleting(true);
@@ -69,7 +75,7 @@ const DraftPopover: React.FC<DraftPopoverProps> = ({
         handleClose();
       },
       updater: (store) => {
-        deleteNode(store, 'Pagination_draftWorkspace', paginationOptions, draftId);
+        deleteNode(store, 'Pagination_draftWorkspaces', paginationOptions, draftId);
       },
     });
   };
@@ -77,7 +83,7 @@ const DraftPopover: React.FC<DraftPopoverProps> = ({
   return (
     <div>
       <IconButton
-        onClick={handleOpenDelete}
+        onClick={handleOpen}
         aria-haspopup="true"
         size="large"
         color="primary"
@@ -87,7 +93,7 @@ const DraftPopover: React.FC<DraftPopoverProps> = ({
       </IconButton>
       <Menu
         anchorEl={anchorEl}
-        open={!!anchorEl}
+        open={Boolean(anchorEl)}
         onClose={handleClose}
       >
         <Security needs={[KNOWLEDGE]}>
@@ -99,8 +105,7 @@ const DraftPopover: React.FC<DraftPopoverProps> = ({
         PaperProps={{ elevation: 1 }}
         keepMounted={true}
         TransitionComponent={Transition}
-        onClose={() => setDisplayDelete(false)}
-        className="noDrag"
+        onClose={handleCloseDelete}
       >
         <DialogContent>
           <DialogContentText>
@@ -108,7 +113,7 @@ const DraftPopover: React.FC<DraftPopoverProps> = ({
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDisplayDelete(false)}>{t_i18n('Cancel')}</Button>
+          <Button onClick={handleCloseDelete} disabled={deleting}>{t_i18n('Cancel')}</Button>
           <Button onClick={submitDelete} disabled={deleting} color="secondary">
             {t_i18n('Delete')}
           </Button>
