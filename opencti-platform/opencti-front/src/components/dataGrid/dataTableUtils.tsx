@@ -79,7 +79,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   analyses: {
     id: 'analyses',
     label: 'Analyses',
-    flexSize: 8,
+    percentWidth: 8,
     isSortable: false,
     render: ({ id, entity_type, containersNumber }, { n }) => {
       const classes = useStyles();
@@ -115,7 +115,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   attribute_abstract: {
     id: 'attribute_abstract',
     label: 'Abstract',
-    flexSize: 25,
+    percentWidth: 25,
     isSortable: true,
     render: ({ attribute_abstract, content }, { column: { size } }) => {
       const data = attribute_abstract || content;
@@ -125,14 +125,14 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   attribute_count: {
     id: 'attribute_count',
     label: 'Nb.',
-    flexSize: 4,
+    percentWidth: 4,
     isSortable: true,
     render: ({ attribute_count }) => (<Tooltip title={attribute_count}><>{attribute_count}</></Tooltip>),
   },
   channel_types: {
     id: 'channel_types',
     label: 'Types',
-    flexSize: 20,
+    percentWidth: 20,
     isSortable: true,
     render: ({ channel_types }, { column: { size } }) => {
       const value = channel_types ? channel_types.join(', ') : '-';
@@ -142,7 +142,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   color: {
     id: 'color',
     label: 'Color',
-    flexSize: 25,
+    percentWidth: 25,
     isSortable: true,
     render: ({ color }, { column: { size } }) => (
       <Tooltip title={color}>
@@ -165,7 +165,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   confidence: {
     id: 'confidence',
     label: 'Confidence',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ confidence, entity_type }) => (
       <ItemConfidence confidence={confidence} entityType={entity_type} variant="inList" />
@@ -174,7 +174,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   context: {
     id: 'context',
     label: 'Context',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ context }) => {
       const classes = useStyles();
@@ -191,27 +191,27 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   created: {
     id: 'created',
     label: 'Original creation',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: true,
     render: ({ created }, { fd }) => fd(created),
   },
   created_at: {
     id: 'created_at',
     label: 'Platform creation date',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: true,
     render: ({ created_at }, { fd }) => fd(created_at),
   },
   createdBy: {
     id: 'createdBy',
     label: 'Author',
-    flexSize: 12,
+    percentWidth: 12,
     render: ({ createdBy }) => createdBy?.name ?? '-',
   },
   creator: {
     id: 'creator',
     label: 'Creators',
-    flexSize: 12,
+    percentWidth: 12,
     render: ({ creators }, { column: { size } }) => {
       const value = isNotEmptyField(creators) ? creators.map((c: { name: string }) => c.name).join(', ') : '-';
       return (<Tooltip title={value}><div>{truncate(value, size * MAGICAL_SIZE)}</div></Tooltip>);
@@ -220,14 +220,14 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   entity_type: {
     id: 'entity_type',
     label: 'Type',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: false,
     render: (data) => <ItemEntityType entityType={data.entity_type} />,
   },
   event_types: {
     id: 'event_types',
     label: 'Types',
-    flexSize: 20,
+    percentWidth: 20,
     isSortable: true,
     render: ({ event_types }, { column: { size } }) => {
       const value = event_types ? event_types.join(', ') : '-';
@@ -237,7 +237,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   external_id: {
     id: 'external_id',
     label: 'External ID',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ external_id }, { column: { size } }) => (
       <Tooltip title={external_id}><div>{truncate(external_id, size * MAGICAL_SIZE)}</div></Tooltip>
@@ -246,21 +246,21 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   first_observed: {
     id: 'first_observed',
     label: 'First obs.',
-    flexSize: 14,
+    percentWidth: 14,
     isSortable: true,
     render: ({ first_observed }, { nsdt }) => nsdt(first_observed),
   },
   first_seen: {
     id: 'first_seen',
     label: 'First obs.',
-    flexSize: 12,
+    percentWidth: 12,
     isSortable: true,
     render: ({ first_seen }, { nsdt }) => nsdt(first_seen),
   },
   fromName: {
     id: 'fromName',
     label: 'From name',
-    flexSize: 18,
+    percentWidth: 18,
     isSortable: false,
     render: ({ from }, { column: { size }, t_i18n }) => {
       const value = from ? getMainRepresentative(from) : t_i18n('Restricted');
@@ -270,7 +270,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   incident_type: {
     id: 'incident_type',
     label: 'Incident type',
-    flexSize: 9,
+    percentWidth: 9,
     isSortable: true,
     render: ({ incident_type }, { t_i18n }) => {
       const classes = useStyles();
@@ -287,7 +287,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   infrastructure_types: {
     id: 'infrastructure_types',
     label: 'Type',
-    flexSize: 8,
+    percentWidth: 8,
     isSortable: true,
     render: ({ infrastructure_types }, { t_i18n }) => {
       const classes = useStyles();
@@ -304,7 +304,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   is_family: {
     id: 'is_family',
     label: 'Is family',
-    flexSize: 8,
+    percentWidth: 8,
     isSortable: true,
     render: ({ is_family }, { t_i18n }) => (
       <ItemBoolean
@@ -316,7 +316,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   killChainPhase: {
     id: 'killChainPhase',
     label: 'Kill chain phase',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: false,
     render: ({ killChainPhases }) => ((killChainPhases && killChainPhases.length > 0)
       ? `[${killChainPhases[0].kill_chain_name}] ${killChainPhases[0].phase_name}`
@@ -325,21 +325,21 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   last_observed: {
     id: 'last_observed',
     label: 'Last obs.',
-    flexSize: 14,
+    percentWidth: 14,
     isSortable: true,
     render: ({ last_observed }, { nsdt }) => nsdt(last_observed),
   },
   last_seen: {
     id: 'last_seen',
     label: 'Last obs.',
-    flexSize: 12,
+    percentWidth: 12,
     isSortable: true,
     render: ({ last_seen }, { nsdt }) => nsdt(last_seen),
   },
   malware_types: {
     id: 'malware_types',
     label: 'Malware types',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: true,
     render: ({ malware_types }, { column: { size } }) => {
       const value = malware_types ? malware_types.join(', ') : '-';
@@ -349,14 +349,14 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   modified: {
     id: 'modified',
     label: 'Modification date',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: true,
     render: ({ modified }, { fd }) => fd(modified),
   },
   name: {
     id: 'name',
     label: 'Name',
-    flexSize: 25,
+    percentWidth: 25,
     isSortable: true,
     render: (data, { column: { size } }) => (
       <Tooltip title={getMainRepresentative(data)}>
@@ -367,7 +367,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   note_types: {
     id: 'note_types',
     label: 'Type',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ note_types }, { t_i18n }) => {
       const classes = useStyles();
@@ -384,14 +384,14 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   number_observed: {
     id: 'number_observed',
     label: 'Nb.',
-    flexSize: 8,
+    percentWidth: 8,
     isSortable: true,
     render: ({ number_observed }, { n }) => (<Tooltip title={number_observed}><>{n(number_observed)}</></Tooltip>),
   },
   objectAssignee: {
     id: 'objectAssignee',
     label: 'Assignees',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: false,
     render: ({ objectAssignee }, { column: { size } }) => {
       const value = isNotEmptyField(objectAssignee) ? objectAssignee.map((c: { name: string }) => c.name).join(', ') : '-';
@@ -401,7 +401,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   objectLabel: {
     id: 'objectLabel',
     label: 'Labels',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: false,
     render: ({ objectLabel }, { storageHelpers: { handleAddFilter } }) => {
       return (
@@ -416,7 +416,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   objectMarking: {
     id: 'objectMarking',
     label: 'Marking',
-    flexSize: 8,
+    percentWidth: 8,
     isSortable: true,
     render: ({ objectMarking }) => (
       <ItemMarkings
@@ -429,7 +429,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   observable_value: {
     id: 'observable_value',
     label: 'Value',
-    flexSize: 20,
+    percentWidth: 20,
     isSortable: false,
     render: ({ observable_value }, { column: { size } }) => (
       <Tooltip title={observable_value}><div>{truncate(observable_value, size * MAGICAL_SIZE)}</div></Tooltip>
@@ -438,21 +438,21 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   operatingSystem: {
     id: 'operatingSystem',
     label: 'Operating System',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: false,
     render: ({ operatingSystem }) => (<Tooltip title={operatingSystem?.name}><>{operatingSystem?.name ?? '-'}</></Tooltip>),
   },
   pattern_type: {
     id: 'pattern_type',
     label: 'Pattern type',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ pattern_type }) => (<ItemPatternType variant="inList" label={pattern_type} />),
   },
   primary_motivation: {
     id: 'primary_motivation',
     label: 'Primary motivation',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ primary_motivation }) => (
       <ItemOpenVocab
@@ -464,7 +464,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   priority: {
     id: 'priority',
     label: 'Priority',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ priority }, { t_i18n }) => (
       <ItemPriority
@@ -477,7 +477,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   product: {
     id: 'product',
     label: 'Product',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: true,
     render: ({ product }, { column: { size } }) => (
       <Tooltip title={product}><div>{truncate(product, size * MAGICAL_SIZE)}</div></Tooltip>
@@ -486,14 +486,14 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   published: {
     id: 'published',
     label: 'Date',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ published }, { fd }) => fd(published),
   },
   rating: {
     id: 'rating',
     label: 'Rating',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ rating }) => (
       <RatingField
@@ -507,7 +507,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   relationship_type: {
     id: 'relationship_type',
     label: 'Type',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ relationship_type }, { t_i18n }) => {
       const classes = useStyles();
@@ -524,7 +524,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   report_types: {
     id: 'report_types',
     label: 'Type',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ report_types }, { t_i18n }) => {
       const classes = useStyles();
@@ -541,7 +541,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   resource_level: {
     id: 'resource_level',
     label: 'Resource level',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: (threatActorGroup) => (
       <ItemOpenVocab
@@ -553,7 +553,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   result_name: {
     id: 'result_name',
     label: 'Result name',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: true,
     render: ({ result_name }, { column: { size } }) => (
       <Tooltip title={result_name}><div>{truncate(result_name, size * MAGICAL_SIZE)}</div></Tooltip>
@@ -562,7 +562,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   secondary_motivations: {
     id: 'secondary_motivations',
     label: 'Secondary motivations',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: false,
     render: ({ secondary_motivations }, { column: { size } }) => {
       const value = secondary_motivations ? secondary_motivations.join(', ') : '-';
@@ -572,7 +572,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   severity: {
     id: 'severity',
     label: 'Severity',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ severity }, { t_i18n }) => (
       <ItemPriority
@@ -585,7 +585,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   sophistication: {
     id: 'sophistication',
     label: 'Sophistication',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: (threatActorGroup) => (
       <ItemOpenVocab
@@ -597,7 +597,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   source_name: {
     id: 'source_name',
     label: 'Source name',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: true,
     render: ({ source_name }, { column: { size } }) => (
       <Tooltip title={source_name}><div>{truncate(source_name, size * MAGICAL_SIZE)}</div></Tooltip>
@@ -606,28 +606,28 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   start_time: {
     id: 'start_time',
     label: 'Start date',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: true,
     render: ({ start_time }, { fd }) => fd(start_time),
   },
   stop_time: {
     id: 'stop_time',
     label: 'End date',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: true,
     render: ({ stop_time }, { fd }) => fd(stop_time),
   },
   submitted: {
     id: 'submitted',
     label: 'Submission date',
-    flexSize: 12,
+    percentWidth: 12,
     isSortable: true,
     render: ({ submitted }, { fd }) => fd(submitted),
   },
   threat_actor_types: {
     id: 'threat_actor_types',
     label: 'Types',
-    flexSize: 20,
+    percentWidth: 20,
     isSortable: true,
     render: ({ threat_actor_types }, { column: { size } }) => {
       const value = threat_actor_types ? threat_actor_types.join(', ') : '-';
@@ -637,7 +637,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   toName: {
     id: 'toName',
     label: 'To name',
-    flexSize: 18,
+    percentWidth: 18,
     isSortable: false,
     render: ({ to }, { column: { size }, t_i18n }) => {
       const value = to ? getMainRepresentative(to) : t_i18n('Restricted');
@@ -647,14 +647,14 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   url: {
     id: 'url',
     label: 'URL',
-    flexSize: 45,
+    percentWidth: 45,
     isSortable: true,
     render: ({ url }, { column: { size } }) => (<Tooltip title={url}><div>{truncate(url, size * MAGICAL_SIZE)}</div></Tooltip>),
   },
   user_email: {
     id: 'user_email',
     label: 'Email',
-    flexSize: 50,
+    percentWidth: 50,
     isSortable: false,
     render: ({ user_email }, { column: { size } }) => (
       <Tooltip title={user_email}><div>{truncate(user_email, size * MAGICAL_SIZE)}</div></Tooltip>
@@ -663,7 +663,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   value: {
     id: 'value',
     label: 'Value',
-    flexSize: 22,
+    percentWidth: 22,
     isSortable: false,
     render: (node, { column: { size } }) => {
       const value = getMainRepresentative(node);
@@ -673,14 +673,14 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   x_mitre_id: {
     id: 'x_mitre_id',
     label: 'ID',
-    flexSize: 10,
+    percentWidth: 10,
     isSortable: true,
     render: ({ x_mitre_id }) => <code>{emptyFilled(x_mitre_id)}</code>,
   },
   x_opencti_negative: {
     id: 'x_opencti_negative',
     label: 'Qualification',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: true,
     render: ({ x_opencti_negative }, { t_i18n }) => {
       const classes = useStyles();
@@ -703,7 +703,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   x_opencti_cvss_base_severity: {
     id: 'x_opencti_cvss_base_severity',
     label: 'CVSS3 - Severity',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: true,
     render: ({ x_opencti_cvss_base_severity }) => (
       <Tooltip title={x_opencti_cvss_base_severity}><>{x_opencti_cvss_base_severity}</></Tooltip>
@@ -712,7 +712,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   x_opencti_organization_type: {
     id: 'x_opencti_organization_type',
     label: 'Type',
-    flexSize: 15,
+    percentWidth: 15,
     isSortable: true,
     render: ({ x_opencti_organization_type }) => {
       const classes = useStyles();
@@ -729,7 +729,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
   x_opencti_workflow_id: {
     id: 'x_opencti_workflow_id',
     label: 'Status',
-    flexSize: 8,
+    percentWidth: 8,
     isSortable: true,
     render: ({ status, workflowEnabled }, { variant }) => (
       <ItemStatus

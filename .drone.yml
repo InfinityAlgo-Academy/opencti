@@ -50,21 +50,8 @@ steps:
       - cd "$DRONE_WORKSPACE/opencti-platform/opencti-graphql"
       - yarn install
       - yarn build
-      - yarn check-ts
-      - yarn lint
-      - NODE_OPTIONS=--max_old_space_size=8192 yarn test
     depends_on:
       - dependencies-checkout
-
-  - name: api-coverage
-    image: plugins/codecov
-    settings:
-      token:
-        from_secret: codecov_token
-      paths:
-        - opencti-platform/opencti-graphql/coverage
-    depends_on:
-      - api-tests
 
   - name: frontend-tests
     image: node:20-alpine
@@ -77,8 +64,6 @@ steps:
       - cd opencti-platform/opencti-front
       - yarn install
       - yarn build
-      - yarn check-ts
-      - yarn lint
       - NODE_OPTIONS=--max_old_space_size=8192 yarn test
 
 

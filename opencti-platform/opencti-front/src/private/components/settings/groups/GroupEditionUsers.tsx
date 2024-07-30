@@ -99,7 +99,7 @@ const GroupEditionUsers: FunctionComponent<GroupEditionUsersProps> = ({ group, q
   return (
     <DataTableWithoutFragment
       dataColumns={{
-        name: { flexSize: 50, isSortable: false },
+        name: { percentWidth: 50, isSortable: false },
         user_email: {},
       }}
       storageKey={`group-${group.id}-users`}

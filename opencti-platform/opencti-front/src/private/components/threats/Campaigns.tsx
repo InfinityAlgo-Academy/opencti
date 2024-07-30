@@ -135,19 +135,19 @@ const Campaigns = () => {
   const renderList = () => {
     const dataColumns = {
       name: {
-        flexSize: 15,
+        percentWidth: 15,
       },
       creator: {},
       created: {
-        flexSize: 10,
+        percentWidth: 10,
       },
       modified: {},
       createdBy: {},
-      objectMarking: { flexSize: 10 },
+      objectMarking: { percentWidth: 10 },
       objectLabel: {},
       x_opencti_workflow_id: {
         label: 'Processing status',
-        flexSize: 10,
+        percentWidth: 10,
       },
     };
 

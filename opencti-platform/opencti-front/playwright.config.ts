@@ -48,7 +48,7 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
   },
   expect: { timeout: 60000 },
-  timeout: 200000,
+  timeout: 60000,
   /* Configure projects for major browsers */
   projects: [
     {

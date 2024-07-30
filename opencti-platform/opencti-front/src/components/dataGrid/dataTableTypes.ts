@@ -15,6 +15,7 @@ export type LocalStorageColumns = Record<string, LocalStorageColumn>;
 export enum DataTableVariant {
   default = 'default',
   inline = 'inline',
+  widget = 'widget',
 }
 
 export interface UseDataTable<T = any> {
@@ -30,7 +31,7 @@ export interface DataTableColumn {
   isSortable?: boolean
   label?: string
   size?: number
-  flexSize: number
+  percentWidth: number
   render?: (v: any, helpers?: any) => ReactNode
   visible?: boolean
   order: number
@@ -76,6 +77,7 @@ export interface DataTableContextProps {
   rootRef?: DataTableProps['rootRef']
   createButton?: DataTableProps['createButton']
   resetColumns: () => void
+  disableNavigation: DataTableProps['disableNavigation']
 }
 
 export interface DataTableProps {
@@ -112,6 +114,7 @@ export interface DataTableProps {
   actions?: (row: any) => ReactNode
   createButton?: ReactNode
   pageSize?: string
+  disableNavigation?: boolean
 }
 
 export interface DataTableBodyProps {

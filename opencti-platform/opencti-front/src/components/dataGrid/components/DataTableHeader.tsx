@@ -152,13 +152,13 @@ const DataTableHeader: FunctionComponent<DataTableHeaderProps> = ({
               const clientDiff = clientWidth - effectiveColumns.reduce((acc, col) => acc + (col.size ?? 0), 0);
 
               if (clientDiff > 0) {
-                const flexSize = (100 * currentCol.size) / currentSize;
+                const percentWidth = (100 * currentCol.size) / currentSize;
                 if (otherColumn) {
                   const otherColumnNewSize = (otherColumn.size ?? 0) - lastX - currentSize + clientWidth;
                   otherColumn.size = otherColumnNewSize;
-                  otherColumn.flexSize = (otherColumnNewSize * 100) / clientWidth;
+                  otherColumn.percentWidth = (otherColumnNewSize * 100) / clientWidth;
                 }
-                currentCol.flexSize = flexSize;
+                currentCol.percentWidth = percentWidth;
               }
 
               setLocalStorageColumns((curr: LocalStorageColumns) => ({

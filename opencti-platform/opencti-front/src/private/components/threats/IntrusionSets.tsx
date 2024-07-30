@@ -132,14 +132,14 @@ const IntrusionSets = () => {
   const renderList = () => {
     const dataColumns = {
       name: {
-        flexSize: 15,
+        percentWidth: 15,
       },
       resource_level: {},
       primary_motivation: {},
       secondary_motivations: {},
       creator: {},
       modified: {},
-      objectMarking: { flexSize: 10 },
+      objectMarking: { percentWidth: 10 },
       objectLabel: {},
     };
 

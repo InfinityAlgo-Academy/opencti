@@ -133,17 +133,17 @@ const ThreatActorsGroup = () => {
   const renderList = () => {
     const dataColumns = {
       name: {
-        flexSize: 15,
+        percentWidth: 15,
       },
       threat_actor_types: {
         label: 'Type',
-        flexSize: 13,
+        percentWidth: 13,
       },
       sophistication: {},
       resource_level: {},
       creator: {},
       modified: {},
-      objectMarking: { flexSize: 10 },
+      objectMarking: { percentWidth: 10 },
       objectLabel: {},
     };
 

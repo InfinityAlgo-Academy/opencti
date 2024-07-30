@@ -6,7 +6,6 @@ import { DataTableContext, defaultColumnsMap } from '../dataTableUtils';
 import { DataTableColumn, DataTableColumns, DataTableContextProps, DataTableProps, DataTableVariant, LocalStorageColumns } from '../dataTableTypes';
 import DataTableHeaders from './DataTableHeaders';
 import { SELECT_COLUMN_SIZE } from './DataTableHeader';
-import { isNotEmptyField } from '../../../utils/utils';
 import DataTablePagination from '../DataTablePagination';
 
 const DataTableComponent = ({
@@ -40,6 +39,7 @@ const DataTableComponent = ({
   actions,
   createButton,
   pageSize,
+  disableNavigation,
 }: DataTableProps) => {
   const localStorageColumns = useDataTableLocalStorage<LocalStorageColumns>(`${storageKey}_columns`, {}, true)[0];
   const toggleHelper = useDataTableToggle(storageKey);
@@ -72,8 +72,8 @@ const DataTableComponent = ({
     '--col-table-size': clientWidth,
   };
   columns.forEach((col) => {
-    if (col.visible && col.flexSize) {
-      const size = col.flexSize * (clientWidth / 100);
+    if (col.visible && col.percentWidth) {
+      const size = col.percentWidth * (clientWidth / 100);
       temporaryColumnsSize[`--header-${col.id}-size`] = size;
       temporaryColumnsSize[`--col-${col.id}-size`] = size;
     }
@@ -112,6 +112,7 @@ const DataTableComponent = ({
         rootRef,
         actions,
         createButton,
+        disableNavigation,
       } as DataTableContextProps}
     >
       {filtersComponent ?? (variant === DataTableVariant.inline && (
@@ -132,7 +133,7 @@ const DataTableComponent = ({
           flexDirection: 'column',
         }}
       >
-        {(variant !== DataTableVariant.inline && isNotEmptyField(numberOfElements)) && (
+        {(variant === DataTableVariant.default) && (
           <DataTablePagination
             page={page}
             setPage={setPage}
