@@ -29,7 +29,7 @@ const GroupingComponent = ({ grouping }) => {
   const overviewLayoutCustomization = useOverviewLayoutCustomization(grouping.entity_type);
 
   return (
-    <div data-testid="grouping-details-page">
+    <div data-testid='grouping-details-page'>
       <Grid
         container={true}
         spacing={3}
