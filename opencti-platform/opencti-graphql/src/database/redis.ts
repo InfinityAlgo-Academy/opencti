@@ -59,6 +59,7 @@ const redisOptions = async (autoReconnect = false): Promise<RedisOptions> => {
     maxRetriesPerRequest: autoReconnect ? null : 1,
     showFriendlyErrorStack: DEV_MODE,
     family: conf.get('redis:host_ip_family') ?? 4,
+    commandTimeout: conf.get('redis:command_timeout') ?? null,
   };
 };
 
