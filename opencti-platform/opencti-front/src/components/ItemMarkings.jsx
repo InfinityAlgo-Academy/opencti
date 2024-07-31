@@ -28,7 +28,7 @@ const useStyles = makeStyles(() => ({
     float: 'left',
     marginRight: 7,
     borderRadius: 4,
-    width: 90,
+    width: 100,
   },
   chipInToolTip: {
     fontSize: 12,
