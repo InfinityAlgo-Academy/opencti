@@ -217,7 +217,8 @@ const handleBasedOnAttribute = (
       } else if (definition) {
         const refs = definition.multiple ? entities : entities[0];
         if (isNotEmptyField(refs)) {
-          input[attribute.key] = [...(input[attribute.key] ?? []), refs];
+          // input[attribute.key] = [...(input[attribute.key] ?? []), refs];
+          input[attribute.key] = refs;
         }
       }
     }
