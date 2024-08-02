@@ -767,6 +767,7 @@ export const findFiltersRepresentatives = async (context, user, inputFilters) =>
   const keysToResolve = schemaRelationsRefDefinition.getAllInputNames()
     .concat(STIX_CORE_RELATIONSHIPS)
     .concat(specialFilterKeysWhoseValueToResolve);
+  // add attributes with type=string and format=id
   const idsToResolve = extractFilterGroupValues(inputFilters, keysToResolve);
   const otherIds = extractFilterGroupValues(inputFilters, keysToResolve, true);
   // resolve the ids
