@@ -161,6 +161,7 @@ const Labels = () => {
           preloadedPaginationProps={preloadedPaginationProps}
           exportContext={{ entity_type: 'Label' }}
           actions={(label) => <LabelPopover labelId={label.id} />}
+          disableNavigation
         />
       )}
       <LabelCreation paginationOptions={paginationOptions} />

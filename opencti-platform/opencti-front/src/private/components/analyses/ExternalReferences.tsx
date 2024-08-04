@@ -1,7 +1,10 @@
 import React, { FunctionComponent } from 'react';
 import useHelper from 'src/utils/hooks/useHelper';
 import { graphql } from 'react-relay';
-import { ExternalReferencesLinesPaginationQuery, ExternalReferencesLinesPaginationQuery$variables, } from '@components/analyses/__generated__/ExternalReferencesLinesPaginationQuery.graphql';
+import {
+  ExternalReferencesLinesPaginationQuery,
+  ExternalReferencesLinesPaginationQuery$variables,
+} from '@components/analyses/__generated__/ExternalReferencesLinesPaginationQuery.graphql';
 import { ExternalReferencesLines_data$data } from '@components/analyses/__generated__/ExternalReferencesLines_data.graphql';
 import ExternalReferenceCreation from './external_references/ExternalReferenceCreation';
 import Security from '../../../utils/Security';

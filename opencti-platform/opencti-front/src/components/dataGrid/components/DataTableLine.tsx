@@ -103,6 +103,7 @@ const DataTableLine = ({
   onToggleShiftEntity,
 }: DataTableLineProps) => {
   const theme = useTheme<Theme>();
+  const navigate = useNavigate();
 
   const {
     storageKey,
@@ -111,9 +112,24 @@ const DataTableLine = ({
     useComputeLink,
     actions,
     disableNavigation,
+    onLineClick,
   } = useDataTableContext();
+  const data = useLineData(row);
 
-  const navigable = !actions || disableNavigation;
+  let link = useComputeLink(data);
+  if (redirectionMode && redirectionMode !== 'overview') {
+    link = `${link}/${redirectionMode}`;
+  }
+
+  const navigable = !disableNavigation || !onLineClick;
+  const internalOnClick = () => {
+    if (onLineClick) {
+      onLineClick(data);
+    } else if (navigable) {
+      navigate(link);
+    }
+  };
+
   const classes = useStyles({ navigable });
 
   const {
@@ -123,23 +139,14 @@ const DataTableLine = ({
     onToggleEntity,
   } = useDataTableToggle(storageKey);
 
-  const data = useLineData(row);
-
-  const navigate = useNavigate();
-
-  let link = useComputeLink(data);
-  if (redirectionMode && redirectionMode !== 'overview') {
-    link = `${link}/${redirectionMode}`;
-  }
-
   const startsWithSelect = effectiveColumns.at(0)?.id === 'select';
 
   return (
     <div
       key={row.id}
       className={classes.row}
-      onClick={() => (navigable ? navigate(link) : undefined)}
-      style={{ cursor: navigable ? 'pointer' : 'unset' }}
+      onClick={internalOnClick}
+      style={{ cursor: (navigable || Boolean(onLineClick)) ? 'pointer' : 'unset' }}
     >
       {startsWithSelect && (
         <div

@@ -15,6 +15,7 @@ import DataTable from '../../../components/dataGrid/DataTable';
 import { UsePreloadedPaginationFragment } from '../../../utils/hooks/usePreloadedPaginationFragment';
 import { DataTableProps } from '../../../components/dataGrid/dataTableTypes';
 import Breadcrumbs from '../../../components/Breadcrumbs';
+import useConnectedDocumentModifier from '../../../utils/hooks/useConnectedDocumentModifier';
 
 const reportLineFragment = graphql`
   fragment ReportsLine_node on Report {
@@ -131,7 +132,6 @@ const reportsLineFragment = graphql`
     }
   }
 `;
-import useConnectedDocumentModifier from '../../../utils/hooks/useConnectedDocumentModifier';
 
 const LOCAL_STORAGE_KEY = 'reports';
 

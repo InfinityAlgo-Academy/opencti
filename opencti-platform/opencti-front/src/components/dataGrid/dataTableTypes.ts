@@ -78,6 +78,7 @@ export interface DataTableContextProps {
   createButton?: DataTableProps['createButton']
   resetColumns: () => void
   disableNavigation: DataTableProps['disableNavigation']
+  onLineClick: DataTableProps['onLineClick']
 }
 
 export interface DataTableProps {
@@ -115,6 +116,7 @@ export interface DataTableProps {
   createButton?: ReactNode
   pageSize?: string
   disableNavigation?: boolean
+  onLineClick?: (line: any) => void
 }
 
 export interface DataTableBodyProps {

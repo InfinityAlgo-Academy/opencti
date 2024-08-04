@@ -221,7 +221,7 @@ const Groupings: FunctionComponent<GroupingsProps> = () => {
         />
       )}
       {!isFABReplaced && (<Security needs={[KNOWLEDGE_KNUPDATE]}>
-          <GroupingCreation paginationOptions={queryPaginationOptions} />
+        <GroupingCreation paginationOptions={queryPaginationOptions} />
         </Security>
       )}
     </>

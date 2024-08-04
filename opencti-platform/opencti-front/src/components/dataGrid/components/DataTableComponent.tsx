@@ -40,6 +40,7 @@ const DataTableComponent = ({
   createButton,
   pageSize,
   disableNavigation,
+  onLineClick,
 }: DataTableProps) => {
   const localStorageColumns = useDataTableLocalStorage<LocalStorageColumns>(`${storageKey}_columns`, {}, true)[0];
   const toggleHelper = useDataTableToggle(storageKey);
@@ -113,6 +114,7 @@ const DataTableComponent = ({
         actions,
         createButton,
         disableNavigation,
+        onLineClick,
       } as DataTableContextProps}
     >
       {filtersComponent ?? (variant === DataTableVariant.inline && (

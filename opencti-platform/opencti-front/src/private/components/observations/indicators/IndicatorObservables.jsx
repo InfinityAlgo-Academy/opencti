@@ -54,6 +54,7 @@ const IndicatorObservablesComponent = ({ indicator }) => {
         rootRef={ref}
         storageKey={`indicator-observables-${indicator.id}`}
         variant={DataTableVariant.inline}
+        disableNavigation
         actions={(observable) => (
           <IndicatorObservablePopover
             indicatorId={indicator.id}
