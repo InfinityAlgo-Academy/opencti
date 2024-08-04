@@ -1,13 +1,13 @@
 import React, { FunctionComponent } from 'react';
 import useHelper from 'src/utils/hooks/useHelper';
-import { ReportsLines_data$data } from '@components/analyses/reports/__generated__/ReportsLines_data.graphql';
 import { graphql } from 'react-relay';
+import { ReportsLinesPaginationQuery, ReportsLinesPaginationQuery$variables } from '@components/analyses/__generated__/ReportsLinesPaginationQuery.graphql';
+import { ReportsLines_data$data } from '@components/analyses/__generated__/ReportsLines_data.graphql';
 import ReportCreation from './reports/ReportCreation';
 import Security from '../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../utils/hooks/useGranted';
 import useAuth from '../../../utils/hooks/useAuth';
 import { usePaginationLocalStorage } from '../../../utils/hooks/useLocalStorage';
-import { ReportsLinesPaginationQuery, ReportsLinesPaginationQuery$variables } from './reports/__generated__/ReportsLinesPaginationQuery.graphql';
 import useQueryLoading from '../../../utils/hooks/useQueryLoading';
 import { useBuildEntityTypeBasedFilterContext, emptyFilterGroup } from '../../../utils/filters/filtersUtils';
 import { useFormatter } from '../../../components/i18n';
