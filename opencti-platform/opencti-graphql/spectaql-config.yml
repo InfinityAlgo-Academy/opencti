@@ -1,0 +1,36 @@
+spectaql:
+  # Use the theme from node_modules
+  themeDir: ./node_modules/spectaql-dark-theme/theme
+
+  logoFile: ./img/anvil-white.svg
+  faviconFile: ./img/favicon.png
+
+introspection:
+  removeTrailingPeriodFromDescriptions: false
+  schemaFile: ../opencti-front/src/schema/relay.schema.graphql
+  queryNameStrategy: capitalizeFirst
+  fieldExpansionDepth: 2
+
+extensions:
+  graphqlScalarExamples: true
+
+info:
+  title: GraphQL API Reference
+  description: Welcome to the party!
+  termsOfService: https://www.example.com/terms
+  contact:
+    name: API Support
+    url: http://www.example.com/support
+    email: support@example.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://example.com/graphql
+    description: Production
+    production: true
+    headers:
+      - name: Authorization
+        example: Bearer <YOUR_TOKEN_HERE>
+        comment: Your foo from bar
