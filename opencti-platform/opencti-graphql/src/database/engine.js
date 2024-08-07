@@ -3725,7 +3725,7 @@ export const elIndexElements = async (context, user, message, elements) => {
       const doc = elementDoc;
       if (draftContext) {
         doc._index = draftIndex;
-        doc.draft_changes = { draft_operation: 'create' };
+        doc.draft_change = { draft_operation: 'create' };
       }
       return [
         { index: { _index: draftContext && !isInternalObject(doc.entity_type) && !isInternalRelationship(doc.entity_type)
@@ -3892,6 +3892,8 @@ const elUpdateConnectionsOfElement = async (documentId, documentBody) => {
     throw DatabaseError('Error updating connections', { cause: err, documentId, body: documentBody });
   });
 };
+
+const DRAFT_INPUT_TO_IGNORE = ['updated_at', 'modified', 'i_attributes'];
 export const elUpdateElement = async (context, user, instance, inputs = []) => {
   const draftContext = inDraftContext(context, user);
   let instanceToUse = instance;
@@ -3901,7 +3903,19 @@ export const elUpdateElement = async (context, user, instance, inputs = []) => {
 
   const esData = prepareElementForIndexing(instanceToUse);
   validateDataBeforeIndexing(esData);
-  const dataToReplace = R.dissoc('representative', esData);
+  let dataToReplace = R.dissoc('representative', esData);
+  if (draftContext) {
+    const isDraftCreation = instance.draft_change && instance.draft_change.draft_operation === 'create';
+    if (!isDraftCreation) {
+      const draftUpdates = inputs.filter((i) => !DRAFT_INPUT_TO_IGNORE.includes(i.key))
+        .map((i) => ({ draft_update_operation: 'replace', draft_update_field: i.key, draft_update_values: i.value }));
+      const currentUpdates = instance.draft_change && instance.draft_change.draft_updates
+        ? instance.draft_change.draft_updates.filter((currentUpdate) => !draftUpdates.some((update) => update.draft_update_field === currentUpdate.draft_update_field))
+        : [];
+      const draftChange = { draft_operation: 'update', draft_updates: [...currentUpdates, ...draftUpdates] };
+      dataToReplace = { ...dataToReplace, draft_change: draftChange };
+    }
+  }
   const replacePromise = elReplace(instanceToUse._index, instanceToUse.internal_id, { doc: dataToReplace });
   // If entity with a name, must update connections
   let connectionPromise = Promise.resolve();

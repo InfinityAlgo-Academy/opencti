@@ -44,4 +44,5 @@ input DraftWorkspaceAddInput {
 type Mutation {
     draftWorkspaceAdd(input: DraftWorkspaceAddInput!): DraftWorkspace @auth
     draftWorkspaceDelete(id: ID!): ID @auth
+    draftWorkspaceValidate(id: ID!): String @auth
 }

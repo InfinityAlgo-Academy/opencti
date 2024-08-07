@@ -338,7 +338,7 @@ const loadElementMetaDependencies = async (context, user, elements, args = {}) =
   return loadedElementMap;
 };
 
-const loadElementsWithDependencies = async (context, user, elements, opts = {}) => {
+export const loadElementsWithDependencies = async (context, user, elements, opts = {}) => {
   const elementsToDeps = [...elements];
   let fromAndToPromise = Promise.resolve();
   const targetsToResolved = [];
@@ -851,10 +851,12 @@ export const mergeInstanceWithInputs = (instance, inputs) => {
 };
 const partialInstanceWithInputs = (instance, inputs) => {
   const inputData = updatedInputsToData(instance, inputs);
+  const { draft_change } = instance;
   return {
     _index: instance._index,
     internal_id: instance.internal_id,
     entity_type: instance.entity_type,
+    ...(draft_change ? { draft_change } : {}),
     ...inputData,
   };
 };

@@ -4,10 +4,12 @@ import type { DraftWorkspaceAddInput, QueryDraftWorkspacesArgs } from '../../gen
 import { createInternalObject } from '../../domain/internalObject';
 import { now } from '../../utils/format';
 import { type BasicStoreEntityDraftWorkspace, ENTITY_TYPE_DRAFT_WORKSPACE, type StoreEntityDraftWorkspace } from './draftWorkspace-types';
-import { elCreateIndex, elDeleteIndices, elPlatformIndices, engineMappingGenerator } from '../../database/engine';
-import { ES_INDEX_PREFIX } from '../../database/utils';
+import { elCreateIndex, elDeleteIndices, elList, elPlatformIndices, engineMappingGenerator } from '../../database/engine';
+import { ES_INDEX_PREFIX, READ_RELATIONSHIPS_INDICES } from '../../database/utils';
 import { FunctionalError } from '../../config/errors';
-import { deleteElementById } from '../../database/middleware';
+import {deleteElementById, loadElementsWithDependencies, stixLoadById, stixLoadByIds} from '../../database/middleware';
+import { buildStixBundle, convertStoreToStix } from '../../database/stix-converter';
+import { isStixRefRelationship } from '../../schema/stixRefRelationship';
 
 export const findById = (context: AuthContext, user: AuthUser, id: string) => {
   return storeLoadById<BasicStoreEntityDraftWorkspace>(context, user, id, ENTITY_TYPE_DRAFT_WORKSPACE);
@@ -44,4 +46,18 @@ export const deleteDraftWorkspace = async (context: AuthContext, user: AuthUser,
   await deleteElementById(context, user, id, ENTITY_TYPE_DRAFT_WORKSPACE);
 
   return id;
+};
+
+export const validateDraftWorkspace = async (context: AuthContext, user: AuthUser, id: string) => {
+  const draftIndexToValidate = `${ES_INDEX_PREFIX}_draft_workspace_${id}*`;
+  const draftEntities = await elList(context, user, draftIndexToValidate);
+
+  const draftEntitiesMinusRefRel = draftEntities.filter((e) => !isStixRefRelationship(e.entity_type));
+  const createEntities = draftEntitiesMinusRefRel.filter((e) => e.draft_change?.draft_operation === 'create');
+  const createEntitiesIds = createEntities.map((e) => e.internal_id);
+  const stixTestEntities = await stixLoadByIds(context, user, createEntitiesIds);
+  const stixBundle = buildStixBundle(stixTestEntities);
+
+  const jsonStixBundle = JSON.stringify(stixBundle);
+  return jsonStixBundle;
 };
