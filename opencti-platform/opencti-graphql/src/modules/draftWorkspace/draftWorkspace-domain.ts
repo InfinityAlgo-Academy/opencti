@@ -7,9 +7,11 @@ import { type BasicStoreEntityDraftWorkspace, ENTITY_TYPE_DRAFT_WORKSPACE, type 
 import { elCreateIndex, elDeleteIndices, elList, elPlatformIndices, engineMappingGenerator } from '../../database/engine';
 import { ES_INDEX_PREFIX, READ_RELATIONSHIPS_INDICES } from '../../database/utils';
 import { FunctionalError } from '../../config/errors';
-import {deleteElementById, loadElementsWithDependencies, stixLoadById, stixLoadByIds} from '../../database/middleware';
+import { deleteElementById, loadElementsWithDependencies, stixLoadById, stixLoadByIds } from '../../database/middleware';
 import { buildStixBundle, convertStoreToStix } from '../../database/stix-converter';
 import { isStixRefRelationship } from '../../schema/stixRefRelationship';
+import { pushToWorkerForDraft, pushToWorkerForSync } from '../../database/rabbitmq';
+import { OPENCTI_SYSTEM_UUID } from '../../schema/general';
 
 export const findById = (context: AuthContext, user: AuthUser, id: string) => {
   return storeLoadById<BasicStoreEntityDraftWorkspace>(context, user, id, ENTITY_TYPE_DRAFT_WORKSPACE);
@@ -59,5 +61,8 @@ export const validateDraftWorkspace = async (context: AuthContext, user: AuthUse
   const stixBundle = buildStixBundle(stixTestEntities);
 
   const jsonStixBundle = JSON.stringify(stixBundle);
+  const content = Buffer.from(jsonStixBundle, 'utf-8').toString('base64');
+  await pushToWorkerForSync({ type: 'bundle', applicant_id: OPENCTI_SYSTEM_UUID, content, update: true });
+
   return jsonStixBundle;
 };

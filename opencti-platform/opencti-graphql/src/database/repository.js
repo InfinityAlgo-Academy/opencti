@@ -4,7 +4,7 @@ import { connectorConfig } from './rabbitmq';
 import { sinceNowInMinutes } from '../utils/format';
 import { CONNECTOR_INTERNAL_ANALYSIS, CONNECTOR_INTERNAL_ENRICHMENT, CONNECTOR_INTERNAL_IMPORT_FILE, CONNECTOR_INTERNAL_NOTIFICATION } from '../schema/general';
 import { listEntities, storeLoadById } from './middleware-loader';
-import { INTERNAL_PLAYBOOK_QUEUE, INTERNAL_SYNC_QUEUE, isEmptyField } from './utils';
+import { INTERNAL_DRAFT_QUEUE, INTERNAL_PLAYBOOK_QUEUE, INTERNAL_SYNC_QUEUE, isEmptyField } from './utils';
 import { BUILTIN_NOTIFIERS_CONNECTORS } from '../modules/notifier/notifier-statics';
 import { builtInConnector, builtInConnectorsRuntime } from '../connector/connector-domain';
 
@@ -52,6 +52,13 @@ export const connectorsForWorker = async (context, user) => {
     name: 'Internal playbook manager',
     connector_scope: [],
     config: connectorConfig(INTERNAL_PLAYBOOK_QUEUE),
+    active: true
+  });
+  registeredConnectors.push({
+    id: INTERNAL_DRAFT_QUEUE,
+    name: 'Internal draft manager',
+    connector_scope: [],
+    config: connectorConfig(INTERNAL_DRAFT_QUEUE),
     active: true
   });
   return registeredConnectors;
