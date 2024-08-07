@@ -8687,6 +8687,7 @@ type Mutation {
   supportPackageDelete(id: ID!): ID
   draftWorkspaceAdd(input: DraftWorkspaceAddInput!): DraftWorkspace
   draftWorkspaceDelete(id: ID!): ID
+  draftWorkspaceValidate(id: ID!): String
 }
 
 type Channel implements BasicObject & StixObject & StixCoreObject & StixDomainObject {
