@@ -55,14 +55,23 @@ export const validateDraftWorkspace = async (context: AuthContext, user: AuthUse
   const draftEntities = await elList(context, user, draftIndexToValidate);
 
   const draftEntitiesMinusRefRel = draftEntities.filter((e) => !isStixRefRelationship(e.entity_type));
-  const createEntities = draftEntitiesMinusRefRel.filter((e) => e.draft_change?.draft_operation === 'create');
-  const createEntitiesIds = createEntities.map((e) => e.internal_id);
-  const stixTestEntities = await stixLoadByIds(context, user, createEntitiesIds);
-  const stixBundle = buildStixBundle(stixTestEntities);
 
-  const jsonStixBundle = JSON.stringify(stixBundle);
-  const content = Buffer.from(jsonStixBundle, 'utf-8').toString('base64');
-  await pushToWorkerForSync({ type: 'bundle', applicant_id: OPENCTI_SYSTEM_UUID, content, update: true });
+  // const createEntities = draftEntitiesMinusRefRel.filter((e) => e.draft_change?.draft_operation === 'create');
+  // const createEntitiesIds = createEntities.map((e) => e.internal_id);
+  // const createStixEntities = await stixLoadByIds(context, user, createEntitiesIds);
+  // const createStixBundle = buildStixBundle(createStixEntities);
+  // const createJSONBundle = JSON.stringify(createStixBundle);
+  // const createContent = Buffer.from(createJSONBundle, 'utf-8').toString('base64');
+  // await pushToWorkerForDraft({ type: 'bundle', applicant_id: OPENCTI_SYSTEM_UUID, content: createContent, update: true });
 
-  return jsonStixBundle;
+  const deletedEntities = draftEntitiesMinusRefRel.filter((e) => e.draft_change?.draft_operation === 'delete');
+  const deleteEntitiesIds = deletedEntities.map((e) => e.internal_id);
+  const deleteStixEntities = await stixLoadByIds(context, user, deleteEntitiesIds);
+  const deleteStixEntitiesModified = deleteStixEntities.map((d) => ({ ...d, opencti_operation: 'delete' }));
+  const deleteStixBundle = buildStixBundle(deleteStixEntitiesModified);
+  const deleteJSONBundle = JSON.stringify(deleteStixBundle);
+  const deleteContent = Buffer.from(deleteJSONBundle, 'utf-8').toString('base64');
+  await pushToWorkerForDraft({ type: 'bundle', applicant_id: OPENCTI_SYSTEM_UUID, content: deleteContent, update: true });
+
+  return deleteJSONBundle;
 };
