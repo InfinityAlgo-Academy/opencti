@@ -352,7 +352,7 @@ export const loadElementsWithDependencies = async (context, user, elements, opts
   });
   const depsPromise = loadElementMetaDependencies(context, user, elementsToDeps, opts);
   if (targetsToResolved.length > 0) {
-    const args = { toMap: true, connectionFormat: false, draftID: user.workspace_context };
+    const args = { toMap: true, connectionFormat: false, draftID: opts.draftID };
     // Load with System user, access rights will be dynamically change after
     fromAndToPromise = elFindByIds(context, SYSTEM_USER, targetsToResolved, args);
   }

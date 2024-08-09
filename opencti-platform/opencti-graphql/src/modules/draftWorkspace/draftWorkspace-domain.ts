@@ -58,7 +58,7 @@ export const validateDraftWorkspace = async (context: AuthContext, user: AuthUse
 
   const createEntities = draftEntitiesMinusRefRel.filter((e) => e.draft_change?.draft_operation === 'create');
   const createEntitiesIds = createEntities.map((e) => e.internal_id);
-  const createStixEntities = await stixLoadByIds(context, user, createEntitiesIds);
+  const createStixEntities = await stixLoadByIds(context, user, createEntitiesIds,{ draftID: user.workspace_context });
 
   const deletedEntities = draftEntitiesMinusRefRel.filter((e) => e.draft_change?.draft_operation === 'delete');
   const deleteEntitiesIds = deletedEntities.map((e) => e.internal_id);
