@@ -3628,16 +3628,15 @@ export const elIndexElements = async (context, user, message, elements) => {
       //   R.pipe(R.dissoc('_index'), R.dissoc('_routing'))(doc),
       // ];
       return [
-        { update: { _index: doc._index, _id: doc.internal_id, routing: doc._routing, retry_on_conflict: ES_RETRY_ON_CONFLICT } },
+        { update: { _index: doc._index, _id: doc.internal_id, retry_on_conflict: ES_RETRY_ON_CONFLICT } },
         {
           doc: R.pipe(R.dissoc('_index'), R.dissoc('_routing'))(doc),
           doc_as_upsert: true
         }
       ];
     });
-    if (bodyElements.length > 0) {
-      await elBulk({ refresh: true, timeout: BULK_TIMEOUT, body: bodyElements });
-    }
+    const promiseElements = bodyElements.length > 0
+      ? elBulk({ refresh: true, timeout: BULK_TIMEOUT, body: bodyElements }) : Promise.resolve();
     // 02. Bulk indexing of relations denorm child
     let bulkDenormRefresh = false;
     const bodyChildFrom = elements.filter((e) => (e.base_type === BASE_TYPE_RELATION && isImpactedRole(e.fromRole))).map((e) => {
@@ -3682,7 +3681,7 @@ export const elIndexElements = async (context, user, message, elements) => {
     }).flat();
     const promiseTo = bodyChildTo.length > 0
       ? elBulk({ refresh: bulkDenormRefresh, timeout: BULK_TIMEOUT, body: bodyChildTo }) : Promise.resolve();
-    await Promise.all([promiseFrom, promiseTo]);
+    await Promise.all([promiseElements, promiseFrom, promiseTo]);
     return transformedElements.length;
   };
   return telemetry(context, user, `INSERT ${message}`, {
