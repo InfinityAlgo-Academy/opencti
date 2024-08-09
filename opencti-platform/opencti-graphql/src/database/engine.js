@@ -1335,7 +1335,7 @@ export const elFindByIds = async (context, user, ids, opts = {}) => {
   const draftIndex = getDraftIndex(draftContext);
   let computedIndices = computeQueryIndices(indices, types);
   if (draftContext) computedIndices = [...computedIndices, `${draftIndex}*`];
-  if (draftID) computedIndices = [...computedIndices, `${draftID}*`];
+  if (draftID) computedIndices = [...computedIndices, `${getDraftIndex(draftID)}*`];
   const hits = [];
   const groupIds = R.splitEvery(MAX_TERMS_SPLIT, idsArray);
   for (let index = 0; index < groupIds.length; index += 1) {

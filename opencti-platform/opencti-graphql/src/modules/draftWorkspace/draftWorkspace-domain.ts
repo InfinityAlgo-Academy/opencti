@@ -11,7 +11,6 @@ import { deleteElementById, stixLoadByIds } from '../../database/middleware';
 import { buildStixBundle } from '../../database/stix-converter';
 import { isStixRefRelationship } from '../../schema/stixRefRelationship';
 import { pushToWorkerForDraft } from '../../database/rabbitmq';
-import { OPENCTI_SYSTEM_UUID } from '../../schema/general';
 
 export const findById = (context: AuthContext, user: AuthUser, id: string) => {
   return storeLoadById<BasicStoreEntityDraftWorkspace>(context, user, id, ENTITY_TYPE_DRAFT_WORKSPACE);
@@ -58,7 +57,7 @@ export const validateDraftWorkspace = async (context: AuthContext, user: AuthUse
 
   const createEntities = draftEntitiesMinusRefRel.filter((e) => e.draft_change?.draft_operation === 'create');
   const createEntitiesIds = createEntities.map((e) => e.internal_id);
-  const createStixEntities = await stixLoadByIds(context, user, createEntitiesIds,{ draftID: user.workspace_context });
+  const createStixEntities = await stixLoadByIds(context, user, createEntitiesIds, { draftID: user.workspace_context });
 
   const deletedEntities = draftEntitiesMinusRefRel.filter((e) => e.draft_change?.draft_operation === 'delete');
   const deleteEntitiesIds = deletedEntities.map((e) => e.internal_id);
@@ -68,7 +67,7 @@ export const validateDraftWorkspace = async (context: AuthContext, user: AuthUse
   const stixBundle = buildStixBundle([...createStixEntities, ...deleteStixEntitiesModified]);
   const jsonBundle = JSON.stringify(stixBundle);
   const content = Buffer.from(jsonBundle, 'utf-8').toString('base64');
-  await pushToWorkerForDraft({ type: 'bundle', applicant_id: OPENCTI_SYSTEM_UUID, content, update: true });
+  await pushToWorkerForDraft({ type: 'bundle', applicant_id: user.internal_id, content, update: true });
 
   return jsonBundle;
 };
