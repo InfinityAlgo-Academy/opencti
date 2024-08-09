@@ -3909,7 +3909,7 @@ export const elUpdateElement = async (context, user, instance, inputs = []) => {
     const isDraftCreation = instance.draft_change && instance.draft_change.draft_operation === 'create';
     if (!isDraftCreation) {
       const draftUpdates = inputs.filter((i) => !DRAFT_INPUT_TO_IGNORE.includes(i.key))
-        .map((i) => ({ draft_update_operation: 'replace', draft_update_field: i.key, draft_update_values: i.value }));
+        .map((i) => ({ draft_update_operation: 'replace', draft_update_field: i.key, draft_update_values: instance[i.key] }));
       const currentUpdates = instance.draft_change && instance.draft_change.draft_updates
         ? instance.draft_change.draft_updates.filter((currentUpdate) => !draftUpdates.some((update) => update.draft_update_field === currentUpdate.draft_update_field))
         : [];
