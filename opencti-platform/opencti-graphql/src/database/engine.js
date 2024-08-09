@@ -1324,7 +1324,7 @@ export const elFindByIds = async (context, user, ids, opts = {}) => {
   const { indices, baseData = false, baseFields = BASE_FIELDS } = opts;
   const { withoutRels = false, toMap = false, mapWithAllIds = false, type = null } = opts;
   const { orderBy = 'created_at', orderMode = 'asc' } = opts;
-  const { getByLiveId = false } = opts;
+  const { getByLiveId = false, draftID = null } = opts;
   const idsArray = Array.isArray(ids) ? ids : [ids];
   const types = (Array.isArray(type) || !type) ? type : [type];
   const processIds = R.filter((id) => isNotEmptyField(id), idsArray);
@@ -1335,6 +1335,7 @@ export const elFindByIds = async (context, user, ids, opts = {}) => {
   const draftIndex = getDraftIndex(draftContext);
   let computedIndices = computeQueryIndices(indices, types);
   if (draftContext) computedIndices = [...computedIndices, `${draftIndex}*`];
+  if (draftID) computedIndices = [...computedIndices, `${draftID}*`];
   const hits = [];
   const groupIds = R.splitEvery(MAX_TERMS_SPLIT, idsArray);
   for (let index = 0; index < groupIds.length; index += 1) {

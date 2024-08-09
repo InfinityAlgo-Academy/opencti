@@ -5,12 +5,12 @@ import { createInternalObject } from '../../domain/internalObject';
 import { now } from '../../utils/format';
 import { type BasicStoreEntityDraftWorkspace, ENTITY_TYPE_DRAFT_WORKSPACE, type StoreEntityDraftWorkspace } from './draftWorkspace-types';
 import { elCreateIndex, elDeleteIndices, elList, elPlatformIndices, engineMappingGenerator } from '../../database/engine';
-import { ES_INDEX_PREFIX, READ_RELATIONSHIPS_INDICES } from '../../database/utils';
+import { ES_INDEX_PREFIX } from '../../database/utils';
 import { FunctionalError } from '../../config/errors';
-import { deleteElementById, loadElementsWithDependencies, stixLoadById, stixLoadByIds } from '../../database/middleware';
-import { buildStixBundle, convertStoreToStix } from '../../database/stix-converter';
+import { deleteElementById, stixLoadByIds } from '../../database/middleware';
+import { buildStixBundle } from '../../database/stix-converter';
 import { isStixRefRelationship } from '../../schema/stixRefRelationship';
-import { pushToWorkerForDraft, pushToWorkerForSync } from '../../database/rabbitmq';
+import { pushToWorkerForDraft } from '../../database/rabbitmq';
 import { OPENCTI_SYSTEM_UUID } from '../../schema/general';
 
 export const findById = (context: AuthContext, user: AuthUser, id: string) => {
@@ -39,7 +39,7 @@ export const addDraftWorkspace = async (context: AuthContext, user: AuthUser, in
 export const deleteDraftWorkspace = async (context: AuthContext, user: AuthUser, id: string) => {
   const draftWorkspace = await findById(context, user, id);
   if (!draftWorkspace) {
-    throw FunctionalError(`Draft workspace ${id} cannot be found`);
+    throw FunctionalError(`Draft workspace ${id} cannot be found`, id);
   }
   const draftIndexToDelete = `${ES_INDEX_PREFIX}_draft_workspace_${id}`;
   const indices = await elPlatformIndices(draftIndexToDelete);
@@ -56,22 +56,19 @@ export const validateDraftWorkspace = async (context: AuthContext, user: AuthUse
 
   const draftEntitiesMinusRefRel = draftEntities.filter((e) => !isStixRefRelationship(e.entity_type));
 
-  // const createEntities = draftEntitiesMinusRefRel.filter((e) => e.draft_change?.draft_operation === 'create');
-  // const createEntitiesIds = createEntities.map((e) => e.internal_id);
-  // const createStixEntities = await stixLoadByIds(context, user, createEntitiesIds);
-  // const createStixBundle = buildStixBundle(createStixEntities);
-  // const createJSONBundle = JSON.stringify(createStixBundle);
-  // const createContent = Buffer.from(createJSONBundle, 'utf-8').toString('base64');
-  // await pushToWorkerForDraft({ type: 'bundle', applicant_id: OPENCTI_SYSTEM_UUID, content: createContent, update: true });
+  const createEntities = draftEntitiesMinusRefRel.filter((e) => e.draft_change?.draft_operation === 'create');
+  const createEntitiesIds = createEntities.map((e) => e.internal_id);
+  const createStixEntities = await stixLoadByIds(context, user, createEntitiesIds);
 
   const deletedEntities = draftEntitiesMinusRefRel.filter((e) => e.draft_change?.draft_operation === 'delete');
   const deleteEntitiesIds = deletedEntities.map((e) => e.internal_id);
   const deleteStixEntities = await stixLoadByIds(context, user, deleteEntitiesIds);
   const deleteStixEntitiesModified = deleteStixEntities.map((d) => ({ ...d, opencti_operation: 'delete' }));
-  const deleteStixBundle = buildStixBundle(deleteStixEntitiesModified);
-  const deleteJSONBundle = JSON.stringify(deleteStixBundle);
-  const deleteContent = Buffer.from(deleteJSONBundle, 'utf-8').toString('base64');
-  await pushToWorkerForDraft({ type: 'bundle', applicant_id: OPENCTI_SYSTEM_UUID, content: deleteContent, update: true });
 
-  return deleteJSONBundle;
+  const stixBundle = buildStixBundle([...createStixEntities, ...deleteStixEntitiesModified]);
+  const jsonBundle = JSON.stringify(stixBundle);
+  const content = Buffer.from(jsonBundle, 'utf-8').toString('base64');
+  await pushToWorkerForDraft({ type: 'bundle', applicant_id: OPENCTI_SYSTEM_UUID, content, update: true });
+
+  return jsonBundle;
 };
