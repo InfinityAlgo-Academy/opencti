@@ -36,6 +36,7 @@ const WidgetListCoreObjects = forwardRef<HTMLDivElement, WidgetListCoreObjectsPr
     variant={DataTableVariant.widget}
     disableNavigation={publicWidget}
     rootRef={(ref as MutableRefObject<HTMLDivElement>)?.current}
+    allowBackgroundtasks={false}
   />
 ));
 
