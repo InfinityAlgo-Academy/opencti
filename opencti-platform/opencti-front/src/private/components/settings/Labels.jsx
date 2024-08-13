@@ -85,6 +85,10 @@ const lineFragment = graphql`
     value
     color
     created_at
+    editContext {
+      name
+      focusOn
+    }
   }
 `;
 
@@ -160,7 +164,7 @@ const Labels = () => {
           lineFragment={lineFragment}
           preloadedPaginationProps={preloadedPaginationProps}
           exportContext={{ entity_type: 'Label' }}
-          actions={(label) => <LabelPopover labelId={label.id} />}
+          actions={(label) => <LabelPopover label={label} paginationOptions={paginationOptions} />}
           disableNavigation
         />
       )}
