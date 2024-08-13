@@ -163,8 +163,8 @@ const Labels = () => {
           toolbarFilters={contextFilters}
           lineFragment={lineFragment}
           preloadedPaginationProps={preloadedPaginationProps}
-          exportContext={{ entity_type: 'Label' }}
-          actions={(label) => <LabelPopover label={label} paginationOptions={paginationOptions} />}
+          actions={(label) => <LabelPopover label={label} paginationOptions={queryPaginationOptions} />}
+          searchContextFinal={{ entityTypes: ['Kill-Chain-Phases'] }}
           disableNavigation
         />
       )}

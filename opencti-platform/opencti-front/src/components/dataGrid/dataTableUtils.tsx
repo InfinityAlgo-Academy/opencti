@@ -75,6 +75,8 @@ const useStyles = makeStyles<Theme>((theme) => ({
   },
 }));
 
+const defaultRender: DataTableColumn['render'] = (data, { column: { size } }) => (<Tooltip title={data}><div>{truncate(data, size * MAGICAL_SIZE)}</div></Tooltip>);
+
 const defaultColumns: DataTableProps['dataColumns'] = {
   analyses: {
     id: 'analyses',
@@ -117,9 +119,8 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'Abstract',
     percentWidth: 25,
     isSortable: true,
-    render: ({ attribute_abstract, content }, { column: { size } }) => {
-      const data = attribute_abstract || content;
-      return (<Tooltip title={data}><div>{truncate(data, size * MAGICAL_SIZE)}</div></Tooltip>);
+    render: ({ attribute_abstract, content }, helpers) => {
+      return defaultRender(attribute_abstract || content, helpers);
     },
   },
   attribute_count: {
@@ -127,16 +128,16 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'Nb.',
     percentWidth: 4,
     isSortable: true,
-    render: ({ attribute_count }) => (<Tooltip title={attribute_count}><>{attribute_count}</></Tooltip>),
+    render: ({ attribute_count }, helpers) => defaultRender(attribute_count, helpers),
   },
   channel_types: {
     id: 'channel_types',
     label: 'Types',
     percentWidth: 20,
     isSortable: true,
-    render: ({ channel_types }, { column: { size } }) => {
+    render: ({ channel_types }, helpers) => {
       const value = channel_types ? channel_types.join(', ') : '-';
-      return (<Tooltip title={value}><div>{truncate(value, size * MAGICAL_SIZE)}</div></Tooltip>);
+      return defaultRender(value, helpers);
     },
   },
   color: {
@@ -212,9 +213,9 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     id: 'creator',
     label: 'Creators',
     percentWidth: 12,
-    render: ({ creators }, { column: { size } }) => {
+    render: ({ creators }, helpers) => {
       const value = isNotEmptyField(creators) ? creators.map((c: { name: string }) => c.name).join(', ') : '-';
-      return (<Tooltip title={value}><div>{truncate(value, size * MAGICAL_SIZE)}</div></Tooltip>);
+      return defaultRender(value, helpers);
     },
   },
   entity_type: {
@@ -229,9 +230,9 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'Types',
     percentWidth: 20,
     isSortable: true,
-    render: ({ event_types }, { column: { size } }) => {
+    render: ({ event_types }, helpers) => {
       const value = event_types ? event_types.join(', ') : '-';
-      return (<Tooltip title={value}><div>{truncate(value, size * MAGICAL_SIZE)}</div></Tooltip>);
+      return defaultRender(value, helpers);
     },
   },
   external_id: {
@@ -239,9 +240,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'External ID',
     percentWidth: 10,
     isSortable: true,
-    render: ({ external_id }, { column: { size } }) => (
-      <Tooltip title={external_id}><div>{truncate(external_id, size * MAGICAL_SIZE)}</div></Tooltip>
-    ),
+    render: ({ external_id }, helpers) => defaultRender(external_id, helpers),
   },
   first_observed: {
     id: 'first_observed',
@@ -262,9 +261,9 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'From name',
     percentWidth: 18,
     isSortable: false,
-    render: ({ from }, { column: { size }, t_i18n }) => {
-      const value = from ? getMainRepresentative(from) : t_i18n('Restricted');
-      return (<Tooltip title={value}><div>{truncate(value, size * MAGICAL_SIZE)}</div></Tooltip>);
+    render: ({ from }, helpers) => {
+      const value = from ? getMainRepresentative(from) : helpers.t_i18n('Restricted');
+      return defaultRender(value, helpers);
     },
   },
   incident_type: {
@@ -322,6 +321,13 @@ const defaultColumns: DataTableProps['dataColumns'] = {
       ? `[${killChainPhases[0].kill_chain_name}] ${killChainPhases[0].phase_name}`
       : '-'),
   },
+  kill_chain_name: {
+    id: 'kill_chain_name',
+    label: 'Kill chain name',
+    percentWidth: 40,
+    isSortable: true,
+    render: ({ kill_chain_name }, helpers) => defaultRender(kill_chain_name, helpers),
+  },
   last_observed: {
     id: 'last_observed',
     label: 'Last obs.',
@@ -341,9 +347,9 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'Malware types',
     percentWidth: 15,
     isSortable: true,
-    render: ({ malware_types }, { column: { size } }) => {
+    render: ({ malware_types }, helpers) => {
       const value = malware_types ? malware_types.join(', ') : '-';
-      return (<Tooltip title={value}><div>{truncate(value, size * MAGICAL_SIZE)}</div></Tooltip>);
+      return defaultRender(value, helpers);
     },
   },
   modified: {
@@ -358,11 +364,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'Name',
     percentWidth: 25,
     isSortable: true,
-    render: (data, { column: { size } }) => (
-      <Tooltip title={getMainRepresentative(data)}>
-        <div>{truncate(getMainRepresentative(data), size * MAGICAL_SIZE)}</div>
-      </Tooltip>
-    ),
+    render: (data, helpers) => defaultRender(getMainRepresentative(data), helpers),
   },
   note_types: {
     id: 'note_types',
@@ -393,9 +395,9 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'Assignees',
     percentWidth: 10,
     isSortable: false,
-    render: ({ objectAssignee }, { column: { size } }) => {
+    render: ({ objectAssignee }, helpers) => {
       const value = isNotEmptyField(objectAssignee) ? objectAssignee.map((c: { name: string }) => c.name).join(', ') : '-';
-      return (<Tooltip title={value}><div>{truncate(value, size * MAGICAL_SIZE)}</div></Tooltip>);
+      return defaultRender(value, helpers);
     },
   },
   objectLabel: {
@@ -431,9 +433,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'Value',
     percentWidth: 20,
     isSortable: false,
-    render: ({ observable_value }, { column: { size } }) => (
-      <Tooltip title={observable_value}><div>{truncate(observable_value, size * MAGICAL_SIZE)}</div></Tooltip>
-    ),
+    render: ({ observable_value }, helpers) => defaultRender(observable_value, helpers),
   },
   operatingSystem: {
     id: 'operatingSystem',
@@ -448,6 +448,13 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     percentWidth: 10,
     isSortable: true,
     render: ({ pattern_type }) => (<ItemPatternType variant="inList" label={pattern_type} />),
+  },
+  phase_name: {
+    id: 'phase_name',
+    label: 'Phase name',
+    percentWidth: 35,
+    isSortable: true,
+    render: ({ phase_name }, helpers) => defaultRender(phase_name, helpers),
   },
   primary_motivation: {
     id: 'primary_motivation',
@@ -479,9 +486,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'Product',
     percentWidth: 15,
     isSortable: true,
-    render: ({ product }, { column: { size } }) => (
-      <Tooltip title={product}><div>{truncate(product, size * MAGICAL_SIZE)}</div></Tooltip>
-    ),
+    render: ({ product }, helpers) => defaultRender(product, helpers),
   },
   published: {
     id: 'published',
@@ -555,18 +560,16 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'Result name',
     percentWidth: 15,
     isSortable: true,
-    render: ({ result_name }, { column: { size } }) => (
-      <Tooltip title={result_name}><div>{truncate(result_name, size * MAGICAL_SIZE)}</div></Tooltip>
-    ),
+    render: ({ result_name }, helpers) => defaultRender(result_name, helpers),
   },
   secondary_motivations: {
     id: 'secondary_motivations',
     label: 'Secondary motivations',
     percentWidth: 10,
     isSortable: false,
-    render: ({ secondary_motivations }, { column: { size } }) => {
+    render: ({ secondary_motivations }, helpers) => {
       const value = secondary_motivations ? secondary_motivations.join(', ') : '-';
-      return (<Tooltip title={value}><div>{truncate(value, size * MAGICAL_SIZE)}</div></Tooltip>);
+      return defaultRender(value, helpers);
     },
   },
   severity: {
@@ -599,9 +602,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'Source name',
     percentWidth: 15,
     isSortable: true,
-    render: ({ source_name }, { column: { size } }) => (
-      <Tooltip title={source_name}><div>{truncate(source_name, size * MAGICAL_SIZE)}</div></Tooltip>
-    ),
+    render: ({ source_name }, helpers) => defaultRender(source_name, helpers),
   },
   start_time: {
     id: 'start_time',
@@ -629,9 +630,9 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'Types',
     percentWidth: 20,
     isSortable: true,
-    render: ({ threat_actor_types }, { column: { size } }) => {
+    render: ({ threat_actor_types }, helpers) => {
       const value = threat_actor_types ? threat_actor_types.join(', ') : '-';
-      return (<Tooltip title={value}><div>{truncate(value, size * MAGICAL_SIZE)}</div></Tooltip>);
+      return defaultRender(value, helpers);
     },
   },
   toName: {
@@ -639,9 +640,9 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'To name',
     percentWidth: 18,
     isSortable: false,
-    render: ({ to }, { column: { size }, t_i18n }) => {
-      const value = to ? getMainRepresentative(to) : t_i18n('Restricted');
-      return (<Tooltip title={value}><div>{truncate(value, size * MAGICAL_SIZE)}</div></Tooltip>);
+    render: ({ to }, helpers) => {
+      const value = to ? getMainRepresentative(to) : helpers.t_i18n('Restricted');
+      return defaultRender(value, helpers);
     },
   },
   url: {
@@ -649,25 +650,23 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'URL',
     percentWidth: 45,
     isSortable: true,
-    render: ({ url }, { column: { size } }) => (<Tooltip title={url}><div>{truncate(url, size * MAGICAL_SIZE)}</div></Tooltip>),
+    render: ({ url }, helpers) => defaultRender(url, helpers),
   },
   user_email: {
     id: 'user_email',
     label: 'Email',
     percentWidth: 50,
     isSortable: false,
-    render: ({ user_email }, { column: { size } }) => (
-      <Tooltip title={user_email}><div>{truncate(user_email, size * MAGICAL_SIZE)}</div></Tooltip>
-    ),
+    render: ({ user_email }, helpers) => defaultRender(user_email, helpers),
   },
   value: {
     id: 'value',
     label: 'Value',
     percentWidth: 22,
     isSortable: false,
-    render: (node, { column: { size } }) => {
+    render: (node, helpers) => {
       const value = getMainRepresentative(node);
-      return (<Tooltip title={value}><div>{truncate(value, size * MAGICAL_SIZE)}</div></Tooltip>);
+      return defaultRender(value, helpers);
     },
   },
   x_mitre_id: {
@@ -676,6 +675,13 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     percentWidth: 10,
     isSortable: true,
     render: ({ x_mitre_id }) => <code>{emptyFilled(x_mitre_id)}</code>,
+  },
+  x_opencti_order: {
+    id: 'x_opencti_order',
+    label: 'Order',
+    percentWidth: 10,
+    isSortable: true,
+    render: ({ x_opencti_order }, helpers) => defaultRender(x_opencti_order.toString(), helpers),
   },
   x_opencti_negative: {
     id: 'x_opencti_negative',

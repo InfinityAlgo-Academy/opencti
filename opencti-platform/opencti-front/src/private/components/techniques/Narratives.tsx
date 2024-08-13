@@ -1,6 +1,11 @@
 import React, { FunctionComponent } from 'react';
 import { NarrativeWithSubnarrativeLineDummy } from '@components/techniques/narratives/NarrativeWithSubnarrativeLine';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import FiligranIcon from '@components/common/FiligranIcon';
+import { ListViewIcon, SublistViewIcon } from 'filigran-icon';
+import ToggleButton from '@mui/material/ToggleButton';
+import Tooltip from '@mui/material/Tooltip';
+import { NarrativesLines_data$data } from '@components/techniques/narratives/__generated__/NarrativesLines_data.graphql';
 import ExportContextProvider from '../../../utils/ExportContextProvider';
 import { narrativeLineFragment } from './narratives/NarrativeLine';
 import { narrativesLinesFragment, narrativesLinesQuery } from './narratives/NarrativesLines';
@@ -19,11 +24,6 @@ import SearchInput from '../../../components/SearchInput';
 import ViewSwitchingButtons from '../../../components/ViewSwitchingButtons';
 import DataTable from '../../../components/dataGrid/DataTable';
 import { UsePreloadedPaginationFragment } from '../../../utils/hooks/usePreloadedPaginationFragment';
-import FiligranIcon from '@components/common/FiligranIcon';
-import { ListViewIcon, SublistViewIcon } from 'filigran-icon';
-import ToggleButton from '@mui/material/ToggleButton';
-import Tooltip from '@mui/material/Tooltip';
-import { NarrativesLines_data$data } from '@components/techniques/narratives/__generated__/NarrativesLines_data.graphql';
 
 const LOCAL_STORAGE_KEY = 'narratives';
 
