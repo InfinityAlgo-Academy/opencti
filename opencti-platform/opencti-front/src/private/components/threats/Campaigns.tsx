@@ -50,7 +50,6 @@ const Campaigns = () => {
   );
 
   const { isFeatureEnable } = useHelper();
-  const dataTableEnabled = isFeatureEnable('DATA_TABLES');
   const isFABReplaced = isFeatureEnable('FAB_REPLACEMENT');
 
   const renderCards = () => {
@@ -92,7 +91,7 @@ const Campaigns = () => {
         filters={filters}
         paginationOptions={queryPaginationOptions}
         numberOfElements={numberOfElements}
-        handleChangeView={dataTableEnabled ? helpers.handleChangeView : undefined}
+        handleChangeView={helpers.handleChangeView}
         createButton={isFABReplaced && (
           <Security needs={[KNOWLEDGE_KNUPDATE]}>
             <CampaignCreation paginationOptions={queryPaginationOptions} />
@@ -197,7 +196,7 @@ const Campaigns = () => {
   return (
     <>
       <Breadcrumbs variant="list" elements={[{ label: t_i18n('Threats') }, { label: t_i18n('Campaigns'), current: true }]} />
-      {viewStorage.view !== 'lines' || !dataTableEnabled ? renderCards() : renderList()}
+      {viewStorage.view !== 'lines' ? renderCards() : renderList()}
       {!isFABReplaced && (
         <Security needs={[KNOWLEDGE_KNUPDATE]}>
           <CampaignCreation paginationOptions={queryPaginationOptions} />
