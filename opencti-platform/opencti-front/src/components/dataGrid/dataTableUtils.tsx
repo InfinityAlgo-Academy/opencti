@@ -128,7 +128,7 @@ const defaultColumns: DataTableProps['dataColumns'] = {
     label: 'Nb.',
     percentWidth: 4,
     isSortable: true,
-    render: ({ attribute_count }, helpers) => defaultRender(attribute_count, helpers),
+    render: ({ attribute_count }, helpers) => defaultRender(String(attribute_count), helpers),
   },
   channel_types: {
     id: 'channel_types',
