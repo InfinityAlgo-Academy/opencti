@@ -181,7 +181,7 @@ const Artifacts: FunctionComponent = () => {
         const file = (data.importFiles?.edges && data.importFiles.edges.length > 0)
           ? data.importFiles.edges[0]?.node
           : { name: 'N/A', metaData: { mimetype: 'N/A' }, size: 0 };
-        return (<Tooltip title={file.name}>{truncate(file.name, size * 0.113)}</Tooltip>);
+        return (<Tooltip title={file.name}><>{truncate(file.name, size * 0.113)}</></Tooltip>);
       },
     },
     file_mime_type: {
@@ -192,7 +192,7 @@ const Artifacts: FunctionComponent = () => {
         const file = (data.importFiles?.edges && data.importFiles.edges.length > 0)
           ? data.importFiles.edges[0]?.node
           : { name: 'N/A', metaData: { mimetype: 'N/A' }, size: 0 };
-        return (<Tooltip title={file?.metaData?.mimetype}>{truncate(file?.metaData?.mimetype, size * 0.113)}</Tooltip>);
+        return (<Tooltip title={file?.metaData?.mimetype}><>{truncate(file?.metaData?.mimetype, size * 0.113)}</></Tooltip>);
       },
     },
     file_size: {
@@ -203,7 +203,7 @@ const Artifacts: FunctionComponent = () => {
         const file = (data.importFiles?.edges && data.importFiles.edges.length > 0)
           ? data.importFiles.edges[0]?.node
           : { name: 'N/A', metaData: { mimetype: 'N/A' }, size: 0 };
-        return (<Tooltip title={file?.metaData?.mimetype}>{b(file?.size)}</Tooltip>);
+        return (<Tooltip title={file?.metaData?.mimetype}><>{b(file?.size)}</></Tooltip>);
       },
     },
     createdBy: { percentWidth: 10, isSortable: isRuntimeSort },
