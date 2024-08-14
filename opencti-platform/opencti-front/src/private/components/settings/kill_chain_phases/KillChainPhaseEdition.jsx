@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import * as PropTypes from 'prop-types';
-import { createFragmentContainer, graphql } from 'react-relay';
+import { graphql } from 'react-relay';
 import { Field, Form, Formik } from 'formik';
 import { compose, defaultTo, lensProp, over, pickAll } from 'ramda';
 import * as Yup from 'yup';
