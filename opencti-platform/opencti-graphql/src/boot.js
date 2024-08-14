@@ -3,6 +3,7 @@ import platformInit, { checkSystemDependencies } from './initialization';
 import cacheManager from './manager/cacheManager';
 import { shutdownRedisClients } from './database/redis';
 import { shutdownModules, startModules } from './managers';
+import { UnknownError } from './config/errors';
 
 // region platform start and stop
 export const platformStart = async () => {
@@ -56,7 +57,7 @@ export const platformStop = async () => {
 
 // region signals management
 process.on('unhandledRejection', (reason, p) => {
-  logApp.error('Engine unhandled rejection', { reason, promise: p });
+  logApp.error(UnknownError('Engine unhandled rejection', { reason, promise: p }));
 });
 
 ['SIGTERM', 'SIGINT', 'message'].forEach((signal) => {
