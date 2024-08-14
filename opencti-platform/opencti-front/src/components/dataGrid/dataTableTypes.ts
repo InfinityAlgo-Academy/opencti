@@ -68,7 +68,12 @@ export interface DataTableContextProps {
     setSelectedElements: (selectedElements: Record<string, any>) => void
   } | Record<string, any>
   useComputeLink: (entity: any) => string
-  useDataTableLocalStorage: <T extends LocalStorage = LocalStorage>(key: string, initialValues?: T, ignoreUri?: boolean) => [T, Dispatch<SetStateAction<T>>]
+  useDataTableLocalStorage: <T extends LocalStorage = LocalStorage>(
+    key: string,
+    initialValues?: T,
+    ignoreUri?: boolean,
+    ignoreDispatch?: boolean,
+  ) => [T, Dispatch<SetStateAction<T>>]
   onAddFilter: (key: string) => void
   onSort: (sortBy: string, orderAsc: boolean) => void
   formatter: Record<string, (args: any) => any>

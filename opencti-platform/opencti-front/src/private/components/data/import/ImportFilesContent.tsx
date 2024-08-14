@@ -210,19 +210,19 @@ const ImportFilesContent = () => {
       {queryRef && (
         <DataTable
           dataColumns={{
-            value: { flexSize: 50 },
+            value: { percentWidth: 50 },
             createdBy: {
-              flexSize: 15,
+              percentWidth: 15,
               render: (({ metaData: { creator } }) => creator?.name ?? '-'),
             },
             objectMarking: {
-              flexSize: 15,
+              percentWidth: 15,
             },
             lastModified: {
               id: 'lastModified',
               label: 'Modification date',
               isSortable: true,
-              flexSize: 19,
+              percentWidth: 19,
               render: ({ lastModified }, { fd }) => fd(lastModified),
             },
           }}
