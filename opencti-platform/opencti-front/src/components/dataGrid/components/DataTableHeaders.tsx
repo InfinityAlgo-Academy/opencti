@@ -50,7 +50,7 @@ const DataTableHeaders: FunctionComponent<DataTableHeadersProps> = ({
     handleToggleSelectAll,
   } = useDataTableToggle(storageKey);
 
-  const [_, setLocalStorageColumns] = useDataTableLocalStorage<LocalStorageColumns>(`${storageKey}_columns`, {}, true);
+  const [_, setLocalStorageColumns] = useDataTableLocalStorage<LocalStorageColumns>(`${storageKey}_columns`, {}, true, true);
 
   const [activeColumn, setActiveColumn] = useState<DataTableColumn | undefined>();
   const [anchorEl, setAnchorEl] = useState<PopoverProps['anchorEl']>(null);

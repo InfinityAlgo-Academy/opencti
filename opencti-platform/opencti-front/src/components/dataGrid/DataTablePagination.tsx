@@ -56,7 +56,7 @@ const DataTablePagination = ({
   }, [page, pageSize]);
 
   const [anchorEl, setAnchorEl] = useState<PopoverProps['anchorEl']>(null);
-  const [_, setLocalStorageColumns] = useDataTableLocalStorage<LocalStorageColumns>(`${storageKey}_columns`, {}, true);
+  const [_, setLocalStorageColumns] = useDataTableLocalStorage<LocalStorageColumns>(`${storageKey}_columns`, {}, true, true);
 
   return (
     <div
