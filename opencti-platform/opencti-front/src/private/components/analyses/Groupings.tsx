@@ -201,7 +201,7 @@ const Groupings: FunctionComponent<GroupingsProps> = () => {
   } as UsePreloadedPaginationFragment<GroupingsLinesPaginationQuery>;
 
   return (
-    <>
+    <span data-testid="groupings-page">
       <Breadcrumbs variant="list" elements={[{ label: t_i18n('Analyses') }, { label: t_i18n('Groupings'), current: true }]} />
       {queryRef && (
         <DataTable
@@ -220,11 +220,12 @@ const Groupings: FunctionComponent<GroupingsProps> = () => {
           )}
         />
       )}
-      {!isFABReplaced && (<Security needs={[KNOWLEDGE_KNUPDATE]}>
-        <GroupingCreation paginationOptions={queryPaginationOptions} />
+      {!isFABReplaced && (
+        <Security needs={[KNOWLEDGE_KNUPDATE]}>
+          <GroupingCreation paginationOptions={queryPaginationOptions} />
         </Security>
       )}
-    </>
+    </span>
   );
 };
 

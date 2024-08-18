@@ -10,6 +10,7 @@ import { useDataTableContext } from '../dataTableUtils';
 import type { DataTableCellProps, DataTableLineProps } from '../dataTableTypes';
 import { DataTableColumn } from '../dataTableTypes';
 import type { Theme } from '../../Theme';
+import { getMainRepresentative } from '../../../utils/defaultRepresentatives';
 
 // Deprecated - https://mui.com/system/styles/basics/
 // Do not use it for new code.
@@ -147,6 +148,7 @@ const DataTableLine = ({
       className={classes.row}
       onClick={internalOnClick}
       style={{ cursor: (navigable || Boolean(onLineClick)) ? 'pointer' : 'unset' }}
+      data-testid={getMainRepresentative(data)}
     >
       {startsWithSelect && (
         <div
