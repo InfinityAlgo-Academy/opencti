@@ -204,7 +204,7 @@ const Reports: FunctionComponent = () => {
     },
   };
   return (
-    <spa data-testid="report-page">
+    <span data-testid="report-page">
       <Breadcrumbs variant="list" elements={[{ label: t_i18n('Analyses') }, { label: t_i18n('Reports'), current: true }]} />
       {queryRef && (
         <DataTable
@@ -229,7 +229,7 @@ const Reports: FunctionComponent = () => {
           <ReportCreation paginationOptions={queryPaginationOptions} />
         </Security>
       )}
-    </spa>
+    </span>
   );
 };
 
