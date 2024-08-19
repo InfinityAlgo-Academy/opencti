@@ -453,7 +453,7 @@ const mapJSToStream = (event: any) => {
 };
 
 const inDraftContext = (context: AuthContext, user: AuthUser) => {
-  return user.workspace_context;
+  return context.draftId ?? user.workspace_context;
 };
 
 const pushToStream = async (context: AuthContext, user: AuthUser, client: Cluster | Redis, event: BaseEvent, opts: EventOpts = {}) => {

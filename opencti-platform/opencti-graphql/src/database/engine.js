@@ -3636,7 +3636,7 @@ const prepareIndexing = async (context, user, elements) => {
 };
 
 export const inDraftContext = (context, user) => {
-  return user.workspace_context;
+  return context.draftId ?? user.workspace_context;
 };
 
 const getDraftIndex = (draftID) => {
