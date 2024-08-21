@@ -1,5 +1,5 @@
 import React, { FunctionComponent } from 'react';
-import { graphql } from 'react-relay';
+import { graphql, useFragment } from 'react-relay';
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
 import ListItem from '@mui/material/ListItem';
@@ -12,7 +12,8 @@ import {
   StixDomainObjectAttackPatternsKillChainContainer_data$data,
 } from '@components/common/stix_domain_objects/__generated__/StixDomainObjectAttackPatternsKillChainContainer_data.graphql';
 import { KeyboardArrowRightOutlined } from '@mui/icons-material';
-import { AttackPatternsMatrixLine_data$data } from '@components/techniques/attack_patterns/__generated__/AttackPatternsMatrixLine_data.graphql';
+import { AttackPatternsMatrixLine_node$data, AttackPatternsMatrixLine_node$key } from '@components/techniques/attack_patterns/__generated__/AttackPatternsMatrixLine_node.graphql';
+import Skeleton from '@mui/material/Skeleton';
 import { emptyFilled, truncate } from '../../../../utils/String';
 import { DataColumns } from '../../../../components/list_lines';
 import ItemIcon from '../../../../components/ItemIcon';
@@ -22,27 +23,74 @@ import ItemMarkings from '../../../../components/ItemMarkings';
 export type AttackPatternNode = NonNullable<NonNullable<StixDomainObjectAttackPatternsKillChainContainer_data$data>['attackPatterns']>['edges'][0]['node'];
 
 interface AttackPatternsMatrixLineProps {
-  data: AttackPatternsMatrixLine_data$data
+  node: AttackPatternsMatrixLine_node$key
   dataColumns: DataColumns;
   attackPatterns: NonNullable<NonNullable<StixDomainObjectAttackPatternsKillChainContainer_data$data>['attackPatterns']>['edges'][0]['node'][];
   onLabelClick: HandleAddFilter;
   onToggleEntity: (
-    entity: AttackPatternNode,
+    entity: AttackPatternsMatrixLine_node$data,
     event?: React.SyntheticEvent
   ) => void;
   onToggleShiftEntity: (
     index: number,
-    entity: AttackPatternNode,
+    entity: AttackPatternsMatrixLine_node$data,
     event?: React.SyntheticEvent
   ) => void;
-  selectedElements: Record<string, AttackPatternNode>;
-  deSelectedElements: Record<string, AttackPatternNode>;
+  selectedElements: Record<string, AttackPatternsMatrixLine_node$data>;
+  deSelectedElements: Record<string, AttackPatternsMatrixLine_node$data>;
   selectAll: boolean;
   index: number;
 }
 
+const attackPatternsMatrixLineFragment = graphql`
+fragment AttackPatternsMatrixLine_node on AttackPattern {
+  id
+  entity_type
+  parent_types
+  name
+  description
+  isSubAttackPattern
+  x_mitre_id
+  objectMarking {
+    id
+    definition_type
+    definition
+    x_opencti_order
+    x_opencti_color
+  }
+  created
+  modified
+  objectLabel {
+    id
+    value
+    color
+  }
+  subAttackPatterns {
+    edges {
+      node {
+        id
+        name
+        description
+        x_mitre_id
+      }
+    }
+  }
+  killChainPhases {
+    id
+    kill_chain_name
+    phase_name
+    x_opencti_order
+  }
+  creators {
+    id
+    name
+  }
+}
+`;
+
 const AttackPatternsMatrixLine: FunctionComponent<AttackPatternsMatrixLineProps> = ({
   dataColumns,
+  node,
   attackPatterns,
   onLabelClick,
   onToggleEntity,
@@ -53,6 +101,12 @@ const AttackPatternsMatrixLine: FunctionComponent<AttackPatternsMatrixLineProps>
   index,
 }) => {
   const theme = useTheme();
+  const data = useFragment(attackPatternsMatrixLineFragment, node);
+  const killChainNames = (data.killChainPhases || []).map((phase) => phase.kill_chain_name).join(', ');
+  const phaseName = (data.killChainPhases && data.killChainPhases.length > 0) ? data.killChainPhases[0].phase_name : '';
+
+  console.log('data in line', data);
+  console.log('attackPatterns in line', attackPatterns);
 
   return (
     <div
@@ -64,180 +118,164 @@ const AttackPatternsMatrixLine: FunctionComponent<AttackPatternsMatrixLineProps>
         paddingBottom: 20,
       }}
     >
-      <div>
-        {attackPatterns.map((a) => {
-          const killChainNames = (a.killChainPhases || []).map((phase) => phase.kill_chain_name).join(', ');
-          const phaseName = (a.killChainPhases && a.killChainPhases.length > 0) ? a.killChainPhases[0].phase_name : '';
-
-          return (
-            <ListItem
-              key={a.id}
+      <ListItem
+        key={data.id}
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: '0 10px',
+        }}
+        divider={true}
+        button={true}
+        component={Link}
+        to={`/dashboard/techniques/attack_patterns/${data.id}`}
+      >
+        <ListItemIcon
+          style={{ color: theme.palette.primary.main, minWidth: 40 }}
+          onClick={(event) => (event.shiftKey
+            ? onToggleShiftEntity(index, data, event)
+            : onToggleEntity(data, event))
+                  }
+        >
+          <Checkbox
+            edge="start"
+            checked={
+                        (selectAll && !(data.id in (deSelectedElements || {})))
+                        || data.id in (selectedElements || {})
+                    }
+            disableRipple={true}
+          />
+        </ListItemIcon>
+        <ListItemIcon style={{ color: theme.palette.primary.main }}>
+          <ItemIcon type="Attack-Pattern" />
+        </ListItemIcon>
+        <ListItemText
+          primary={
+            <div
+              key={data.id}
               style={{
                 display: 'flex',
                 flexDirection: 'row',
-                alignItems: 'center',
-                padding: '0 10px',
+                borderBottom: theme.palette.divider,
+                marginBottom: 10,
               }}
-              divider={true}
-              button={true}
-              component={Link}
-              to={`/dashboard/techniques/attack_patterns/${a.id}`}
             >
-              <ListItemIcon
-                style={{ color: theme.palette.primary.main, minWidth: 40 }}
-                onClick={(event) => (event.shiftKey
-                  ? onToggleShiftEntity(index, a, event)
-                  : onToggleEntity(a, event))
-                  }
-              >
-                <Checkbox
-                  edge="start"
-                  checked={
-                        (selectAll && !(a.id in (deSelectedElements || {})))
-                        || a.id in (selectedElements || {})
-                    }
-                  disableRipple={true}
+              <Tooltip title={`[${killChainNames}] ${phaseName}`}>
+                <div style={{ width: dataColumns.killChainPhase.width as string | number }}>
+                  [{truncate(killChainNames, 15)}] {truncate(phaseName, 15)}
+                </div>
+              </Tooltip>
+              <div style={{ width: dataColumns.x_mitre_id.width as string | number }}>
+                {emptyFilled(data.x_mitre_id)}
+              </div>
+              <div style={{ width: dataColumns.name.width as string | number }}>
+                {data.name}
+              </div>
+              <div style={{ width: dataColumns.objectLabel.width as string | number }}>
+                <StixCoreObjectLabels
+                  variant="inList"
+                  labels={data.objectLabel}
+                  onClick={onLabelClick}
                 />
-              </ListItemIcon>
-              <ListItemIcon style={{ color: theme.palette.primary.main }}>
-                <ItemIcon type="Attack-Pattern" />
-              </ListItemIcon>
-              <ListItemText
-                primary={
-                  <div
-                    key={a.id}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      borderBottom: theme.palette.divider,
-                      marginBottom: 10,
-                    }}
-                  >
-                    <Tooltip title={`[${killChainNames}] ${phaseName}`}>
-                      <div style={{ width: dataColumns.killChainPhase.width as string | number }}>
-                        [{truncate(killChainNames, 15)}] {truncate(phaseName, 15)}
-                      </div>
-                    </Tooltip>
-                    <div style={{ width: dataColumns.x_mitre_id.width as string | number }}>
-                      {emptyFilled(a.x_mitre_id)}
-                    </div>
-                    <div style={{ width: dataColumns.name.width as string | number }}>
-                      {a.name}
-                    </div>
-                    <div style={{ width: dataColumns.objectLabel.width as string | number }}>
-                      <StixCoreObjectLabels
-                        variant="inList"
-                        labels={a.objectLabel}
-                        onClick={onLabelClick}
-                      />
-                    </div>
-                    <div style={{ width: dataColumns.created.width as string | number }}>
-                      {a.created}
-                    </div>
-                    <div>
-                      <ItemMarkings
-                        variant="inList"
-                        markingDefinitions={a.objectMarking ?? []}
-                        limit={1}
-                      />
-                    </div>
-                  </div>
+              </div>
+              <div style={{ width: dataColumns.created.width as string | number }}>
+                {data.created}
+              </div>
+              <div>
+                <ItemMarkings
+                  variant="inList"
+                  markingDefinitions={data.objectMarking ?? []}
+                  limit={1}
+                />
+              </div>
+            </div>
                   }
-              />
-              <ListItemIcon style={{ position: 'absolute', right: -10 }}>
-                <KeyboardArrowRightOutlined />
-              </ListItemIcon>
-            </ListItem>
-          );
-        })}
-      </div>
+        />
+        <ListItemIcon style={{ position: 'absolute', right: -10 }}>
+          <KeyboardArrowRightOutlined />
+        </ListItemIcon>
+      </ListItem>
     </div>
   );
 };
 
-export const attackPatternsMatrixLineQuery = graphql`
-  query AttackPatternsMatrixLineQuery(
-    $orderBy: AttackPatternsOrdering
-    $orderMode: OrderingMode
-    $count: Int!
-    $cursor: ID
-    $filters: FilterGroup
-  ) {
-    ...AttackPatternsMatrixLine_data
-    @arguments(
-      orderBy: $orderBy
-      orderMode: $orderMode
-      count: $count
-      cursor: $cursor
-      filters: $filters
-    )
-  }
-`;
+export const AttackPatternsMatrixLineDummy = ({
+  dataColumns,
+}: {
+  dataColumns: DataColumns;
+}) => {
+  const theme = useTheme();
 
-export const attackPatternsMatrixLineFragment = graphql`
-  fragment AttackPatternsMatrixLine_data on Query
-  @argumentDefinitions(
-    orderBy: { type: "AttackPatternsOrdering", defaultValue: x_mitre_id }
-    orderMode: { type: "OrderingMode", defaultValue: asc }
-    count: { type: "Int", defaultValue: 25 }
-    cursor: { type: "ID" }
-    filters: { type: "FilterGroup" }
-  )
-  @refetchable(queryName: "AttackPatternsMatrixLineRefetchQuery") {
-    attackPatterns(
-      orderBy: $orderBy
-      orderMode: $orderMode
-      first: $count
-      after: $cursor
-      filters: $filters
-    ) @connection(key: "Pagination_attackPatterns") {
-      edges {
-        node {
-          id
-          entity_type
-          parent_types
-          name
-          description
-          isSubAttackPattern
-          x_mitre_id
-          objectMarking {
-            id
-            definition_type
-            definition
-            x_opencti_order
-            x_opencti_color
-          }
-          created
-          modified
-          objectLabel {
-            id
-            value
-            color
-          }
-          subAttackPatterns {
-            edges {
-              node {
-                id
-                name
-                description
-                x_mitre_id
+  return (
+    <ListItem style={{ paddingLeft: 10, height: 50 }} divider={true}>
+      <ListItemIcon style={{ color: theme.palette.primary.main }}>
+        <Skeleton
+          animation="wave"
+          variant="circular"
+          width={30}
+          height={30}
+        />
+      </ListItemIcon>
+      <ListItemText
+        primary={
+          <>
+            <div style={{ width: dataColumns.killChainPhase.width }}>
+              <Skeleton
+                animation="wave"
+                variant="rectangular"
+                width="90%"
+                height="100%"
+              />
+            </div>
+            <div style={{ width: dataColumns.x_mitre_id.width }}>
+              <Skeleton
+                animation="wave"
+                variant="rectangular"
+                width="90%"
+                height="100%"
+              />
+            </div>
+            <div style={{ width: dataColumns.name.width }}>
+              <Skeleton
+                animation="wave"
+                variant="rectangular"
+                width="90%"
+                height="100%"
+              />
+            </div>
+            <div style={{ width: dataColumns.objectLabel.width }}>
+              <Skeleton
+                animation="wave"
+                variant="rectangular"
+                width="90%"
+                height="100%"
+              />
+            </div>
+            <div style={{ width: dataColumns.created.width }}>
+              <Skeleton
+                animation="wave"
+                variant="rectangular"
+                width="90%"
+                height="100%"
+              />
+            </div>
+            <div style={{ width: dataColumns.objectMarking.width }}>
+              <Skeleton
+                animation="wave"
+                variant="rectangular"
+                width="90%"
+                height="100%"
+              />
+            </div>
+          </>
               }
-            }
-          }
-          killChainPhases {
-            id
-            kill_chain_name
-            phase_name
-            x_opencti_order
-          }
-          creators {
-            id
-            name
-          }
-        }
-      }
-    }
-  }
-        `;
+      />
+      <ListItemIcon style={{ position: 'absolute', right: -10 }}>
+        <KeyboardArrowRightOutlined color="disabled" />
+      </ListItemIcon>
+    </ListItem>
+  );
+};
 
 export default AttackPatternsMatrixLine;

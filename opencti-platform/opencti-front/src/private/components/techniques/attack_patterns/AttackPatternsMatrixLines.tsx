@@ -2,83 +2,139 @@ import React, { FunctionComponent } from 'react';
 import {
   StixDomainObjectAttackPatternsKillChainContainer_data$data,
 } from '@components/common/stix_domain_objects/__generated__/StixDomainObjectAttackPatternsKillChainContainer_data.graphql';
-import AttackPatternsMatrixLine, { AttackPatternNode, attackPatternsMatrixLineQuery } from '@components/techniques/attack_patterns/AttackPatternsMatrixLine';
-import { AttackPatternsMatrixLine_data$data } from '@components/techniques/attack_patterns/__generated__/AttackPatternsMatrixLine_data.graphql';
-import { QueryRenderer } from '../../../../relay/environment';
-import Loader from '../../../../components/Loader';
+import AttackPatternsMatrixLine, { AttackPatternsMatrixLineDummy } from '@components/techniques/attack_patterns/AttackPatternsMatrixLine';
+import { graphql, PreloadedQuery } from 'react-relay';
+import {
+  AttackPatternsMatrixLinesPaginationQuery,
+  AttackPatternsMatrixLinesPaginationQuery$variables,
+} from '@components/techniques/attack_patterns/__generated__/AttackPatternsMatrixLinesPaginationQuery.graphql';
+import { AttackPatternsMatrixLines_data$key } from '@components/techniques/attack_patterns/__generated__/AttackPatternsMatrixLines_data.graphql';
+import { AttackPatternsMatrixLine_node$data } from '@components/techniques/attack_patterns/__generated__/AttackPatternsMatrixLine_node.graphql';
 import { DataColumns } from '../../../../components/list_lines';
 import { HandleAddFilter, UseLocalStorageHelpers } from '../../../../utils/hooks/useLocalStorage';
+import usePreloadedPaginationFragment from '../../../../utils/hooks/usePreloadedPaginationFragment';
+import ListLinesContent from '../../../../components/list_lines/ListLinesContent';
 
 const nbOfRowsToLoad = 50;
 
 interface AttackPatternsMatrixLinesProps {
+  queryRef: PreloadedQuery<AttackPatternsMatrixLinesPaginationQuery>;
   attackPatterns: NonNullable<NonNullable<StixDomainObjectAttackPatternsKillChainContainer_data$data>['attackPatterns']>['edges'][0]['node'][];
   dataColumns: DataColumns;
+  paginationOptions: AttackPatternsMatrixLinesPaginationQuery$variables;
   setNumberOfElements: UseLocalStorageHelpers['handleSetNumberOfElements'];
-  selectedElements: Record<string, AttackPatternNode>;
-  deSelectedElements: Record<string, AttackPatternNode>;
+  selectedElements: Record<string, AttackPatternsMatrixLine_node$data>;
+  deSelectedElements: Record<string, AttackPatternsMatrixLine_node$data>;
   onToggleEntity: (
-    entity: AttackPatternNode,
+    entity: AttackPatternsMatrixLine_node$data,
     event: React.SyntheticEvent
   ) => void;
   onToggleShiftEntity: (
     index: number,
-    entity: AttackPatternNode,
+    entity: AttackPatternsMatrixLine_node$data,
     event?: React.SyntheticEvent
   ) => void;
   selectAll: boolean;
   onLabelClick: HandleAddFilter;
 }
+
+export const attackPatternsMatrixLinesQuery = graphql`
+  query AttackPatternsMatrixLinesPaginationQuery(
+    $search: String
+    $orderBy: AttackPatternsOrdering
+    $orderMode: OrderingMode
+    $count: Int!
+    $cursor: ID
+    $filters: FilterGroup
+  ) {
+    ...AttackPatternsMatrixLines_data
+    @arguments(
+      search: $search
+      orderBy: $orderBy
+      orderMode: $orderMode
+      count: $count
+      cursor: $cursor
+      filters: $filters
+    )
+  }
+`;
+
+const attackPatternsMatrixLinesFragment = graphql`
+  fragment AttackPatternsMatrixLines_data on Query
+  @argumentDefinitions(
+    search: { type: "String" }
+    orderBy: { type: "AttackPatternsOrdering", defaultValue: x_mitre_id }
+    orderMode: { type: "OrderingMode", defaultValue: asc }
+    count: { type: "Int", defaultValue: 25 }
+    cursor: { type: "ID" }
+    filters: { type: "FilterGroup" }
+  )
+  @refetchable(queryName: "AttackPatternsMatrixLinesRefetchQuery") {
+    attackPatterns(
+      search: $search
+      orderBy: $orderBy
+      orderMode: $orderMode
+      first: $count
+      after: $cursor
+      filters: $filters
+    ) @connection(key: "Pagination_attackPatterns") {
+      edges {
+        node {
+          ...AttackPatternsMatrixLine_node
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+        globalCount
+      }
+    }
+  }
+`;
+
 const AttackPatternsMatrixLines: FunctionComponent<AttackPatternsMatrixLinesProps> = ({
   attackPatterns,
+  queryRef,
   dataColumns,
   onToggleEntity,
   onToggleShiftEntity,
   selectedElements,
   deSelectedElements,
   selectAll,
+  paginationOptions,
   onLabelClick,
 }) => {
+  const { data, hasMore, loadMore, isLoadingMore } = usePreloadedPaginationFragment<
+  AttackPatternsMatrixLinesPaginationQuery,
+  AttackPatternsMatrixLines_data$key
+  >({
+    linesQuery: attackPatternsMatrixLinesQuery,
+    linesFragment: attackPatternsMatrixLinesFragment,
+    queryRef,
+    nodePath: ['attackPatterns', 'pageInfo', 'globalCount'],
+  });
+  console.log('data in AttackPatternsMatrixLines', data);
+  console.log('attackPatterns in AttackPatternsMatrixLines', attackPatterns);
   return (
-    <div style={{
-      width: '100%',
-      height: '100%',
-      margin: 0,
-      padding: 0,
-    }}
-    >
-      <QueryRenderer
-        query={attackPatternsMatrixLineQuery}
-        variables={{
-          count: 5000,
-          filters: {
-            mode: 'and',
-            filters: [{ key: 'revoked', values: ['false'] }],
-            filterGroups: [],
-          },
-        }}
-        render={({ props }: { props: AttackPatternsMatrixLine_data$data | null }) => {
-          if (props) {
-            return (
-              <AttackPatternsMatrixLine
-                data={props}
-                dataColumns={dataColumns}
-                attackPatterns={attackPatterns}
-                globalCount={props.attackPatterns?.pageInfo?.globalCount ?? nbOfRowsToLoad}
-                nbOfRowsToLoad={nbOfRowsToLoad}
-                onLabelClick={onLabelClick}
-                selectedElements={selectedElements}
-                deSelectedElements={deSelectedElements}
-                selectAll={selectAll}
-                onToggleEntity={onToggleEntity}
-                onToggleShiftEntity={onToggleShiftEntity}
-              />
-            );
-          }
-          return <Loader />;
-        }}
-      />
-    </div>
+    <ListLinesContent
+      hasMore={hasMore}
+      initialLoading={!data}
+      attackPatterns={attackPatterns}
+      isLoading={isLoadingMore}
+      loadMore={loadMore}
+      dataList={data?.attackPatterns?.edges ?? []}
+      globalCount={data?.attackPatterns?.pageInfo?.globalCount ?? nbOfRowsToLoad}
+      LineComponent={AttackPatternsMatrixLine}
+      DummyLineComponent={AttackPatternsMatrixLineDummy}
+      dataColumns={dataColumns}
+      paginationOptions={paginationOptions}
+      nbOfRowsToLoad={nbOfRowsToLoad}
+      selectedElements={selectedElements}
+      deSelectedElements={deSelectedElements}
+      selectAll={selectAll}
+      onToggleEntity={onToggleEntity}
+      onLabelClick={onLabelClick}
+    />
   );
 };
 
