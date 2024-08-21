@@ -119,6 +119,7 @@ const createHttpServer = async () => {
         executeContext.req = req;
         executeContext.res = res;
         executeContext.workId = req.headers['opencti-work-id'];
+        executeContext.draftId = req.headers['opencti-draft-id'];
         const user = await authenticateUserFromRequest(executeContext, req, res);
         if (user) {
           executeContext.user = userWithOrigin(req, user);

@@ -1334,6 +1334,7 @@ export const elFindByIds = async (context, user, ids, opts = {}) => {
   const draftContext = inDraftContext(context, user);
   const draftIndex = getDraftIndex(draftContext);
   let computedIndices = computeQueryIndices(indices, types);
+  computedIndices = Array.isArray(computedIndices) ? computedIndices : [computedIndices];
   if (draftContext) computedIndices = [...computedIndices, `${draftIndex}*`];
   if (draftID) computedIndices = [...computedIndices, `${getDraftIndex(draftID)}*`];
   const hits = [];
@@ -3708,12 +3709,24 @@ export const elIndexElements = async (context, user, message, elements) => {
       const element = elements[i];
       if (element.base_type === BASE_TYPE_RELATION) {
         const { from, to } = element;
-        const draftFrom = await getElementDraftVersion(context, user, from);
-        element.from = draftFrom;
-        element.fromId = draftFrom.id;
-        const draftTo = await getElementDraftVersion(context, user, to);
-        element.to = draftTo;
-        element.toId = draftTo.id;
+        if (!elements.some((e) => e.internal_id === from.internal_id)) {
+          const draftFrom = await getElementDraftVersion(context, user, from);
+          element.from = draftFrom;
+          element.fromId = draftFrom.id;
+        } else {
+          element.from._index = draftContext && !isInternalObject(element.from.entity_type) && !isInternalRelationship(element.from.entity_type)
+            ? draftIndex
+            : element.from._index;
+        }
+        if (!elements.some((e) => e.internal_id === to.internal_id)) {
+          const draftTo = await getElementDraftVersion(context, user, to);
+          element.to = draftTo;
+          element.toId = draftTo.id;
+        } else {
+          element.to._index = draftContext && !isInternalObject(element.to.entity_type) && !isInternalRelationship(element.to.entity_type)
+            ? draftIndex
+            : element.to._index;
+        }
       }
     }
   }
