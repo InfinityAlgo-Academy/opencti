@@ -27,7 +27,7 @@ interface StixDomainObjectAttackPatternsKillChainProps {
   availableFilterKeys: string[];
 }
 
-export const stixDomainObjectAttackPatternsKillChainContainerFragment = graphql`
+exportconst stixDomainObjectAttackPatternsKillChainContainerFragment = graphql`
   fragment StixDomainObjectAttackPatternsKillChainContainer_data on Query
   @argumentDefinitions(
     search: { type: "String" }
@@ -101,11 +101,14 @@ export const stixDomainObjectAttackPatternsKillChainContainerFragment = graphql`
           killChainPhases {
             id
             kill_chain_name
-            phase_name
+            kill_chain_namephase_name
             x_opencti_order
           }
           creators {
             id
+            name
+          creators {
+        id
             name
           }
         }

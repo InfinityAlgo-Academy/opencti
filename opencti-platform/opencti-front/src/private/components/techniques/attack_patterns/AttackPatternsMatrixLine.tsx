@@ -1,5 +1,5 @@
 import React, { FunctionComponent } from 'react';
-import { createRefetchContainer, graphql } from 'react-relay';
+import { graphql } from 'react-relay';
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
 import ListItem from '@mui/material/ListItem';
@@ -13,7 +13,6 @@ import {
 } from '@components/common/stix_domain_objects/__generated__/StixDomainObjectAttackPatternsKillChainContainer_data.graphql';
 import { KeyboardArrowRightOutlined } from '@mui/icons-material';
 import { AttackPatternsMatrixLine_data$data } from '@components/techniques/attack_patterns/__generated__/AttackPatternsMatrixLine_data.graphql';
-import { attackPatternsLinesQuery } from './AttackPatternsLines';
 import { emptyFilled, truncate } from '../../../../utils/String';
 import { DataColumns } from '../../../../components/list_lines';
 import ItemIcon from '../../../../components/ItemIcon';
@@ -157,93 +156,88 @@ const AttackPatternsMatrixLine: FunctionComponent<AttackPatternsMatrixLineProps>
 };
 
 export const attackPatternsMatrixLineQuery = graphql`
-    query AttackPatternsMatrixLineQuery(
-        $orderBy: AttackPatternsOrdering
-        $orderMode: OrderingMode
-        $count: Int!
-        $cursor: ID
-        $filters: FilterGroup
-    ) {
-        ...AttackPatternsMatrixLine_data
-        @arguments(
-            orderBy: $orderBy
-            orderMode: $orderMode
-            count: $count
-            cursor: $cursor
-            filters: $filters
-        )
-    }
+  query AttackPatternsMatrixLineQuery(
+    $orderBy: AttackPatternsOrdering
+    $orderMode: OrderingMode
+    $count: Int!
+    $cursor: ID
+    $filters: FilterGroup
+  ) {
+    ...AttackPatternsMatrixLine_data
+    @arguments(
+      orderBy: $orderBy
+      orderMode: $orderMode
+      count: $count
+      cursor: $cursor
+      filters: $filters
+    )
+  }
 `;
 
-export const AttackPatternsMatrixLineFragment = createRefetchContainer(
-  AttackPatternsMatrixLine,
-  {
-    data: graphql`
-            fragment AttackPatternsMatrixLine_data on Query
-            @argumentDefinitions(
-                orderBy: { type: "AttackPatternsOrdering", defaultValue: x_mitre_id }
-                orderMode: { type: "OrderingMode", defaultValue: asc }
-                count: { type: "Int", defaultValue: 25 }
-                cursor: { type: "ID" }
-                filters: { type: "FilterGroup" }
-            ) {
-                attackPatterns(
-                    orderBy: $orderBy
-                    orderMode: $orderMode
-                    first: $count
-                    after: $cursor
-                    filters: $filters
-                ) {
-                    edges {
-                        node {
-                            id
-                            entity_type
-                            parent_types
-                            name
-                            description
-                            isSubAttackPattern
-                            x_mitre_id
-                            objectMarking {
-                                id
-                                definition_type
-                                definition
-                                x_opencti_order
-                                x_opencti_color
-                            }
-                            created
-                            modified
-                            objectLabel {
-                                id
-                                value
-                                color
-                            }
-                            subAttackPatterns {
-                                edges {
-                                    node {
-                                        id
-                                        name
-                                        description
-                                        x_mitre_id
-                                    }
-                                }
-                            }
-                            killChainPhases {
-                                id
-                                kill_chain_name
-                                phase_name
-                                x_opencti_order
-                            }
-                            creators {
-                                id
-                                name
-                            }
-                        }
-                    }
-                }
+export const attackPatternsMatrixLineFragment = graphql`
+  fragment AttackPatternsMatrixLine_data on Query
+  @argumentDefinitions(
+    orderBy: { type: "AttackPatternsOrdering", defaultValue: x_mitre_id }
+    orderMode: { type: "OrderingMode", defaultValue: asc }
+    count: { type: "Int", defaultValue: 25 }
+    cursor: { type: "ID" }
+    filters: { type: "FilterGroup" }
+  )
+  @refetchable(queryName: "AttackPatternsMatrixLineRefetchQuery") {
+    attackPatterns(
+      orderBy: $orderBy
+      orderMode: $orderMode
+      first: $count
+      after: $cursor
+      filters: $filters
+    ) @connection(key: "Pagination_attackPatterns") {
+      edges {
+        node {
+          id
+          entity_type
+          parent_types
+          name
+          description
+          isSubAttackPattern
+          x_mitre_id
+          objectMarking {
+            id
+            definition_type
+            definition
+            x_opencti_order
+            x_opencti_color
+          }
+          created
+          modified
+          objectLabel {
+            id
+            value
+            color
+          }
+          subAttackPatterns {
+            edges {
+              node {
+                id
+                name
+                description
+                x_mitre_id
+              }
             }
-        `,
-  },
-  attackPatternsLinesQuery,
-);
+          }
+          killChainPhases {
+            id
+            kill_chain_name
+            phase_name
+            x_opencti_order
+          }
+          creators {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+        `;
 
 export default AttackPatternsMatrixLine;
