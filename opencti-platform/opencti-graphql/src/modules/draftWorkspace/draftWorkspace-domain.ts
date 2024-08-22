@@ -1,7 +1,7 @@
 import * as R from 'ramda';
 import type { AuthContext, AuthUser } from '../../types/user';
 import { listEntitiesPaginated, storeLoadById } from '../../database/middleware-loader';
-import type { DraftWorkspaceAddInput, QueryDraftWorkspacesArgs } from '../../generated/graphql';
+import type { DraftWorkspaceAddInput, QueryDraftWorkspaceEntitiesArgs, QueryDraftWorkspacesArgs } from '../../generated/graphql';
 import { createInternalObject } from '../../domain/internalObject';
 import { now } from '../../utils/format';
 import { type BasicStoreEntityDraftWorkspace, ENTITY_TYPE_DRAFT_WORKSPACE, type StoreEntityDraftWorkspace } from './draftWorkspace-types';
@@ -13,6 +13,8 @@ import { buildStixBundle, convertStoreToStix } from '../../database/stix-convert
 import { isStixRefRelationship } from '../../schema/stixRefRelationship';
 import { pushToWorkerForDraft } from '../../database/rabbitmq';
 import { SYSTEM_USER } from '../../utils/access';
+import type { BasicStoreEntity } from '../../types/store';
+import { ABSTRACT_STIX_CORE_OBJECT } from '../../schema/general';
 
 export const findById = (context: AuthContext, user: AuthUser, id: string) => {
   return storeLoadById<BasicStoreEntityDraftWorkspace>(context, user, id, ENTITY_TYPE_DRAFT_WORKSPACE);
@@ -20,6 +22,12 @@ export const findById = (context: AuthContext, user: AuthUser, id: string) => {
 
 export const findAll = (context: AuthContext, user: AuthUser, args: QueryDraftWorkspacesArgs) => {
   return listEntitiesPaginated<BasicStoreEntityDraftWorkspace>(context, user, [ENTITY_TYPE_DRAFT_WORKSPACE], args);
+};
+
+export const findAllEntities = (context: AuthContext, user: AuthUser, args: QueryDraftWorkspaceEntitiesArgs) => {
+  const draftId = context.draftId ?? user.workspace_context;
+  const draftIndex = `${ES_INDEX_PREFIX}_draft_workspace_${draftId}`;
+  return listEntitiesPaginated<BasicStoreEntity>(context, user, [ABSTRACT_STIX_CORE_OBJECT], { ...args, indices: [draftIndex] });
 };
 
 export const addDraftWorkspace = async (context: AuthContext, user: AuthUser, input: DraftWorkspaceAddInput) => {

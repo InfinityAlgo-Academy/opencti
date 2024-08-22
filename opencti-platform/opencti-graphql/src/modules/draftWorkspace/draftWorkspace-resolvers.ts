@@ -1,10 +1,11 @@
 import type { Resolvers } from '../../generated/graphql';
-import { findById, findAll, addDraftWorkspace, deleteDraftWorkspace, validateDraftWorkspace } from './draftWorkspace-domain';
+import { findById, findAll, addDraftWorkspace, deleteDraftWorkspace, validateDraftWorkspace, findAllEntities } from './draftWorkspace-domain';
 
 const draftWorkspaceResolvers: Resolvers = {
   Query: {
     draftWorkspace: (_, { id }, context) => findById(context, context.user, id),
     draftWorkspaces: (_, args, context) => findAll(context, context.user, args),
+    draftWorkspaceEntities: (_, args, context) => findAllEntities(context, context.user, args),
   },
   Mutation: {
     draftWorkspaceAdd: (_, { input }, context) => {

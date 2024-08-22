@@ -3919,12 +3919,13 @@ export const elUpdateElement = async (context, user, instance, inputs = []) => {
   validateDataBeforeIndexing(esData);
   let dataToReplace = R.dissoc('representative', esData);
   if (draftContext) {
-    const isDraftCreation = instance.draft_change && instance.draft_change.draft_operation === 'create';
+    const fullInstance = await elLoadById(context, user, instance.internal_id);
+    const isDraftCreation = fullInstance.draft_change && fullInstance.draft_change.draft_operation === 'create';
     if (!isDraftCreation) {
       const draftUpdates = inputs.filter((i) => !DRAFT_INPUT_TO_IGNORE.includes(i.key))
-        .map((i) => ({ draft_update_operation: 'replace', draft_update_field: i.key, draft_update_values: instance[i.key] }));
-      const currentUpdates = instance.draft_change && instance.draft_change.draft_updates
-        ? instance.draft_change.draft_updates.filter((currentUpdate) => !draftUpdates.some((update) => update.draft_update_field === currentUpdate.draft_update_field))
+        .map((i) => ({ draft_update_operation: 'replace', draft_update_field: i.key, draft_update_values: fullInstance[i.key] }));
+      const currentUpdates = fullInstance.draft_change && fullInstance.draft_change.draft_updates
+        ? fullInstance.draft_change.draft_updates.filter((currentUpdate) => !draftUpdates.some((update) => update.draft_update_field === currentUpdate.draft_update_field))
         : [];
       const draftChange = { draft_operation: 'update', draft_updates: [...currentUpdates, ...draftUpdates] };
       dataToReplace = { ...dataToReplace, draft_change: draftChange };
