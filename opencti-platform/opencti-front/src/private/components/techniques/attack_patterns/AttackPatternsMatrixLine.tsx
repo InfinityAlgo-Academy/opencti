@@ -8,9 +8,6 @@ import Checkbox from '@mui/material/Checkbox';
 import ListItemText from '@mui/material/ListItemText';
 import Tooltip from '@mui/material/Tooltip';
 import StixCoreObjectLabels from '@components/common/stix_core_objects/StixCoreObjectLabels';
-import {
-  StixDomainObjectAttackPatternsKillChainContainer_data$data,
-} from '@components/common/stix_domain_objects/__generated__/StixDomainObjectAttackPatternsKillChainContainer_data.graphql';
 import { KeyboardArrowRightOutlined } from '@mui/icons-material';
 import { AttackPatternsMatrixLine_node$data, AttackPatternsMatrixLine_node$key } from '@components/techniques/attack_patterns/__generated__/AttackPatternsMatrixLine_node.graphql';
 import Skeleton from '@mui/material/Skeleton';
@@ -20,12 +17,9 @@ import ItemIcon from '../../../../components/ItemIcon';
 import { HandleAddFilter } from '../../../../utils/hooks/useLocalStorage';
 import ItemMarkings from '../../../../components/ItemMarkings';
 
-export type AttackPatternNode = NonNullable<NonNullable<StixDomainObjectAttackPatternsKillChainContainer_data$data>['attackPatterns']>['edges'][0]['node'];
-
 interface AttackPatternsMatrixLineProps {
   node: AttackPatternsMatrixLine_node$key
   dataColumns: DataColumns;
-  attackPatterns: NonNullable<NonNullable<StixDomainObjectAttackPatternsKillChainContainer_data$data>['attackPatterns']>['edges'][0]['node'][];
   onLabelClick: HandleAddFilter;
   onToggleEntity: (
     entity: AttackPatternsMatrixLine_node$data,
@@ -51,6 +45,9 @@ fragment AttackPatternsMatrixLine_node on AttackPattern {
   description
   isSubAttackPattern
   x_mitre_id
+  x_mitre_platforms
+  x_mitre_permissions_required
+  x_mitre_detection
   objectMarking {
     id
     definition_type
@@ -91,7 +88,6 @@ fragment AttackPatternsMatrixLine_node on AttackPattern {
 const AttackPatternsMatrixLine: FunctionComponent<AttackPatternsMatrixLineProps> = ({
   dataColumns,
   node,
-  attackPatterns,
   onLabelClick,
   onToggleEntity,
   onToggleShiftEntity,
@@ -104,9 +100,6 @@ const AttackPatternsMatrixLine: FunctionComponent<AttackPatternsMatrixLineProps>
   const data = useFragment(attackPatternsMatrixLineFragment, node);
   const killChainNames = (data.killChainPhases || []).map((phase) => phase.kill_chain_name).join(', ');
   const phaseName = (data.killChainPhases && data.killChainPhases.length > 0) ? data.killChainPhases[0].phase_name : '';
-
-  console.log('data in line', data);
-  console.log('attackPatterns in line', attackPatterns);
 
   return (
     <div

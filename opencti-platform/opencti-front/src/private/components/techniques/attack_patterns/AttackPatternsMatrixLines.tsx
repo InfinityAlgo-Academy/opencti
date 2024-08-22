@@ -1,7 +1,4 @@
 import React, { FunctionComponent } from 'react';
-import {
-  StixDomainObjectAttackPatternsKillChainContainer_data$data,
-} from '@components/common/stix_domain_objects/__generated__/StixDomainObjectAttackPatternsKillChainContainer_data.graphql';
 import AttackPatternsMatrixLine, { AttackPatternsMatrixLineDummy } from '@components/techniques/attack_patterns/AttackPatternsMatrixLine';
 import { graphql, PreloadedQuery } from 'react-relay';
 import {
@@ -19,7 +16,6 @@ const nbOfRowsToLoad = 50;
 
 interface AttackPatternsMatrixLinesProps {
   queryRef: PreloadedQuery<AttackPatternsMatrixLinesPaginationQuery>;
-  attackPatterns: NonNullable<NonNullable<StixDomainObjectAttackPatternsKillChainContainer_data$data>['attackPatterns']>['edges'][0]['node'][];
   dataColumns: DataColumns;
   paginationOptions: AttackPatternsMatrixLinesPaginationQuery$variables;
   setNumberOfElements: UseLocalStorageHelpers['handleSetNumberOfElements'];
@@ -28,11 +24,6 @@ interface AttackPatternsMatrixLinesProps {
   onToggleEntity: (
     entity: AttackPatternsMatrixLine_node$data,
     event: React.SyntheticEvent
-  ) => void;
-  onToggleShiftEntity: (
-    index: number,
-    entity: AttackPatternsMatrixLine_node$data,
-    event?: React.SyntheticEvent
   ) => void;
   selectAll: boolean;
   onLabelClick: HandleAddFilter;
@@ -93,11 +84,9 @@ const attackPatternsMatrixLinesFragment = graphql`
 `;
 
 const AttackPatternsMatrixLines: FunctionComponent<AttackPatternsMatrixLinesProps> = ({
-  attackPatterns,
   queryRef,
   dataColumns,
   onToggleEntity,
-  onToggleShiftEntity,
   selectedElements,
   deSelectedElements,
   selectAll,
@@ -113,13 +102,11 @@ const AttackPatternsMatrixLines: FunctionComponent<AttackPatternsMatrixLinesProp
     queryRef,
     nodePath: ['attackPatterns', 'pageInfo', 'globalCount'],
   });
-  console.log('data in AttackPatternsMatrixLines', data);
-  console.log('attackPatterns in AttackPatternsMatrixLines', attackPatterns);
+
   return (
     <ListLinesContent
       hasMore={hasMore}
       initialLoading={!data}
-      attackPatterns={attackPatterns}
       isLoading={isLoadingMore}
       loadMore={loadMore}
       dataList={data?.attackPatterns?.edges ?? []}
