@@ -5,6 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { useTheme } from '@mui/styles';
 import { boundaryWrapper, NoMatch } from '@components/Error';
 import PlatformCriticalAlertDialog from '@components/settings/platform_alerts/PlatformCriticalAlertDialog';
+import DraftContextBanner from '@components/drafts/DraftContextBanner';
 import TopBar from './components/nav/TopBar';
 import LeftBar from './components/nav/LeftBar';
 import Message from '../components/Message';
@@ -17,6 +18,7 @@ import { RootSettings$data } from './__generated__/RootSettings.graphql';
 import Loader from '../components/Loader';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
+const DraftEntities = lazy(() => import('./components/drafts/DraftEntities'));
 const StixObjectOrStixRelationship = lazy(() => import('./components/StixObjectOrStixRelationship'));
 const SearchBulk = lazy(() => import('./components/SearchBulk'));
 const RootAnalyses = lazy(() => import('./components/analyses/Root'));
@@ -45,6 +47,7 @@ const Index = ({ settings }: IndexProps) => {
   const theme = useTheme<Theme>();
   const {
     bannerSettings: { bannerHeight },
+    me,
   } = useAuth();
   const settingsMessagesBannerHeight = useSettingsMessagesBannerHeight();
   const boxSx = {
@@ -79,6 +82,9 @@ const Index = ({ settings }: IndexProps) => {
       {(settings.platform_session_idle_timeout ?? 0) > 0 && <TimeoutLock />}
       <SettingsMessagesBanner />
       <PlatformCriticalAlertDialog alerts={settings.platform_critical_alerts}/>
+      {me.workspace_context && (
+        <DraftContextBanner />
+      )}
       <Box
         sx={{
           display: 'flex',
@@ -94,7 +100,7 @@ const Index = ({ settings }: IndexProps) => {
         <Box component="main" sx={boxSx}>
           <Suspense fallback={<Loader />}>
             <Routes>
-              <Route path="/" Component={boundaryWrapper(Dashboard)}/>
+              <Route path="/" Component={me.workspace_context ? boundaryWrapper(DraftEntities) : boundaryWrapper(Dashboard)}/>
 
               {/* Search need to be rework */}
               <Route path="/search/*" Component={boundaryWrapper(RootSearch)} />
