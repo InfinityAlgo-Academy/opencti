@@ -36,9 +36,10 @@ type Query {
         search: String
     ): DraftWorkspaceConnection @auth
     draftWorkspaceEntities(
+        types: [String]
         first: Int
         after: ID
-        orderBy: DraftWorkspacesOrdering
+        orderBy: StixDomainObjectsOrdering
         orderMode: OrderingMode
         filters: FilterGroup
         search: String
