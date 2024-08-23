@@ -2959,12 +2959,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mistralai/mistralai@npm:0.5.0":
-  version: 0.5.0
-  resolution: "@mistralai/mistralai@npm:0.5.0"
-  dependencies:
-    node-fetch: "npm:^2.6.7"
-  checksum: 10/788e4b6d4bb124131272beea1079081f4b279befc8608ac4fcf0efa147f524c48e4af4b68414c6f71a32704eaf0c9c6d5550634ed6be8a9bcf9cc8d15d55161a
+"@mistralai/mistralai@npm:1.0.4":
+  version: 1.0.4
+  resolution: "@mistralai/mistralai@npm:1.0.4"
+  peerDependencies:
+    zod: ">= 3"
+  checksum: 10/1e81c84150eb031d85cbea3e33859072d1ba5da21de7919e4fbe0eebdb73437bb76807ba36dd7005bc32f426edf91b473ac9dd1297653ea293487648017bf31e
   languageName: node
   linkType: hard
 
@@ -10744,7 +10744,7 @@ __metadata:
     "@graphql-tools/utils": "npm:10.5.4"
     "@jorgeferrero/stream-to-buffer": "npm:2.0.6"
     "@luckycatfactory/esbuild-graphql-loader": "npm:3.8.1"
-    "@mistralai/mistralai": "npm:0.5.0"
+    "@mistralai/mistralai": "npm:1.0.4"
     "@node-saml/passport-saml": "npm:4.0.4"
     "@opensearch-project/opensearch": "npm:2.11.0"
     "@opentelemetry/api": "npm:1.9.0"
