@@ -27,6 +27,7 @@ interface AttackPatternsMatrixLinesProps {
   ) => void;
   selectAll: boolean;
   onLabelClick: HandleAddFilter;
+  redirectionMode?: string;
 }
 
 export const attackPatternsMatrixLinesQuery = graphql`
@@ -85,6 +86,7 @@ const attackPatternsMatrixLinesFragment = graphql`
 
 const AttackPatternsMatrixLines: FunctionComponent<AttackPatternsMatrixLinesProps> = ({
   queryRef,
+  setNumberOfElements,
   dataColumns,
   onToggleEntity,
   selectedElements,
@@ -101,6 +103,7 @@ const AttackPatternsMatrixLines: FunctionComponent<AttackPatternsMatrixLinesProp
     linesFragment: attackPatternsMatrixLinesFragment,
     queryRef,
     nodePath: ['attackPatterns', 'pageInfo', 'globalCount'],
+    setNumberOfElements,
   });
 
   return (
