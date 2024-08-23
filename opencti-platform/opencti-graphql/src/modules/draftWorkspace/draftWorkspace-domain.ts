@@ -6,7 +6,7 @@ import { createInternalObject } from '../../domain/internalObject';
 import { now } from '../../utils/format';
 import { type BasicStoreEntityDraftWorkspace, ENTITY_TYPE_DRAFT_WORKSPACE, type StoreEntityDraftWorkspace } from './draftWorkspace-types';
 import { elCreateIndex, elDeleteIndices, elList, elLoadById, elPlatformIndices, engineMappingGenerator } from '../../database/engine';
-import { ES_INDEX_PREFIX } from '../../database/utils';
+import { ES_INDEX_PREFIX, isNotEmptyField } from '../../database/utils';
 import { FunctionalError } from '../../config/errors';
 import { deleteElementById, loadElementsWithDependencies, stixLoadByIds } from '../../database/middleware';
 import { buildStixBundle, convertStoreToStix } from '../../database/stix-converter';
@@ -15,6 +15,7 @@ import { pushToWorkerForDraft } from '../../database/rabbitmq';
 import { SYSTEM_USER } from '../../utils/access';
 import type { BasicStoreEntity } from '../../types/store';
 import { ABSTRACT_STIX_CORE_OBJECT } from '../../schema/general';
+import { isStixCoreObject } from '../../schema/stixCoreObject';
 
 export const findById = (context: AuthContext, user: AuthUser, id: string) => {
   return storeLoadById<BasicStoreEntityDraftWorkspace>(context, user, id, ENTITY_TYPE_DRAFT_WORKSPACE);
@@ -25,9 +26,16 @@ export const findAll = (context: AuthContext, user: AuthUser, args: QueryDraftWo
 };
 
 export const findAllEntities = (context: AuthContext, user: AuthUser, args: QueryDraftWorkspaceEntitiesArgs) => {
+  let types = [];
+  if (isNotEmptyField(args.types)) {
+    types = R.filter((type) => isStixCoreObject(type), args.types);
+  }
+  if (types.length === 0) {
+    types.push(ABSTRACT_STIX_CORE_OBJECT);
+  }
   const draftId = context.draftId ?? user.workspace_context;
   const draftIndex = `${ES_INDEX_PREFIX}_draft_workspace_${draftId}`;
-  return listEntitiesPaginated<BasicStoreEntity>(context, user, [ABSTRACT_STIX_CORE_OBJECT], { ...args, indices: [draftIndex] });
+  return listEntitiesPaginated<BasicStoreEntity>(context, user, types, { ...args, indices: [draftIndex] });
 };
 
 export const addDraftWorkspace = async (context: AuthContext, user: AuthUser, input: DraftWorkspaceAddInput) => {
