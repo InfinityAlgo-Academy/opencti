@@ -101,14 +101,11 @@ export const stixDomainObjectAttackPatternsKillChainContainerFragment = graphql`
           killChainPhases {
             id
             kill_chain_name
-            kill_chain_namephase_name
+            phase_name
             x_opencti_order
           }
           creators {
             id
-            name
-          creators {
-        id
             name
           }
         }
