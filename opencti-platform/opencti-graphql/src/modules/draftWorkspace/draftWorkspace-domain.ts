@@ -6,7 +6,7 @@ import { createInternalObject } from '../../domain/internalObject';
 import { now } from '../../utils/format';
 import { type BasicStoreEntityDraftWorkspace, ENTITY_TYPE_DRAFT_WORKSPACE, type StoreEntityDraftWorkspace } from './draftWorkspace-types';
 import { elCreateIndex, elDeleteIndices, elList, elLoadById, elPlatformIndices, engineMappingGenerator } from '../../database/engine';
-import { ES_INDEX_PREFIX, isNotEmptyField } from '../../database/utils';
+import {ES_INDEX_PREFIX, isNotEmptyField, READ_INDEX_DRAFT} from '../../database/utils';
 import { FunctionalError } from '../../config/errors';
 import { deleteElementById, loadElementsWithDependencies, stixLoadByIds } from '../../database/middleware';
 import { buildStixBundle, convertStoreToStix } from '../../database/stix-converter';
@@ -33,9 +33,7 @@ export const findAllEntities = (context: AuthContext, user: AuthUser, args: Quer
   if (types.length === 0) {
     types.push(ABSTRACT_STIX_CORE_OBJECT);
   }
-  const draftId = context.draftId ?? user.workspace_context;
-  const draftIndex = `${ES_INDEX_PREFIX}_draft_workspace_${draftId}`;
-  return listEntitiesPaginated<BasicStoreEntity>(context, user, types, { ...args, indices: [draftIndex] });
+  return listEntitiesPaginated<BasicStoreEntity>(context, user, types, { ...args, indices: [READ_INDEX_DRAFT] });
 };
 
 export const addDraftWorkspace = async (context: AuthContext, user: AuthUser, input: DraftWorkspaceAddInput) => {
@@ -46,10 +44,6 @@ export const addDraftWorkspace = async (context: AuthContext, user: AuthUser, in
   const draftWorkspaceInput = { ...input, ...defaultOps };
   const createdDraftWorkspace = await createInternalObject<StoreEntityDraftWorkspace>(context, user, draftWorkspaceInput, ENTITY_TYPE_DRAFT_WORKSPACE);
 
-  const newDraftIndexName = `${ES_INDEX_PREFIX}_draft_workspace_${createdDraftWorkspace.id}`;
-  const mappingProperties = engineMappingGenerator();
-  await elCreateIndex(newDraftIndexName, mappingProperties);
-
   return createdDraftWorkspace;
 };
 
@@ -58,9 +52,6 @@ export const deleteDraftWorkspace = async (context: AuthContext, user: AuthUser,
   if (!draftWorkspace) {
     throw FunctionalError(`Draft workspace ${id} cannot be found`, id);
   }
-  const draftIndexToDelete = `${ES_INDEX_PREFIX}_draft_workspace_${id}`;
-  const indices = await elPlatformIndices(draftIndexToDelete);
-  await elDeleteIndices(indices.map((i: { index: number }) => i.index));
 
   await deleteElementById(context, user, id, ENTITY_TYPE_DRAFT_WORKSPACE);
 

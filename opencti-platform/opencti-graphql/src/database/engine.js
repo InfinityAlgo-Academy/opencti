@@ -15,6 +15,7 @@ import {
   cursorToOffset,
   ES_INDEX_PREFIX,
   INDEX_DELETED_OBJECTS,
+  INDEX_DRAFT,
   INDEX_INTERNAL_OBJECTS,
   inferIndexFromConceptType,
   isEmptyField,
@@ -25,6 +26,7 @@ import {
   pascalize,
   READ_DATA_INDICES,
   READ_ENTITIES_INDICES,
+  READ_INDEX_DRAFT,
   READ_INDEX_INFERRED_ENTITIES,
   READ_INDEX_INFERRED_RELATIONSHIPS,
   READ_INDEX_INTERNAL_OBJECTS,
@@ -1332,11 +1334,10 @@ export const elFindByIds = async (context, user, ids, opts = {}) => {
     return toMap ? {} : [];
   }
   const draftContext = inDraftContext(context, user);
-  const draftIndex = getDraftIndex(draftContext);
   let computedIndices = computeQueryIndices(indices, types);
   computedIndices = Array.isArray(computedIndices) ? computedIndices : [computedIndices];
-  if (draftContext) computedIndices = [...computedIndices, `${draftIndex}*`];
-  if (draftID) computedIndices = [...computedIndices, `${getDraftIndex(draftID)}*`];
+  if (draftContext) computedIndices = [...computedIndices, READ_INDEX_DRAFT];
+  if (draftID) computedIndices = [...computedIndices, READ_INDEX_DRAFT];
   const hits = [];
   const groupIds = R.splitEvery(MAX_TERMS_SPLIT, idsArray);
   for (let index = 0; index < groupIds.length; index += 1) {
@@ -1373,11 +1374,39 @@ export const elFindByIds = async (context, user, ids, opts = {}) => {
     // If an admin ask for a specific element, there is no need to ask him to explicitly extends his visibility to doing it.
     const markingRestrictions = await buildDataRestrictions(context, user, restrictionOptions);
     mustTerms.push(...markingRestrictions.must);
+    // Handle draft
+    const isDraftCopyID = isFeatureEnabled('DRAFT_COPY_ID');
+    const draftMust = [];
+    if (isDraftCopyID && draftContext) {
+      const mustLive = {
+        bool: {
+          must_not: [
+            { term: { _index: READ_INDEX_DRAFT } },
+            { match: { draft_ids: draftContext } }
+          ]
+        }
+      };
+      const mustDraft = {
+        bool: {
+          must: [
+            { term: { _index: READ_INDEX_DRAFT } },
+            { match: { draft_ids: draftContext } }
+          ]
+        }
+      };
+      const draftBool = {
+        bool: {
+          should: [mustLive, mustDraft],
+          minimum_should_match: 1,
+        },
+      };
+      draftMust.push(draftBool);
+    }
     const body = {
       sort: [{ [orderBy]: orderMode }],
       query: {
         bool: {
-          must: mustTerms,
+          must: [...mustTerms, ...draftMust],
           must_not: markingRestrictions.must_not,
         },
       },
@@ -1427,11 +1456,10 @@ export const elLoadById = async (context, user, id, opts = {}) => {
   //* v8 ignore if */
   if (hits.length > 1) {
     const draftContext = inDraftContext(context, user);
-    const draftIndex = getDraftIndex(draftContext);
 
     if (!draftContext) throw DatabaseError('Id loading expect only one response', { id, hits: hits.length });
 
-    const liveFiltered = hits.filter((h) => h._index.includes(draftIndex));
+    const liveFiltered = hits.filter((h) => h._index.includes(INDEX_DRAFT));
     if (liveFiltered.length > 1) throw DatabaseError('Id loading expect only one response', { id, hits: hits.length });
     else { return liveFiltered[0]; }
   }
@@ -2715,12 +2743,6 @@ const elQueryBodyBuilder = async (context, user, options) => {
     if (types !== null && types.length > 0) {
       specialFiltersContent.push({ key: TYPE_FILTER, values: R.flatten(types) });
     }
-
-    const draftContext = inDraftContext(context, user);
-    const isDraftCopyID = isFeatureEnabled('DRAFT_COPY_ID');
-    if (isDraftCopyID && draftContext) {
-      specialFiltersContent.push({ key: 'draft_ids', values: [draftContext], operator: 'not_eq' });
-    }
   }
   const completeFilters = specialFiltersContent.length > 0 ? {
     mode: FilterMode.And,
@@ -2783,11 +2805,41 @@ const elQueryBodyBuilder = async (context, user, options) => {
   } else { // If not ordering criteria, order by standard_id
     ordering.push({ 'standard_id.keyword': 'asc' });
   }
+  // Handle draft
+  const draftContext = inDraftContext(context, user);
+  const isDraftCopyID = isFeatureEnabled('DRAFT_COPY_ID');
+  const draftMust = [];
+  if (isDraftCopyID && draftContext) {
+    const mustLive = {
+      bool: {
+        must_not: [
+          { term: { _index: READ_INDEX_DRAFT } },
+          { match: { draft_ids: draftContext } }
+        ]
+      }
+    };
+    const mustDraft = {
+      bool: {
+        must: [
+          { term: { _index: READ_INDEX_DRAFT } },
+          { match: { draft_ids: draftContext } }
+        ]
+      }
+    };
+    const draftBool = {
+      bool: {
+        should: [mustLive, mustDraft],
+        minimum_should_match: 1,
+      },
+    };
+    draftMust.push(draftBool);
+  }
+
   // Build query
   const body = {
     query: {
       bool: {
-        must: [...accessMust, ...mustFilters],
+        must: [...accessMust, ...mustFilters, ...draftMust],
         must_not: accessMustNot,
       },
     },
@@ -3095,9 +3147,8 @@ export const elPaginate = async (context, user, indexName, options = {}) => {
   const first = options.first ?? ES_DEFAULT_PAGINATION;
   const { types = null, connectionFormat = true, draftID = null } = options;
   const draftContext = inDraftContext(context, user);
-  const draftIndex = getDraftIndex(draftContext);
-  let indexNameToUse = indexName + (!draftContext ? '' : (`,${draftIndex}`));
-  if (draftID) indexNameToUse = `${draftID}*`;
+  let indexNameToUse = indexName + (!draftContext ? '' : (`,${READ_INDEX_DRAFT}`));
+  if (draftID) indexNameToUse = READ_INDEX_DRAFT;
   const body = await elQueryBodyBuilder(context, user, options);
   if (body.size > ES_MAX_PAGINATION && !bypassSizeLimit) {
     logApp.warn('[SEARCH] Pagination limited to max result config', { size: body.size, max: ES_MAX_PAGINATION });
@@ -3640,17 +3691,12 @@ export const inDraftContext = (context, user) => {
   return context.draftId ?? user.workspace_context;
 };
 
-const getDraftIndex = (draftID) => {
-  return `${ES_INDEX_PREFIX}_draft_workspace_${draftID}`;
-};
-
 const copyLiveElementToDraft = async (context, user, element, draftOperation = 'update') => {
   const draftContext = inDraftContext(context, user);
   if (!draftContext || element._index.includes('_draft_workspace_')) return element;
 
   const elementID = element.internal_id;
   const newInternalID = generateInternalId();
-  const draftIndex = getDraftIndex(draftContext);
 
   const isDraftNewID = isFeatureEnabled('DRAFT_NEW_ID');
   const isDraftCopyID = isFeatureEnabled('DRAFT_COPY_ID');
@@ -3658,14 +3704,14 @@ const copyLiveElementToDraft = async (context, user, element, draftOperation = '
   const updatedElement = element;
   if (isDraftNewID) {
     const updateIDScript = `ctx._id = "${newInternalID}"; ctx._source.id = "${newInternalID}"; ctx._source.internal_id = "${newInternalID}"; ctx._source.live_id = "${elementID}";`;
-    await elReindexElements(context, user, [elementID], element._index, draftIndex, updateIDScript);
+    await elReindexElements(context, user, [elementID], element._index, INDEX_DRAFT, updateIDScript);
 
     updatedElement.live_id = elementID;
     updatedElement.id = newInternalID;
     updatedElement.internal_id = newInternalID;
   } else if (isDraftCopyID) {
-    const setDraftChange = `ctx._source.draft_change = [:];ctx._source.draft_change.draft_operation = "${draftOperation}"`;
-    await elReindexElements(context, user, [elementID], element._index, draftIndex, setDraftChange);
+    const setDraftChange = `ctx._source.draft_change = [:];ctx._source.draft_ids='${draftContext}'; ctx._source.draft_change.draft_operation = "${draftOperation}"`;
+    await elReindexElements(context, user, [elementID], element._index, INDEX_DRAFT, setDraftChange);
     const addDraftIdScript = {
       script: {
         source: `ctx._source['draft_ids'] = '${draftContext}';`
@@ -3673,27 +3719,24 @@ const copyLiveElementToDraft = async (context, user, element, draftOperation = '
     };
     await elUpdate(element._index, elementID, addDraftIdScript);
   }
-  updatedElement._index = draftIndex;
+  updatedElement._index = INDEX_DRAFT;
 
   return updatedElement;
 };
 
 const getElementDraftVersion = async (context, user, element) => {
-  const draftContext = inDraftContext(context, user);
-  const draftIndex = getDraftIndex(draftContext);
-
-  if (element._index.includes(draftIndex)) return element;
+  if (element._index.includes(INDEX_DRAFT)) return element;
 
   const isDraftNewID = isFeatureEnabled('DRAFT_NEW_ID');
   const isDraftCopyID = isFeatureEnabled('DRAFT_COPY_ID');
 
   if (isDraftNewID) {
     const loadedElement = await elLoadById(context, user, element.internal_id, { getByLiveId: true });
-    if (loadedElement && loadedElement._index.includes(draftIndex)) return loadedElement;
+    if (loadedElement && loadedElement._index.includes(INDEX_DRAFT)) return loadedElement;
   }
   if (isDraftCopyID) {
     const loadedElement = await elLoadById(context, user, element.internal_id);
-    if (loadedElement && loadedElement._index.includes(draftIndex)) return loadedElement;
+    if (loadedElement && loadedElement._index.includes(INDEX_DRAFT)) return loadedElement;
   }
 
   return await copyLiveElementToDraft(context, user, element);
@@ -3701,7 +3744,6 @@ const getElementDraftVersion = async (context, user, element) => {
 
 export const elIndexElements = async (context, user, message, elements) => {
   const draftContext = inDraftContext(context, user);
-  const draftIndex = getDraftIndex(draftContext);
 
   // If we are in a draft, relations from and to need to be elements that are also in draft.
   if (draftContext) {
@@ -3715,7 +3757,7 @@ export const elIndexElements = async (context, user, message, elements) => {
           element.fromId = draftFrom.id;
         } else {
           element.from._index = draftContext && !isInternalObject(element.from.entity_type) && !isInternalRelationship(element.from.entity_type)
-            ? draftIndex
+            ? INDEX_DRAFT
             : element.from._index;
         }
         if (!elements.some((e) => e.internal_id === to.internal_id)) {
@@ -3724,7 +3766,7 @@ export const elIndexElements = async (context, user, message, elements) => {
           element.toId = draftTo.id;
         } else {
           element.to._index = draftContext && !isInternalObject(element.to.entity_type) && !isInternalRelationship(element.to.entity_type)
-            ? draftIndex
+            ? INDEX_DRAFT
             : element.to._index;
         }
       }
@@ -3738,12 +3780,13 @@ export const elIndexElements = async (context, user, message, elements) => {
     const body = transformedElements.flatMap((elementDoc) => {
       const doc = elementDoc;
       if (draftContext) {
-        doc._index = draftIndex;
+        doc._index = INDEX_DRAFT;
         doc.draft_change = { draft_operation: 'create' };
+        doc.draft_ids = [draftContext];
       }
       return [
         { index: { _index: draftContext && !isInternalObject(doc.entity_type) && !isInternalRelationship(doc.entity_type)
-          ? draftIndex
+          ? INDEX_DRAFT
           : doc._index,
         _id: doc.internal_id,
         retry_on_conflict: ES_RETRY_ON_CONFLICT } },

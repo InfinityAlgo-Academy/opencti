@@ -72,7 +72,7 @@ const isExistingPlatform = async (context) => {
   try {
     const migration = await loadEntity(context, SYSTEM_USER, [ENTITY_TYPE_MIGRATION_STATUS]);
     return migration !== undefined;
-  } catch {
+  } catch (e) {
     return false;
   }
 };

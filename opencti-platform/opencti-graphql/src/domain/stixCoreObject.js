@@ -83,7 +83,7 @@ export const batchInternalRels = async (context, user, elements, opts = {}) => {
   const relIds = elements.map(({ element, definition }) => element[definition.databaseName]).flat().filter((id) => isNotEmptyField(id));
   // Get all rel resolutions with system user
   // The visibility will be restricted in the data preparation
-  const resolvedElements = await internalFindByIds(context, SYSTEM_USER, relIds, { toMap: true });
+  const resolvedElements = await internalFindByIds(context, SYSTEM_USER, relIds, { toMap: true, draftID: user.workspace_context });
   return await Promise.all(elements.map(async ({ element, definition }) => {
     const relId = element[definition.databaseName];
     if (definition.multiple) {
