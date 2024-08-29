@@ -110,6 +110,7 @@ const createApolloServer = () => {
       // Building context from request headers
       executeContext.workId = req.headers['opencti-work-id']; // Api call comes from a worker processing
       executeContext.eventId = req.headers['opencti-event-id']; // Api call is due to listening event
+      executeContext.draftId = req.headers['opencti-draft-id']; // Api call is to be done in draft context
       executeContext.previousStandard = req.headers['previous-standard']; // Previous standard id
       executeContext.synchronizedUpsert = req.headers['synchronized-upsert'] === 'true'; // If full sync needs to be done
       try {
