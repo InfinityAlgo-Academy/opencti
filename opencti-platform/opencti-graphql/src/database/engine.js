@@ -27,6 +27,7 @@ import {
   READ_DATA_INDICES,
   READ_ENTITIES_INDICES,
   READ_INDEX_DRAFT,
+  READ_INDEX_FILES,
   READ_INDEX_INFERRED_ENTITIES,
   READ_INDEX_INFERRED_RELATIONSHIPS,
   READ_INDEX_INTERNAL_OBJECTS,
@@ -3511,6 +3512,20 @@ export const elReindexElements = async (context, user, ids, sourceIndex, destInd
   });
 };
 
+export const elDeleteDraftElements = async (context, user, draftId) => {
+  return elRawDeleteByQuery({
+    index: READ_INDEX_DRAFT,
+    refresh: true,
+    body: {
+      query: {
+        term: { 'draft_ids.keyword': draftId },
+      }
+    },
+  }).catch((err) => {
+    throw DatabaseError('Error deleting draft elements', { cause: err });
+  });
+};
+
 export const elDeleteElements = async (context, user, elements, opts = {}) => {
   if (elements.length === 0) return;
   const { forceDelete = true } = opts;
@@ -3865,7 +3880,7 @@ export const elIndexElements = async (context, user, message, elements) => {
       return { ...entity, id: entityId, data: { script: { source, params } } };
     });
     const bodyUpdate = elementsToUpdate.flatMap((doc) => [
-      { update: { _index: doc._index, _id: doc._id, retry_on_conflict: ES_RETRY_ON_CONFLICT } },
+      { update: { _index: doc._index, _id: doc._id ?? doc.id, retry_on_conflict: ES_RETRY_ON_CONFLICT } },
       R.dissoc('_index', doc.data),
     ]);
     if (bodyUpdate.length > 0) {

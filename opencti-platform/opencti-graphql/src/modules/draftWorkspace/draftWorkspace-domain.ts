@@ -5,7 +5,15 @@ import type { DraftWorkspaceAddInput, QueryDraftWorkspaceEntitiesArgs, QueryDraf
 import { createInternalObject } from '../../domain/internalObject';
 import { now } from '../../utils/format';
 import { type BasicStoreEntityDraftWorkspace, ENTITY_TYPE_DRAFT_WORKSPACE, type StoreEntityDraftWorkspace } from './draftWorkspace-types';
-import { elCreateIndex, elDeleteIndices, elList, elLoadById, elPlatformIndices, engineMappingGenerator } from '../../database/engine';
+import {
+  elCreateIndex,
+  elDeleteDraftElements,
+  elDeleteIndices,
+  elList,
+  elLoadById,
+  elPlatformIndices,
+  engineMappingGenerator
+} from '../../database/engine';
 import {ES_INDEX_PREFIX, isNotEmptyField, READ_INDEX_DRAFT} from '../../database/utils';
 import { FunctionalError } from '../../config/errors';
 import { deleteElementById, loadElementsWithDependencies, stixLoadByIds } from '../../database/middleware';
@@ -53,6 +61,7 @@ export const deleteDraftWorkspace = async (context: AuthContext, user: AuthUser,
     throw FunctionalError(`Draft workspace ${id} cannot be found`, id);
   }
 
+  await elDeleteDraftElements(context, user, id);
   await deleteElementById(context, user, id, ENTITY_TYPE_DRAFT_WORKSPACE);
 
   return id;
