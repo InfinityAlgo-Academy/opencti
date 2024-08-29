@@ -59,8 +59,7 @@ export const deleteDraftWorkspace = async (context: AuthContext, user: AuthUser,
 };
 
 export const validateDraftWorkspace = async (context: AuthContext, user: AuthUser, id: string) => {
-  const draftIndexToValidate = `${ES_INDEX_PREFIX}_draft_workspace_${id}*`;
-  const draftEntities = await elList(context, user, draftIndexToValidate);
+  const draftEntities = await elList(context, user, READ_INDEX_DRAFT);
 
   const draftEntitiesMinusRefRel = draftEntities.filter((e) => !isStixRefRelationship(e.entity_type));
 

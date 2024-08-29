@@ -1187,6 +1187,7 @@ const elDataConverter = (esHit, withoutRels = false) => {
   const elementData = esHit._source;
   const data = {
     _index: esHit._index,
+    _id: esHit._id,
     id: elementData.internal_id,
     sort: esHit.sort,
     ...elRebuildRelation(elementData),
@@ -3710,11 +3711,17 @@ const copyLiveElementToDraft = async (context, user, element, draftOperation = '
     updatedElement.id = newInternalID;
     updatedElement.internal_id = newInternalID;
   } else if (isDraftCopyID) {
-    const setDraftChange = `ctx._source.draft_change = [:];ctx._source.draft_ids='${draftContext}'; ctx._source.draft_change.draft_operation = "${draftOperation}"`;
+    const setDraftChange = `ctx._id="${newInternalID}";ctx._source.draft_change = [:];ctx._source.draft_ids=['${draftContext}']; ctx._source.draft_change.draft_operation = "${draftOperation}"`;
     await elReindexElements(context, user, [elementID], element._index, INDEX_DRAFT, setDraftChange);
+    updatedElement._id = newInternalID;
     const addDraftIdScript = {
       script: {
-        source: `ctx._source['draft_ids'] = '${draftContext}';`
+        source: `
+          if (ctx._source.containsKey('draft_ids')) 
+            {ctx._source['draft_ids'].add('${draftContext}');} 
+          else 
+            {ctx._source.draft_ids = ['${draftContext}']}
+        `
       }
     };
     await elUpdate(element._index, elementID, addDraftIdScript);
@@ -3858,7 +3865,7 @@ export const elIndexElements = async (context, user, message, elements) => {
       return { ...entity, id: entityId, data: { script: { source, params } } };
     });
     const bodyUpdate = elementsToUpdate.flatMap((doc) => [
-      { update: { _index: doc._index, _id: doc.id, retry_on_conflict: ES_RETRY_ON_CONFLICT } },
+      { update: { _index: doc._index, _id: doc._id, retry_on_conflict: ES_RETRY_ON_CONFLICT } },
       R.dissoc('_index', doc.data),
     ]);
     if (bodyUpdate.length > 0) {
@@ -3954,27 +3961,40 @@ const DRAFT_INPUT_TO_IGNORE = ['updated_at', 'modified', 'i_attributes'];
 export const elUpdateElement = async (context, user, instance, inputs = []) => {
   const draftContext = inDraftContext(context, user);
   let instanceToUse = instance;
-  if (draftContext && !isInternalObject(instance.entity_type) && !isInternalRelationship(instance.entity_type)) instanceToUse = await getElementDraftVersion(context, user, instance);
-
-  if (instanceToUse !== instance) throw DatabaseError('Cannot update live entity with a draft copy');
+  let firstDraftCopy = false;
+  if (draftContext && !isInternalObject(instance.entity_type) && !isInternalRelationship(instance.entity_type)) {
+    firstDraftCopy = !instance._index.includes(INDEX_DRAFT);
+    instanceToUse = await getElementDraftVersion(context, user, instance);
+  }
 
   const esData = prepareElementForIndexing(instanceToUse);
   validateDataBeforeIndexing(esData);
   let dataToReplace = R.dissoc('representative', esData);
+  let replaceId = instanceToUse.internal_id;
   if (draftContext) {
-    const fullInstance = await elLoadById(context, user, instance.internal_id);
-    const isDraftCreation = fullInstance.draft_change && fullInstance.draft_change.draft_operation === 'create';
-    if (!isDraftCreation) {
+    if (firstDraftCopy) {
       const draftUpdates = inputs.filter((i) => !DRAFT_INPUT_TO_IGNORE.includes(i.key))
-        .map((i) => ({ draft_update_operation: 'replace', draft_update_field: i.key, draft_update_values: fullInstance[i.key] }));
-      const currentUpdates = fullInstance.draft_change && fullInstance.draft_change.draft_updates
-        ? fullInstance.draft_change.draft_updates.filter((currentUpdate) => !draftUpdates.some((update) => update.draft_update_field === currentUpdate.draft_update_field))
-        : [];
-      const draftChange = { draft_operation: 'update', draft_updates: [...currentUpdates, ...draftUpdates] };
+        .map((i) => ({ draft_update_operation: 'replace', draft_update_field: i.key, draft_update_values: instanceToUse[i.key] }));
+      const draftChange = { draft_operation: 'update', draft_updates: draftUpdates };
       dataToReplace = { ...dataToReplace, draft_change: draftChange };
+      replaceId = instanceToUse._id;
+      dataToReplace = R.dissoc('_id', dataToReplace);
+    } else {
+      const fullInstance = await elLoadById(context, user, instanceToUse.internal_id);
+      const isDraftCreation = fullInstance.draft_change && fullInstance.draft_change.draft_operation === 'create';
+      if (!isDraftCreation) {
+        const draftUpdates = inputs.filter((i) => !DRAFT_INPUT_TO_IGNORE.includes(i.key))
+          .map((i) => ({ draft_update_operation: 'replace', draft_update_field: i.key, draft_update_values: fullInstance[i.key] }));
+        const currentUpdates = fullInstance.draft_change && fullInstance.draft_change.draft_updates
+          ? fullInstance.draft_change.draft_updates.filter((currentUpdate) => !draftUpdates.some((update) => update.draft_update_field === currentUpdate.draft_update_field))
+          : [];
+        const draftChange = { draft_operation: 'update', draft_updates: [...currentUpdates, ...draftUpdates] };
+        dataToReplace = { ...dataToReplace, draft_change: draftChange };
+      }
+      replaceId = fullInstance._id;
     }
   }
-  const replacePromise = elReplace(instanceToUse._index, instanceToUse.internal_id, { doc: dataToReplace });
+  const replacePromise = elReplace(instanceToUse._index, replaceId, { doc: dataToReplace });
   // If entity with a name, must update connections
   let connectionPromise = Promise.resolve();
   if (esData.name && isStixObject(instanceToUse.entity_type)) {
