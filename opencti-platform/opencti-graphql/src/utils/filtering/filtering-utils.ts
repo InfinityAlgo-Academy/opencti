@@ -120,7 +120,7 @@ export const extractFilterGroupValues = (inputFilters: FilterGroup, key: string 
 };
 
 /**
- * Insert a Filter inside a FilterGroup
+ * Construct a filter: filterGroup AND (new filter constructed from key, values, operator and mode)
  * If the input filterGroup is not defined, it will return a new filterGroup with only the added filter (and / or).
  * Note that this function does input coercion, accepting string[] and string alike
  */
@@ -131,7 +131,7 @@ export const addFilter = (filterGroup: FilterGroup | undefined | null, newKey: s
     valuesArray = Array.isArray(newValues) ? newValues : [newValues];
   }
   return {
-    mode: filterGroup?.mode ?? 'and',
+    mode: 'and',
     filters: [
       {
         key: keyArray,
@@ -139,9 +139,8 @@ export const addFilter = (filterGroup: FilterGroup | undefined | null, newKey: s
         operator,
         mode: 'or'
       },
-      ...(filterGroup?.filters ?? [])
     ],
-    filterGroups: filterGroup?.filterGroups ?? [],
+    filterGroups: filterGroup ? [filterGroup] : [],
   } as FilterGroup;
 };
 
