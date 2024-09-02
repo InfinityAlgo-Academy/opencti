@@ -2703,6 +2703,8 @@ interface Container {
   x_opencti_graph_data: String
   objectAssignee: [Assignee!]
   avatar: OpenCtiFile
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(first: Int, after: ID, orderBy: StixObjectOrStixRelationshipsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], all: Boolean): StixObjectOrStixRelationshipRefConnection
   relatedContainers(first: Int, after: ID, orderBy: ContainersOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], viaTypes: [String]): ContainerConnection
   creators: [Creator!]
@@ -2771,6 +2773,8 @@ type Note implements BasicObject & StixObject & StixCoreObject & StixDomainObjec
   x_opencti_graph_data: String
   objectAssignee: [Assignee!]
   avatar: OpenCtiFile
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(first: Int, after: ID, orderBy: StixObjectOrStixRelationshipsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], all: Boolean): StixObjectOrStixRelationshipRefConnection
   relatedContainers(first: Int, after: ID, orderBy: ContainersOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], viaTypes: [String]): ContainerConnection
   attribute_abstract: String
@@ -2898,6 +2902,8 @@ type ObservedData implements BasicObject & StixObject & StixCoreObject & StixDom
   x_opencti_graph_data: String
   objectAssignee: [Assignee!]
   avatar: OpenCtiFile
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(first: Int, after: ID, orderBy: StixObjectOrStixRelationshipsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], all: Boolean): StixObjectOrStixRelationshipRefConnection
   relatedContainers(first: Int, after: ID, orderBy: ContainersOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], viaTypes: [String]): ContainerConnection
   first_observed: DateTime!
@@ -3000,6 +3006,8 @@ type Opinion implements BasicObject & StixObject & StixCoreObject & StixDomainOb
   x_opencti_graph_data: String
   objectAssignee: [Assignee!]
   avatar: OpenCtiFile
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(first: Int, after: ID, orderBy: StixObjectOrStixRelationshipsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], all: Boolean): StixObjectOrStixRelationshipRefConnection
   relatedContainers(first: Int, after: ID, orderBy: ContainersOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], viaTypes: [String]): ContainerConnection
   explanation: String
@@ -3122,6 +3130,8 @@ type Report implements BasicObject & StixObject & StixCoreObject & StixDomainObj
   x_opencti_graph_data: String
   objectAssignee: [Assignee!]
   avatar: OpenCtiFile
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(first: Int, after: ID, orderBy: StixObjectOrStixRelationshipsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], all: Boolean): StixObjectOrStixRelationshipRefConnection
   relatedContainers(first: Int, after: ID, orderBy: ContainersOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], viaTypes: [String]): ContainerConnection
   name: String!
@@ -8047,6 +8057,7 @@ type ContainerEditMutations {
   fieldPatch(input: [EditInput]!, commitMessage: String, references: [String]): Container
   contextPatch(input: EditContext): Container
   contextClean: Container
+  editAuthorizedMembers(input: [MemberAccessInput!]): Container
   relationAdd(input: StixRefRelationshipAddInput!, commitMessage: String, references: [String]): StixRefRelationship
   relationDelete(toId: StixRef!, relationship_type: String!, commitMessage: String, references: [String]): Container
   investigationAdd: Workspace
@@ -8521,7 +8532,6 @@ type Mutation {
   caseTemplateRelationDelete(id: ID!, toId: StixRef!, relationship_type: String!): CaseTemplate
   caseIncidentAdd(input: CaseIncidentAddInput!): CaseIncident
   caseIncidentDelete(id: ID!): ID
-  caseIncidentEditAuthorizedMembers(id: ID!, input: [MemberAccessInput!]): CaseIncident
   caseRfiAdd(input: CaseRfiAddInput!): CaseRfi
   caseRfiDelete(id: ID!): ID
   caseRftAdd(input: CaseRftAddInput!): CaseRft
@@ -8961,6 +8971,8 @@ type Grouping implements BasicObject & StixObject & StixCoreObject & StixDomainO
   x_opencti_graph_data: String
   objectAssignee: [Assignee!]
   avatar: OpenCtiFile
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(first: Int, after: ID, orderBy: StixObjectOrStixRelationshipsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], all: Boolean): StixObjectOrStixRelationshipRefConnection
   relatedContainers(first: Int, after: ID, orderBy: ContainersOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], viaTypes: [String]): ContainerConnection
   name: String!
@@ -9749,6 +9761,8 @@ type Task implements Container & StixDomainObject & StixCoreObject & StixObject 
   objectAssignee: [Assignee!]
   objectParticipant: [Participant!]
   avatar: OpenCtiFile
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(first: Int, after: ID, orderBy: StixObjectOrStixRelationshipsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], all: Boolean): StixObjectOrStixRelationshipRefConnection
   relatedContainers(first: Int, after: ID, orderBy: ContainersOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], viaTypes: [String]): ContainerConnection
   creators: [Creator!]
@@ -9884,6 +9898,8 @@ interface Case implements BasicObject & StixObject & StixCoreObject & StixDomain
   objectAssignee: [Assignee!]
   objectParticipant: [Participant!]
   avatar: OpenCtiFile
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(first: Int, after: ID, orderBy: StixObjectOrStixRelationshipsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], all: Boolean): StixObjectOrStixRelationshipRefConnection
   relatedContainers(first: Int, after: ID, orderBy: ContainersOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], viaTypes: [String]): ContainerConnection
   creators: [Creator!]
@@ -9901,8 +9917,6 @@ interface Case implements BasicObject & StixObject & StixCoreObject & StixDomain
   content: String
   content_mapping: String
   tasks: TaskConnection!
-  authorized_members: [MemberAccess!]
-  currentUserAccessRight: String
 }
 
 enum CasesOrdering {
@@ -10004,6 +10018,8 @@ type CaseIncident implements BasicObject & StixObject & StixCoreObject & StixDom
   objectAssignee: [Assignee!]
   objectParticipant: [Participant!]
   avatar: OpenCtiFile
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(first: Int, after: ID, orderBy: StixObjectOrStixRelationshipsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], all: Boolean): StixObjectOrStixRelationshipRefConnection
   relatedContainers(first: Int, after: ID, orderBy: ContainersOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], viaTypes: [String]): ContainerConnection
   creators: [Creator!]
@@ -10021,8 +10037,6 @@ type CaseIncident implements BasicObject & StixObject & StixCoreObject & StixDom
   content: String
   content_mapping: String
   tasks: TaskConnection!
-  authorized_members: [MemberAccess!]
-  currentUserAccessRight: String
   rating: Int
   response_types: [String!]
   severity: String
@@ -10125,6 +10139,8 @@ type CaseRfi implements BasicObject & StixObject & StixCoreObject & StixDomainOb
   objectAssignee: [Assignee!]
   objectParticipant: [Participant!]
   avatar: OpenCtiFile
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(first: Int, after: ID, orderBy: StixObjectOrStixRelationshipsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], all: Boolean): StixObjectOrStixRelationshipRefConnection
   relatedContainers(first: Int, after: ID, orderBy: ContainersOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], viaTypes: [String]): ContainerConnection
   creators: [Creator!]
@@ -10142,8 +10158,6 @@ type CaseRfi implements BasicObject & StixObject & StixCoreObject & StixDomainOb
   content: String
   content_mapping: String
   tasks: TaskConnection!
-  authorized_members: [MemberAccess!]
-  currentUserAccessRight: String
   information_types: [String!]
   severity: String
   priority: String
@@ -10244,6 +10258,8 @@ type CaseRft implements BasicObject & StixObject & StixCoreObject & StixDomainOb
   objectAssignee: [Assignee!]
   objectParticipant: [Participant!]
   avatar: OpenCtiFile
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(first: Int, after: ID, orderBy: StixObjectOrStixRelationshipsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], all: Boolean): StixObjectOrStixRelationshipRefConnection
   relatedContainers(first: Int, after: ID, orderBy: ContainersOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], viaTypes: [String]): ContainerConnection
   creators: [Creator!]
@@ -10261,8 +10277,6 @@ type CaseRft implements BasicObject & StixObject & StixCoreObject & StixDomainOb
   content: String
   content_mapping: String
   tasks: TaskConnection!
-  authorized_members: [MemberAccess!]
-  currentUserAccessRight: String
   takedown_types: [String!]
   severity: String
   priority: String
@@ -10364,6 +10378,8 @@ type Feedback implements BasicObject & StixObject & StixCoreObject & StixDomainO
   objectAssignee: [Assignee!]
   objectParticipant: [Participant!]
   avatar: OpenCtiFile
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(first: Int, after: ID, orderBy: StixObjectOrStixRelationshipsOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], all: Boolean): StixObjectOrStixRelationshipRefConnection
   relatedContainers(first: Int, after: ID, orderBy: ContainersOrdering, orderMode: OrderingMode, filters: FilterGroup, search: String, types: [String], viaTypes: [String]): ContainerConnection
   creators: [Creator!]
@@ -10382,8 +10398,6 @@ type Feedback implements BasicObject & StixObject & StixCoreObject & StixDomainO
   content_mapping: String
   tasks: TaskConnection!
   rating: Int
-  authorized_members: [MemberAccess!]
-  currentUserAccessRight: String
 }
 
 enum FeedbacksOrdering {

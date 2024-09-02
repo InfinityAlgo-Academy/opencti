@@ -3000,6 +3000,8 @@ interface Container {
   objectAssignee: [Assignee!]
   avatar: OpenCtiFile
   # Container
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(
     first: Int
     after: ID
@@ -3144,6 +3146,8 @@ type Note implements BasicObject & StixObject & StixCoreObject & StixDomainObjec
   objectAssignee: [Assignee!]
   avatar: OpenCtiFile
   # Container
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(
     first: Int
     after: ID
@@ -3361,6 +3365,8 @@ type ObservedData implements BasicObject & StixObject & StixCoreObject & StixDom
   objectAssignee: [Assignee!]
   avatar: OpenCtiFile
   # Container
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(
     first: Int
     after: ID
@@ -3554,6 +3560,8 @@ type Opinion implements BasicObject & StixObject & StixCoreObject & StixDomainOb
   objectAssignee: [Assignee!]
   avatar: OpenCtiFile
   # Container
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(
     first: Int
     after: ID
@@ -3766,6 +3774,8 @@ type Report implements BasicObject & StixObject & StixCoreObject & StixDomainObj
   objectAssignee: [Assignee!]
   avatar: OpenCtiFile
   # Container
+  authorized_members: [MemberAccess!]
+  currentUserAccessRight: String
   objects(
     first: Int
     after: ID
@@ -13670,6 +13680,7 @@ type ContainerEditMutations {
   fieldPatch(input: [EditInput]!, commitMessage: String, references: [String]): Container @auth(for: [KNOWLEDGE_KNUPDATE])
   contextPatch(input: EditContext): Container @auth(for: [KNOWLEDGE_KNUPDATE])
   contextClean: Container @auth(for: [KNOWLEDGE_KNUPDATE])
+  editAuthorizedMembers(input:[MemberAccessInput!]): Container @auth(for: [KNOWLEDGE_KNUPDATE_KNMANAGEAUTHMEMBERS])
   relationAdd(input: StixRefRelationshipAddInput!, commitMessage: String, references: [String]): StixRefRelationship @auth(for: [KNOWLEDGE_KNUPDATE])
   relationDelete(toId: StixRef!, relationship_type: String!, commitMessage: String, references: [String]): Container @auth(for: [KNOWLEDGE_KNUPDATE])
   investigationAdd: Workspace @auth(for: [KNOWLEDGE_KNUPDATE])
