@@ -2621,7 +2621,7 @@ export const getExistingRelations = async (context, user, input, opts = {}) => {
     const deduplicationFilters = buildRelationDeduplicationFilters(input);
     const searchFilters = {
       mode: 'or',
-      filters: [{ key: 'ids', values: getInputIds(relationshipType, input, false) }],
+      filters: [{ key: 'ids', values: getInputIds(relationshipType, input) }],
       filterGroups: [{
         mode: 'and',
         filters: [
@@ -2676,7 +2676,7 @@ export const createRelationRaw = async (context, user, rawInput, opts = {}) => {
   await validateEntityAndRelationCreation(context, user, filledInput, relationshipType, entitySetting, opts);
 
   // Build lock ids
-  const inputIds = getInputIds(relationshipType, filledInput, fromRule);
+  const inputIds = getInputIds(relationshipType, filledInput);
   const participantIds = inputIds.filter((e) => !locks.includes(e));
   try {
     // Try to get the lock in redis
