@@ -438,22 +438,22 @@ export const generateStandardId = (type, data) => {
   // Unknown
   throw UnsupportedError(`${type} is not supported by the platform`);
 };
-export const generateAliasesId = (rawAliases, instance) => {
-  if (isEmptyField(instance.entity_type)) {
-    throw UnsupportedError('Cant generate alias without entity type ', { instance });
+export const generateAliasesId = (rawAliases, input) => {
+  if (isEmptyField(input.entity_type)) {
+    throw UnsupportedError('Cant generate alias without entity type ', { input });
   }
-  if (!isStixObjectAliased(instance.entity_type)) {
+  if (!isStixObjectAliased(input.entity_type)) {
     return [];
   }
   const aliases = R.uniq(rawAliases.filter((a) => isNotEmptyField(a)).map((a) => a.trim()));
   return R.uniq(aliases.map((alias) => {
-    const instanceWithAliasAsName = { ...instance, name: alias };
-    return generateStandardId(instance.entity_type, instanceWithAliasAsName);
+    const instanceWithAliasAsName = { name: alias };
+    return generateStandardId(input.entity_type, instanceWithAliasAsName);
   }));
 };
 export const generateAliasesIdsForInstance = (instance) => {
   const aliases = [...(instance.aliases || []), ...(instance.x_opencti_aliases || [])];
-  return generateAliasesId(aliases, instance);
+  return aliases.length > 0 ? generateAliasesId(aliases, instance) : [];
 };
 
 const getHashIds = (type, hashes) => {
@@ -494,8 +494,8 @@ export const getInputIds = (type, input, fromRule) => {
   ids.push(...getHashIds(type, input.hashes));
   // Inference can only be created once, locking the combination
   if (fromRule && isBasicRelationship(type)) {
-    ids.push(`${input.from.internal_id}-${type}-${input.to.internal_id}`);
-    ids.push(`${input.to.internal_id}-${type}-${input.from.internal_id}`);
+    ids.push(`${input.fromId}-${type}-${input.toId}`);
+    ids.push(`${input.toId}-${type}-${input.fromId}`);
   }
   // Return list of unique ids to lock
   return R.uniq(ids);
