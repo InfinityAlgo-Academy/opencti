@@ -5,8 +5,9 @@ import { propOr } from 'ramda';
 import { createFragmentContainer, graphql } from 'react-relay';
 import withStyles from '@mui/styles/withStyles';
 import { Route, Routes } from 'react-router-dom';
+import { containerAddStixCoreObjectsLinesRelationAddMutation } from '@components/common/containers/ContainerAddStixCoreObjectsLines';
 import StixCoreRelationship from '../../common/stix_core_relationships/StixCoreRelationship';
-import { QueryRenderer } from '../../../../relay/environment';
+import { commitMutation, QueryRenderer } from '../../../../relay/environment';
 import ContainerHeader from '../../common/containers/ContainerHeader';
 import ReportKnowledgeGraph, { reportKnowledgeGraphQuery } from './ReportKnowledgeGraph';
 import ReportKnowledgeCorrelation, { reportKnowledgeCorrelationQuery } from './ReportKnowledgeCorrelation';
@@ -19,6 +20,7 @@ import { constructHandleAddFilter, constructHandleRemoveFilter, emptyFilterGroup
 import ContentKnowledgeTimeLineBar from '../../common/containers/ContainertKnowledgeTimeLineBar';
 import investigationAddFromContainer from '../../../../utils/InvestigationUtils';
 import withRouter from '../../../../utils/compat_router/withRouter';
+import { insertNode } from '../../../../utils/store';
 
 const styles = () => ({
   container: {
@@ -251,6 +253,31 @@ class ReportKnowledgeComponent extends Component {
       orderBy,
       orderMode: 'desc',
     };
+    const handleAddEntity = (entity) => {
+      const input = {
+        toId: entity.id,
+        relationship_type: 'object',
+      };
+      commitMutation({
+        mutation: containerAddStixCoreObjectsLinesRelationAddMutation,
+        variables: {
+          id: report.id,
+          input,
+        },
+        updater: (store) => {
+          insertNode(
+            store,
+            'Pagination_objects',
+            undefined,
+            'containerEdit',
+            report.id,
+            'relationAdd',
+            { input },
+            'to',
+          );
+        },
+      });
+    };
     return (
       <div
         className={classes.container}
@@ -390,6 +417,7 @@ class ReportKnowledgeComponent extends Component {
                         handleToggleModeOnlyActive={this.handleToggleModeOnlyActive.bind(
                           this,
                         )}
+                        handleAdd={handleAddEntity}
                       />
                     );
                   }
