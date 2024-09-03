@@ -50,7 +50,6 @@ import useGranted, { KNOWLEDGE_KNUPDATE } from '../../../../utils/hooks/useGrant
 import { CaseRfiCreationForm } from '../../cases/case_rfis/CaseRfiCreation';
 import { CaseRftCreationForm } from '../../cases/case_rfts/CaseRftCreation';
 import { ThreatActorIndividualCreationForm } from '../../threats/threat_actors_individual/ThreatActorIndividualCreation';
-import useHelper from '../../../../utils/hooks/useHelper';
 import BulkTextModalButton from '../../../../components/fields/BulkTextField/BulkTextModalButton';
 
 export const stixDomainObjectCreationAllTypesQuery = graphql`
@@ -201,7 +200,6 @@ const StixDomainPanel = ({
   defaultCreatedBy,
   defaultMarkingDefinitions,
 }) => {
-  const { isFeatureEnable } = useHelper();
   const [bulkOpen, setBulkOpen] = useState(false);
   const { t_i18n } = useFormatter();
   const queryData = usePreloadedQuery(
@@ -759,13 +757,11 @@ const StixDomainPanel = ({
     >
       <DialogTitle style={{ display: 'flex' }}>
         {t_i18n('Create an entity')}
-        {isFeatureEnable('BULK_ENTITIES') && (
-          <BulkTextModalButton
-            onClick={() => setBulkOpen(true)}
-            sx={{ marginRight: 0 }}
-            disabled={!BULK_ENTITIES.includes(type)}
-          />
-        )}
+        <BulkTextModalButton
+          onClick={() => setBulkOpen(true)}
+          sx={{ marginRight: 0 }}
+          disabled={!BULK_ENTITIES.includes(type)}
+        />
       </DialogTitle>
       <DialogContent>
         <Select
