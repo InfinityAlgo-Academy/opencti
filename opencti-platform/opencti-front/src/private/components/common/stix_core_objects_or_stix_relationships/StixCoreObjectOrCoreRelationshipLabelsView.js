@@ -59,7 +59,6 @@ const StixCoreObjectOrCoreRelationshipLabelsView = (props) => {
   const theme = mode === 'dark'
     ? ThemeDark()
     : ThemeLight();
-  const normalColor = mode === 'dark' ? '#ffffff' : '#000000';
   const classes = useStyles();
   const { t_i18n } = useFormatter();
   const {
@@ -224,7 +223,7 @@ const StixCoreObjectOrCoreRelationshipLabelsView = (props) => {
                       classes={{ root: classes.label }}
                       label={truncate(label.value, 25)}
                       style={{
-                        color: normalColor,
+                        color: theme.palette.chip.main,
                         borderColor: label.color,
                         backgroundColor: hexToRGB(label.color),
                       }}
@@ -235,7 +234,7 @@ const StixCoreObjectOrCoreRelationshipLabelsView = (props) => {
                       deleteIcon={
                         <CancelOutlined
                           className={classes.deleteIcon}
-                          style={{ color: normalColor }}
+                          style={{ color: theme.palette.chip.main }}
                         />
                       }
                     />
