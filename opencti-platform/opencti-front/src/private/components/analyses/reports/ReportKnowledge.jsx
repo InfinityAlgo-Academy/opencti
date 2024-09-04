@@ -216,6 +216,32 @@ class ReportKnowledgeComponent extends Component {
     this.setState({ timeLineSearchTerm: value }, () => this.saveView());
   }
 
+  handleAddEntity(entity) {
+    const input = {
+      toId: entity.id,
+      relationship_type: 'object',
+    };
+    commitMutation({
+      mutation: containerAddStixCoreObjectsLinesRelationAddMutation,
+      variables: {
+        id: this.props.report.id,
+        input,
+      },
+      updater: (store) => {
+        insertNode(
+          store,
+          'Pagination_objects',
+          undefined,
+          'containerEdit',
+          this.props.report.id,
+          'relationAdd',
+          { input },
+          'to',
+        );
+      },
+    });
+  }
+
   render() {
     const {
       classes,
@@ -252,31 +278,6 @@ class ReportKnowledgeComponent extends Component {
       filters: timeLineFilters,
       orderBy,
       orderMode: 'desc',
-    };
-    const handleAddEntity = (entity) => {
-      const input = {
-        toId: entity.id,
-        relationship_type: 'object',
-      };
-      commitMutation({
-        mutation: containerAddStixCoreObjectsLinesRelationAddMutation,
-        variables: {
-          id: report.id,
-          input,
-        },
-        updater: (store) => {
-          insertNode(
-            store,
-            'Pagination_objects',
-            undefined,
-            'containerEdit',
-            report.id,
-            'relationAdd',
-            { input },
-            'to',
-          );
-        },
-      });
     };
     return (
       <div
@@ -408,16 +409,10 @@ class ReportKnowledgeComponent extends Component {
                         currentKillChain={currentKillChain}
                         currentModeOnlyActive={currentModeOnlyActive}
                         currentColorsReversed={currentColorsReversed}
-                        handleChangeKillChain={this.handleChangeKillChain.bind(
-                          this,
-                        )}
-                        handleToggleColorsReversed={this.handleToggleColorsReversed.bind(
-                          this,
-                        )}
-                        handleToggleModeOnlyActive={this.handleToggleModeOnlyActive.bind(
-                          this,
-                        )}
-                        handleAdd={handleAddEntity}
+                        handleChangeKillChain={this.handleChangeKillChain.bind(this)}
+                        handleToggleColorsReversed={this.handleToggleColorsReversed.bind(this)}
+                        handleToggleModeOnlyActive={this.handleToggleModeOnlyActive.bind(this)}
+                        handleAdd={this.handleAddEntity.bind(this)}
                       />
                     );
                   }
