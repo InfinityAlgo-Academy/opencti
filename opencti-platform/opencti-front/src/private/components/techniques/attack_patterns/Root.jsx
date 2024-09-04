@@ -25,6 +25,7 @@ import { getCurrentTab, getPaddingRight } from '../../../../utils/utils';
 import Security from '../../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../../utils/hooks/useGranted';
 import AttackPatternEdition from './AttackPatternEdition';
+import CreateRelationshipContextProvider from '../../common/menus/CreateRelationshipContextProvider';
 
 const subscription = graphql`
   subscription RootAttackPatternSubscription($id: ID!) {
@@ -96,7 +97,7 @@ class RootAttackPattern extends Component {
 
     const link = `/dashboard/techniques/attack_patterns/${attackPatternId}/knowledge`;
     return (
-      <>
+      <CreateRelationshipContextProvider>
         <QueryRenderer
           query={attackPatternQuery}
           variables={{ id: attackPatternId }}
@@ -146,6 +147,7 @@ class RootAttackPattern extends Component {
                             <AttackPatternEdition attackPatternId={attackPattern.id} />
                           </Security>
                         )}
+                        RelateComponent={CreateRelationshipContextProvider}
                       />
                       <Box
                         sx={{
@@ -255,7 +257,7 @@ class RootAttackPattern extends Component {
             return <Loader />;
           }}
         />
-      </>
+      </CreateRelationshipContextProvider>
     );
   }
 }

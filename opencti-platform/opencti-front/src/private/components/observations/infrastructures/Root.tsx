@@ -28,6 +28,8 @@ import { getCurrentTab } from '../../../../utils/utils';
 import Security from '../../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../../utils/hooks/useGranted';
 import InfrastructureEdition from './InfrastructureEdition';
+import CreateRelationshipContextProvider from '../../common/menus/CreateRelationshipContextProvider';
+import CreateRelationshipButtonComponent from '../../common/menus/CreateRelationshipButtonComponent';
 
 const subscription = graphql`
   subscription RootInfrastructureSubscription($id: ID!) {
@@ -89,7 +91,7 @@ const RootInfrastructureComponent = ({ queryRef, infrastructureId }) => {
     return 0;
   };
   return (
-    <>
+    <CreateRelationshipContextProvider>
       {infrastructure ? (
         <div
           style={{ paddingRight: paddingRightValue() }}
@@ -107,6 +109,7 @@ const RootInfrastructureComponent = ({ queryRef, infrastructureId }) => {
             EditComponent={<Security needs={[KNOWLEDGE_KNUPDATE]}>
               <InfrastructureEdition infrastructureId={infrastructure.id} />
             </Security>}
+            RelateComponent={CreateRelationshipButtonComponent}
             enableQuickSubscription={true}
           />
           <Box
@@ -209,7 +212,7 @@ const RootInfrastructureComponent = ({ queryRef, infrastructureId }) => {
       ) : (
         <ErrorNotFound/>
       )}
-    </>
+    </CreateRelationshipContextProvider>
   );
 };
 

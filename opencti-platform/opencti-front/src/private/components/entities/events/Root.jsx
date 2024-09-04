@@ -26,6 +26,8 @@ import { getCurrentTab, getPaddingRight } from '../../../../utils/utils';
 import Security from '../../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../../utils/hooks/useGranted';
 import EventEdition from './EventEdition';
+import CreateRelationshipContextProvider from '../../common/menus/CreateRelationshipContextProvider';
+import CreateRelationshipButtonComponent from '../../common/menus/CreateRelationshipButtonComponent';
 
 const subscription = graphql`
   subscription RootEventsSubscription($id: ID!) {
@@ -95,7 +97,7 @@ class RootEvent extends Component {
     const link = `/dashboard/entities/events/${eventId}/knowledge`;
 
     return (
-      <>
+      <CreateRelationshipContextProvider>
         <QueryRenderer
           query={eventQuery}
           variables={{ id: eventId }}
@@ -146,6 +148,7 @@ class RootEvent extends Component {
                             <EventEdition eventId={event.id} />
                           </Security>
                         )}
+                        RelateComponent={CreateRelationshipButtonComponent}
                       />
                       <Box
                         sx={{
@@ -279,7 +282,7 @@ class RootEvent extends Component {
             return <Loader />;
           }}
         />
-      </>
+      </CreateRelationshipContextProvider>
     );
   }
 }

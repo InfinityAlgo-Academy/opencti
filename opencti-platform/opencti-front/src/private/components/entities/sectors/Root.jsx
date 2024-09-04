@@ -26,6 +26,8 @@ import { getCurrentTab, getPaddingRight } from '../../../../utils/utils';
 import Security from '../../../../utils/Security';
 import { KNOWLEDGE_KNUPDATE } from '../../../../utils/hooks/useGranted';
 import SectorEdition from './SectorEdition';
+import CreateRelationshipContextProvider from '../../common/menus/CreateRelationshipContextProvider';
+import CreateRelationshipButtonComponent from '../../common/menus/CreateRelationshipButtonComponent';
 
 const subscription = graphql`
   subscription RootSectorSubscription($id: ID!) {
@@ -97,7 +99,7 @@ class RootSector extends Component {
     const link = `/dashboard/entities/sectors/${sectorId}/knowledge`;
 
     return (
-      <>
+      <CreateRelationshipContextProvider>
         <QueryRenderer
           query={sectorQuery}
           variables={{ id: sectorId }}
@@ -150,6 +152,7 @@ class RootSector extends Component {
                             <SectorEdition sectorId={sector.id} />
                           </Security>
                         )}
+                        RelateComponent={CreateRelationshipButtonComponent}
                       />
                       <Box
                         sx={{
@@ -283,7 +286,7 @@ class RootSector extends Component {
             return <Loader />;
           }}
         />
-      </>
+      </CreateRelationshipContextProvider>
     );
   }
 }
