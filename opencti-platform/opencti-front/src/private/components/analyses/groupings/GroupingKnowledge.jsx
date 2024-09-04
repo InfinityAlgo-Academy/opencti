@@ -5,7 +5,7 @@ import { graphql, createFragmentContainer } from 'react-relay';
 import withStyles from '@mui/styles/withStyles';
 import { Route, Routes } from 'react-router-dom';
 import { propOr } from 'ramda';
-import { containerAddStixCoreObjectsLinesRelationAddMutation } from '@components/common/containers/ContainerAddStixCoreObjectsLines';
+import { containerAddStixCoreObjectsLinesRelationAddMutation } from '../../common/containers/ContainerAddStixCoreObjectsLines';
 import StixCoreRelationship from '../../common/stix_core_relationships/StixCoreRelationship';
 import { commitMutation, QueryRenderer } from '../../../../relay/environment';
 import ContainerHeader from '../../common/containers/ContainerHeader';
