@@ -40,14 +40,6 @@ const AttackPatternsMatrix: FunctionComponent<AttackPatternsMatrixProps> = ({
     >
       <QueryRenderer
         query={attackPatternsMatrixColumnsQuery}
-        variables={{
-          count: 5000,
-          filters: {
-            mode: 'and',
-            filters: [{ key: 'revoked', values: ['false'] }],
-            filterGroups: [],
-          },
-        }}
         render={({ props }: { props: AttackPatternsMatrixColumnsQuery | null }) => {
           if (props) {
             return (
