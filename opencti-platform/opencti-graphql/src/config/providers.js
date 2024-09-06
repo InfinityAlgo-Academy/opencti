@@ -355,10 +355,19 @@ for (let i = 0; i < providerKeys.length; i += 1) {
               const emailAttribute = mappedConfig.email_attribute ?? 'email';
               const firstnameAttribute = mappedConfig.firstname_attribute ?? 'given_name';
               const lastnameAttribute = mappedConfig.lastname_attribute ?? 'family_name';
-              const name = userinfo[nameAttribute];
-              const email = userinfo[emailAttribute];
-              const firstname = userinfo[firstnameAttribute];
-              const lastname = userinfo[lastnameAttribute];
+              let name = userinfo[nameAttribute];
+              let email = userinfo[emailAttribute];
+              let firstname = userinfo[firstnameAttribute];
+              let lastname = userinfo[lastnameAttribute];
+              // ADFS SSO does not utilize the /userinfo endpoint to provide additional userinfo and this data will not exist, instead this
+              // user info will be included in the id_token. See https://github.com/OpenCTI-Platform/opencti/issues/7477 for more details.
+              if (!name || !email || !firstname || !lastname) {
+                const decodedIdToken = jwtDecode(tokenset.id_token);
+                name = name || decodedIdToken[nameAttribute];
+                email = email || decodedIdToken[emailAttribute];
+                firstname = firstname || decodedIdToken[firstnameAttribute];
+                lastname = lastname || decodedIdToken[lastnameAttribute];
+              }
               const opts = {
                 providerGroups: groupsToAssociate,
                 providerOrganizations: organizationsToAssociate,
