@@ -10,16 +10,16 @@ import type { AuthContext, AuthUser } from '../../../types/user';
 import { type DomainFindById } from '../../../domain/domainTypes';
 import type { BasicStoreEntityDocument } from './document-types';
 import type { BasicStoreCommon, BasicStoreObject } from '../../../types/store';
-import { type File, FilterMode, FilterOperator, OrderingMode } from '../../../generated/graphql';
+import { type File, FilterMode, FilterOperator, OrderingMode, type QueryAllPendingFilesArgs } from '../../../generated/graphql';
 import { loadExportWorksAsProgressFiles } from '../../../domain/work';
 import { elSearchFiles } from '../../../database/file-search';
 import { SYSTEM_USER } from '../../../utils/access';
 import { FROM_START_STR } from '../../../utils/format';
-import { buildContextDataForFile, publishUserAction } from '../../../listener/UserActionListener';
 import type { UserAction } from '../../../listener/UserActionListener';
+import { buildContextDataForFile, publishUserAction } from '../../../listener/UserActionListener';
 import { ForbiddenAccess } from '../../../config/errors';
 import { RELATION_OBJECT_MARKING } from '../../../schema/stixRefRelationship';
-import { buildRefRelationKey } from '../../../schema/general';
+import { ABSTRACT_STIX_CORE_OBJECT, buildRefRelationKey } from '../../../schema/general';
 
 export const getIndexFromDate = async (context: AuthContext) => {
   const searchOptions = {
@@ -222,5 +222,36 @@ export const paginatedForPathWithEnrichment = async (context: AuthContext, user:
     pagination.edges = [...progressFiles.map((p: any) => ({ node: p, cursor: uuidv4() })), ...pagination.edges];
   }
   // endregion
+  return pagination ?? [];
+};
+
+export const paginatedForAllPendingFiles = async (context: AuthContext, user: AuthUser, opts?: QueryAllPendingFilesArgs) => {
+  const stixCoreObjects = await listEntitiesPaginated(context, user, [ABSTRACT_STIX_CORE_OBJECT], {});
+  const ids = stixCoreObjects.edges.map((n) => n.node.internal_id);
+  const pathFilter = { // (entity_id is empty) OR (entity_id = one of the available stix core objects ids)
+    mode: FilterMode.Or,
+    filters: [
+      { key: ['entity_id'], values: ids, operator: FilterOperator.Eq, mode: FilterMode.Or },
+      { key: ['entity_id'], values: [], operator: FilterOperator.Nil, mode: FilterMode.Or },
+    ],
+    filterGroups: [],
+  };
+  const filters = {
+    mode: FilterMode.And,
+    filters: [
+      { key: ['internal_id'], values: ['import/pending'], operator: FilterOperator.StartsWith },
+    ],
+    filterGroups: opts?.filters
+      ? [opts.filters, pathFilter]
+      : [pathFilter],
+  };
+  // Default ordering on lastModified starting from the oldest
+  const orderOptions: any = {};
+  if (isEmptyField(opts?.orderBy)) {
+    orderOptions.orderBy = 'lastModified';
+    orderOptions.orderMode = OrderingMode.Asc;
+  }
+  const listOptions = { ...opts, filters, ...orderOptions, indices: [READ_INDEX_INTERNAL_OBJECTS] };
+  const pagination = await listEntitiesPaginated<BasicStoreEntityDocument>(context, user, [ENTITY_TYPE_INTERNAL_FILE], listOptions);
   return pagination ?? [];
 };

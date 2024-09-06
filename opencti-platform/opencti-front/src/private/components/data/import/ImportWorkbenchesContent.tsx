@@ -13,13 +13,15 @@ import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import { ImportWorkbenchesContentFileLine_file$data } from '@components/data/import/__generated__/ImportWorkbenchesContentFileLine_file.graphql';
 import { ImportWorkbenchesContentLines_data$data } from '@components/data/import/__generated__/ImportWorkbenchesContentLines_data.graphql';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Transition from '../../../../components/Transition';
 import useApiMutation from '../../../../utils/hooks/useApiMutation';
 import Breadcrumbs from '../../../../components/Breadcrumbs';
 import { useFormatter } from '../../../../components/i18n';
 import { APP_BASE_PATH } from '../../../../relay/environment';
 import useQueryLoading from '../../../../utils/hooks/useQueryLoading';
-import { emptyFilterGroup, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../utils/filters/filtersUtils';
+import { addFilter, emptyFilterGroup, useRemoveIdAndIncorrectKeysFromFilterGroupObject } from '../../../../utils/filters/filtersUtils';
 import { usePaginationLocalStorage } from '../../../../utils/hooks/useLocalStorage';
 import DataTable from '../../../../components/dataGrid/DataTable';
 import { UsePreloadedPaginationFragment } from '../../../../utils/hooks/usePreloadedPaginationFragment';
@@ -54,6 +56,13 @@ export const workbenchLineFragment = graphql`
       creator {
         name
       }
+      entity {
+        representative {
+          main
+        }
+        id
+        entity_type
+      }
     }
   }
 `;
@@ -69,7 +78,7 @@ const importWorkbenchLinesFragment = graphql`
     filters: { type: "FilterGroup" }
   )
   @refetchable(queryName: "ImportWorkbenchesRefetchQuery") {
-    pendingFiles(
+    allPendingFiles(
       first: $count,
       after: $cursor,
       orderBy: $orderBy,
@@ -77,7 +86,7 @@ const importWorkbenchLinesFragment = graphql`
       search: $search,
       filters: $filters,
     )
-    @connection(key: "Pagination_global_pendingFiles") {
+    @connection(key: "Pagination_global_allPendingFiles") {
       edges {
         node {
           ...ImportWorkbenchesContentFileLine_file
@@ -116,6 +125,7 @@ const LOCAL_STORAGE_KEY = 'importWorkbenches';
 const ImportWorkbenchesContent = () => {
   const { t_i18n } = useFormatter();
   const [displayDelete, setDisplayDelete] = useState<string>('');
+  const [onlyGlobalFiles, setOnlyGlobalFiles] = useState(false);
 
   const initialValues = {
     filters: emptyFilterGroup,
@@ -125,7 +135,10 @@ const ImportWorkbenchesContent = () => {
   };
   const { viewStorage, helpers, paginationOptions } = usePaginationLocalStorage<ImportWorkbenchesContentQuery$variables>(LOCAL_STORAGE_KEY, initialValues);
   const { filters } = viewStorage;
-  const finalFilters = useRemoveIdAndIncorrectKeysFromFilterGroupObject(filters, ['InternalFile']);
+  const finalFilters = useRemoveIdAndIncorrectKeysFromFilterGroupObject(
+    onlyGlobalFiles ? addFilter(filters, 'metaData.entity_id', [], 'nil') : filters,
+    ['InternalFile'],
+  );
   const queryPaginationOptions = {
     ...paginationOptions,
     filters: finalFilters,
@@ -143,11 +156,6 @@ const ImportWorkbenchesContent = () => {
         mode: 'or',
       },
       {
-        key: 'entity_id',
-        values: [],
-        operator: 'nil',
-      },
-      {
         key: 'file_id',
         values: ['import/pending'],
         operator: 'starts_with',
@@ -160,7 +168,7 @@ const ImportWorkbenchesContent = () => {
     linesQuery: importWorkbenchesContentQuery,
     linesFragment: importWorkbenchLinesFragment,
     queryRef,
-    nodePath: ['pendingFiles', 'pageInfo', 'globalCount'],
+    nodePath: ['allPendingFiles', 'pageInfo', 'globalCount'],
     setNumberOfElements: helpers.handleSetNumberOfElements,
   } as UsePreloadedPaginationFragment<ImportWorkbenchesContentQuery>;
 
@@ -177,12 +185,29 @@ const ImportWorkbenchesContent = () => {
         const fileStore = store.get(id);
         fileStore?.setValue(0, 'lastModifiedSinceMin');
         fileStore?.setValue('progress', 'uploadStatus');
-        deleteNode(store, 'Pagination_global_pendingFiles', queryPaginationOptions, id);
+        deleteNode(store, 'Pagination_global_allPendingFiles', queryPaginationOptions, id);
       },
       onCompleted: () => setDisplayDelete(''),
       onError: () => setDisplayDelete(''),
     });
   };
+
+  const globalFilesField = (
+    <div>
+      <FormControlLabel
+        value="start"
+        control={
+          <Checkbox
+            style={{ padding: 7 }}
+            onChange={() => setOnlyGlobalFiles(!onlyGlobalFiles)}
+            checked={onlyGlobalFiles}
+          />
+        }
+        label={t_i18n('Display only global files')}
+        labelPlacement="end"
+      />
+    </div>
+  );
 
   return (
     <div style={{ height: '100%', paddingRight: 200 }} className="break">
@@ -214,13 +239,17 @@ const ImportWorkbenchesContent = () => {
       {queryRef && (
         <DataTable
           dataColumns={{
-            name: { percentWidth: 50 },
+            name: { percentWidth: 40 },
+            relatedEntity: {
+              percentWidth: 20,
+              isSortable: false,
+            },
             createdBy: {
-              percentWidth: 15,
+              percentWidth: 13,
               render: (({ metaData: { creator } }) => creator?.name ?? '-'),
             },
             objectLabel: {
-              percentWidth: 15,
+              percentWidth: 10,
               render: ({ metaData: { labels } }) => {
                 return (
                   <StixCoreObjectLabels
@@ -234,11 +263,11 @@ const ImportWorkbenchesContent = () => {
               id: 'lastModified',
               label: 'Modification date',
               isSortable: true,
-              percentWidth: 19,
+              percentWidth: 15,
               render: ({ lastModified }, { fd }) => fd(lastModified),
             },
           }}
-          resolvePath={(data: ImportWorkbenchesContentLines_data$data) => data.pendingFiles?.edges?.map(({ node }) => node)}
+          resolvePath={(data: ImportWorkbenchesContentLines_data$data) => (data.allPendingFiles?.edges ?? []).map(({ node }) => node)}
           storageKey={LOCAL_STORAGE_KEY}
           entityTypes={['InternalFile']}
           searchContextFinal={{ entityTypes: ['InternalFile'] }}
@@ -247,6 +276,8 @@ const ImportWorkbenchesContent = () => {
           initialValues={initialValues}
           preloadedPaginationProps={preloadedPaginationProps}
           taskScope='IMPORT'
+          extraFields={globalFilesField}
+          disableNavigation
           actions={(file: ImportWorkbenchesContentFileLine_file$data) => {
             const { id, metaData, uploadStatus } = file;
             const isProgress = uploadStatus === 'progress' || uploadStatus === 'wait';

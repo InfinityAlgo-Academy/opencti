@@ -50,6 +50,7 @@ type OCTIDataTableProps = Pick<DataTableProps, 'dataColumns'
   currentView?: string
   hideFilters?: boolean
   taskScope?: string
+  extraFields?: ReactNode
 };
 
 const DataTable = (props: OCTIDataTableProps) => {
@@ -76,6 +77,7 @@ const DataTable = (props: OCTIDataTableProps) => {
     currentView,
     hideFilters,
     taskScope,
+    extraFields,
   } = props;
 
   const {
@@ -148,6 +150,9 @@ const DataTable = (props: OCTIDataTableProps) => {
               onSubmit={helpers.handleSearch}
               keyword={searchTerm}
             />
+            <div style={{ marginLeft: 20 }}>
+              {extraFields}
+            </div>
             {!hideFilters && (
               <DataTableFilters
                 availableFilterKeys={availableFilterKeys}

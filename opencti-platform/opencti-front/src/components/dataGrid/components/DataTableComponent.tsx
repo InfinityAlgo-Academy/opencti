@@ -124,7 +124,8 @@ const DataTableComponent = ({
       } as DataTableContextProps}
     >
       <div ref={dataTableHeaderRef}>
-        {filtersComponent ?? (variant === DataTableVariant.inline && (
+      {extraFields}
+      {filtersComponent ?? (variant === DataTableVariant.inline && (
           <div
             style={{
               width: '100%',
