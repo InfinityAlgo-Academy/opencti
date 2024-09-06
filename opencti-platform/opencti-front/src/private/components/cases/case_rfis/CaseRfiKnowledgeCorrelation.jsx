@@ -1138,6 +1138,7 @@ class CaseRfiKnowledgeCorrelationComponent extends Component {
                           },
                           node,
                           node.color,
+                          theme.palette.chip.main,
                           ctx,
                           this.selectedNodes.has(node),
                           false,
