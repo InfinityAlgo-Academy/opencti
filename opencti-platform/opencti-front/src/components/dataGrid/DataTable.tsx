@@ -26,6 +26,7 @@ type OCTIDataTableProps = Pick<DataTableProps, 'dataColumns'
 | 'storageKey'
 | 'initialValues'
 | 'toolbarFilters'
+| 'handleCopy'
 | 'availableFilterKeys'
 | 'redirectionModeEnabled'
 | 'additionalFilterKeys'
@@ -37,6 +38,7 @@ type OCTIDataTableProps = Pick<DataTableProps, 'dataColumns'
 | 'disableLineSelection'
 | 'disableToolBar'
 | 'disableSelectAll'
+| 'disableRedirectOnRowClick'
 | 'entityTypes'> & {
   lineFragment: GraphQLTaggedNode
   preloadedPaginationProps: UsePreloadedPaginationFragment<OperationType>,
@@ -71,6 +73,7 @@ const DataTable = (props: OCTIDataTableProps) => {
     exportContext,
     entityTypes,
     toolbarFilters,
+    handleCopy,
     variant = DataTableVariant.default,
     additionalHeaderButtons,
     currentView,
@@ -166,6 +169,7 @@ const DataTable = (props: OCTIDataTableProps) => {
             <DataTableDisplayFilters
               availableFilterKeys={availableFilterKeys}
               availableRelationFilterTypes={availableRelationFilterTypes}
+              availableEntityTypes={availableEntityTypes}
               additionalFilterKeys={additionalFilterKeys}
               entityTypes={computedEntityTypes}
               paginationOptions={paginationOptions}
@@ -189,6 +193,7 @@ const DataTable = (props: OCTIDataTableProps) => {
             filters={toolbarFilters}
             handleClearSelectedElements={handleClearSelectedElements}
             taskScope={taskScope}
+            handleCopy={handleCopy}
           />
         </div>
       )}

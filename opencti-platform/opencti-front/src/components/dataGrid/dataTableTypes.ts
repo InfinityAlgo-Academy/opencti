@@ -85,6 +85,7 @@ export interface DataTableContextProps {
   disableNavigation: DataTableProps['disableNavigation']
   disableToolBar: DataTableProps['disableToolBar']
   disableSelectAll: DataTableProps['disableSelectAll']
+  disableRedirectOnRowClick: DataTableProps['disableRedirectOnRowClick']
   onLineClick: DataTableProps['onLineClick']
 }
 
@@ -94,6 +95,7 @@ export interface DataTableProps {
   storageKey: string
   initialValues: LocalStorage
   toolbarFilters?: FilterGroup
+  handleCopy?: () => void
   lineFragment?: GraphQLTaggedNode
   dataQueryArgs: any
   availableFilterKeys?: string[] | undefined;
@@ -126,6 +128,7 @@ export interface DataTableProps {
   disableLineSelection?: boolean
   disableToolBar?: boolean
   disableSelectAll?: boolean
+  disableRedirectOnRowClick?: boolean
   onLineClick?: (line: any) => void
 }
 
@@ -149,6 +152,7 @@ export interface DataTableDisplayFiltersProps {
   additionalFilterKeys?: string[]
   availableRelationFilterTypes?: Record<string, string[]> | undefined
   availableFilterKeys?: string[] | undefined;
+  availableEntityTypes?: string[]
   paginationOptions: any
 }
 
